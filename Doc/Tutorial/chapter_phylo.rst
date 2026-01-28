@@ -878,6 +878,113 @@ function:
 Detailed documentation for this new module currently lives on the
 Biopython wiki: http://biopython.org/wiki/PAML
 
+.. _`sec:PhyloDistanceCalculation`:
+
+Computing distance matrices
+----------------------------
+
+``DistanceCalculator`` computes pairwise sequence distances from a
+multiple sequence alignment.  The resulting ``DistanceMatrix`` can then
+be handed directly to ``DistanceTreeConstructor`` to build a
+Neighbor-Joining or UPGMA phylogenetic tree.
+
+Basic usage
+~~~~~~~~~~~
+
+Load an alignment and compute an identity-based distance matrix:
+
+.. doctest ../Tests
+
+.. code:: pycon
+
+   >>> from Bio import AlignIO
+   >>> from Bio.Phylo.TreeConstruction import DistanceCalculator
+   >>> aln = AlignIO.read("TreeConstruction/msa.phy", "phylip")
+   >>> calculator = DistanceCalculator("identity")
+   >>> dm = calculator.get_distance(aln)
+   >>> print(round(dm["Alpha", "Beta"], 6))
+   0.230769
+
+Substitution-matrix models are also supported.  ``"blosum62"`` is
+commonly used for protein alignments; ``"blastn"`` for nucleotide:
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> calc_blosum = DistanceCalculator("blosum62")
+   >>> dm_blosum = calc_blosum.get_distance(aln)
+   >>> print(round(dm_blosum["Alpha", "Beta"], 6))
+   0.369048
+
+Building a tree from the distance matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pass any ``DistanceMatrix`` to ``DistanceTreeConstructor`` to construct
+a tree using Neighbor-Joining (``nj``) or UPGMA (``upgma``):
+
+.. cont-doctest
+
+.. code:: pycon
+
+   >>> from Bio.Phylo.TreeConstruction import DistanceTreeConstructor
+   >>> constructor = DistanceTreeConstructor()
+   >>> nj_tree = constructor.nj(dm)
+   >>> sorted(t.name for t in nj_tree.get_terminals())
+   ['Alpha', 'Beta', 'Delta', 'Epsilon', 'Gamma']
+
+   >>> upgma_tree = constructor.upgma(dm)
+   >>> sorted(t.name for t in upgma_tree.get_terminals())
+   ['Alpha', 'Beta', 'Delta', 'Epsilon', 'Gamma']
+
+Accelerated distance computation (experimental)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For large alignments the pure-Python pairwise loop becomes the
+bottleneck.  Three experimental backends are available that vectorise
+the inner computation:
+
+``"numpy"``
+   Encodes sequences as ``uint8`` arrays and uses a precomputed
+   256 × 256 scoring lookup table.  Supports both identity and
+   substitution-matrix models.
+
+``"scipy"``
+   Uses ``scipy.spatial.distance.pdist`` for the identity model.
+   Scoring-matrix models fall back silently to the NumPy backend.
+
+``"onehot"``
+   One-hot encodes sequences and scores pairs via matrix
+   multiplication.  Supports both identity and substitution-matrix
+   models.
+
+All three backends produce results that are numerically identical to
+the legacy pure-Python loop.  They emit ``BiopythonExperimentalWarning``
+at construction time because their API may change in a future release:
+
+.. doctest ../Tests
+
+.. code:: pycon
+
+   >>> import warnings
+   >>> from Bio import BiopythonExperimentalWarning
+   >>> from Bio.Phylo.TreeConstruction import DistanceCalculator
+   >>> from Bio import AlignIO
+   >>> aln = AlignIO.read("TreeConstruction/msa.phy", "phylip")
+   >>> with warnings.catch_warnings():
+   ...     warnings.simplefilter("ignore", BiopythonExperimentalWarning)
+   ...     calc_np = DistanceCalculator("identity", method="numpy")
+   ...
+   >>> dm_np = calc_np.get_distance(aln)
+   >>> print(round(dm_np["Alpha", "Beta"], 6))
+   0.230769
+
+The ``n_jobs`` parameter controls the number of parallel workers used
+by the ``"numpy"`` and ``"onehot"`` backends.  Set it to ``1`` to force
+sequential execution, or leave it as ``None`` to auto-detect.  The
+``BIOPYTHON_DIST_JOBS`` environment variable overrides ``n_jobs`` when
+set.
+
 .. _`sec:PhyloFuture`:
 
 Future plans

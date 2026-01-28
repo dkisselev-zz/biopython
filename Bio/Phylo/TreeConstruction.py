@@ -14,7 +14,6 @@ from Bio.Phylo import BaseTree
 from Bio.Align import Alignment, MultipleSeqAlignment
 from Bio.Align import substitution_matrices
 
-
 # flake8: noqa
 
 
@@ -480,8 +479,33 @@ class DistanceCalculator:
 
     models = ["identity"] + dna_models + protein_models
 
-    def __init__(self, model="identity", skip_letters=None):
-        """Initialize with a distance model."""
+    def __init__(
+        self, model="identity", skip_letters=None, method="python", n_jobs=None
+    ):
+        """Initialize with a distance model and optional computation method.
+
+        Arguments:
+         - model - Name of the substitution model (e.g. ``"identity"``,
+           ``"blosum62"``, ``"blastn"``).  See ``dna_models`` and
+           ``protein_models`` class attributes for available options.
+         - skip_letters - Tuple of characters to exclude from distance
+           calculation.  Defaults to ``()`` for identity and
+           ``("-", "*")`` for scoring models.
+         - method - Computation backend: ``"python"`` (default, legacy
+           pure-Python loop), ``"numpy"``, ``"scipy"``, or ``"onehot"``.
+           Methods other than ``"python"`` are experimental and will emit
+           ``BiopythonExperimentalWarning``.
+         - n_jobs - Number of parallel workers for accelerated methods.
+           ``None`` means auto-detect.  Overridden by the
+           ``BIOPYTHON_DIST_JOBS`` environment variable when set.
+
+        Examples
+        --------
+        >>> from Bio.Phylo.TreeConstruction import DistanceCalculator
+        >>> calc = DistanceCalculator("identity")
+        >>> calc = DistanceCalculator("blosum62", method="numpy")  # doctest:+SKIP
+
+        """
         # Shim for backward compatibility (#491)
         if skip_letters:
             self.skip_letters = skip_letters
@@ -502,6 +526,29 @@ class DistanceCalculator:
             raise ValueError(
                 "Model not supported. Available models: " + ", ".join(self.models)
             )
+
+        # Resolve computation strategy
+        if method == "python":
+            self._strategy = None
+        else:
+            import warnings
+
+            from Bio import BiopythonExperimentalWarning
+            from Bio.Phylo.DistanceComputation import _STRATEGY_REGISTRY
+            from Bio.Phylo.DistanceComputation import _resolve_strategy
+
+            if method not in _STRATEGY_REGISTRY:
+                raise ValueError(
+                    f"Unknown method '{method}'. "
+                    f"Valid methods: python, {tuple(_STRATEGY_REGISTRY)}"
+                )
+
+            warnings.warn(
+                f"DistanceCalculator method='{method}' is experimental and "
+                "may change in a future release.",
+                BiopythonExperimentalWarning,
+            )
+            self._strategy = _resolve_strategy(method, n_jobs=n_jobs)
 
     def _pairwise(self, seq1, seq2):
         """Calculate pairwise distance from two sequences (PRIVATE).
@@ -549,28 +596,53 @@ class DistanceCalculator:
     def get_distance(self, msa):
         """Return a DistanceMatrix for an Alignment or MultipleSeqAlignment object.
 
-        :Parameters:
-            msa : Alignment or MultipleSeqAlignment object representing a
-                DNA or protein multiple sequence alignment.
+        Arguments:
+         - msa - An ``Alignment`` or ``MultipleSeqAlignment`` object
+           representing a DNA or protein multiple sequence alignment.
+
+        The computation method is determined by the ``method`` argument
+        passed at construction time.  All methods return a ``DistanceMatrix``
+        with identical semantics.
+
+        Examples
+        --------
+        >>> from Bio.Phylo.TreeConstruction import DistanceCalculator
+        >>> from Bio import AlignIO
+        >>> aln = AlignIO.read("TreeConstruction/msa.phy", "phylip")
+        >>> calculator = DistanceCalculator("identity")
+        >>> dm = calculator.get_distance(aln)
+        >>> print(round(dm["Alpha", "Beta"], 6))
+        0.230769
 
         """
         if isinstance(msa, Alignment):
             names = [s.id for s in msa.sequences]
-            dm = DistanceMatrix(names)
-            n = len(names)
-            for i1 in range(n):
-                for i2 in range(i1):
-                    dm[names[i1], names[i2]] = self._pairwise(msa[i1], msa[i2])
+            sequences = [str(msa[i]) for i in range(len(names))]
         elif isinstance(msa, MultipleSeqAlignment):
             names = [s.id for s in msa]
-            dm = DistanceMatrix(names)
-            for seq1, seq2 in itertools.combinations(msa, 2):
-                dm[seq1.id, seq2.id] = self._pairwise(seq1, seq2)
+            sequences = [str(s.seq) for s in msa]
         else:
             raise TypeError(
                 "Must provide an Alignment object or a MultipleSeqAlignment object."
             )
 
+        # Accelerated path via registered strategy
+        if self._strategy is not None:
+            raw_matrix = self._strategy.compute(
+                sequences, names, self.scoring_matrix, self.skip_letters
+            )
+            return DistanceMatrix(names, raw_matrix)
+
+        # Legacy pure-Python path (unchanged)
+        dm = DistanceMatrix(names)
+        if isinstance(msa, Alignment):
+            n = len(names)
+            for i1 in range(n):
+                for i2 in range(i1):
+                    dm[names[i1], names[i2]] = self._pairwise(msa[i1], msa[i2])
+        else:
+            for seq1, seq2 in itertools.combinations(msa, 2):
+                dm[seq1.id, seq2.id] = self._pairwise(seq1, seq2)
         return dm
 
 

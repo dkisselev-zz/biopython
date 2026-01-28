@@ -181,6 +181,7 @@ PACKAGES = [
     "Bio.SwissProt",
     "Bio.TogoWS",
     "Bio.Phylo",
+    "Bio.Phylo.DistanceComputation",
     "Bio.Phylo.PAML",
     "Bio.UniGene",
     "Bio.UniProt",
