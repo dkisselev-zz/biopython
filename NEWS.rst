@@ -22,6 +22,18 @@ possible, especially the following contributors:
 - Ziyan Rao (first contribution)
 - Manuel Lera-Ramirez
 
+New features
+------------
+
+``Bio.Phylo.TreeConstruction.DistanceCalculator`` now supports multiple
+computation methods for significant performance improvements. The new
+``method`` parameter accepts ``"python"`` (original implementation),
+``"numpy"`` (1.5-45x faster), ``"scipy"`` (38-73x faster for identity model,
+requires SciPy), or ``"onehot"`` (4-5x faster for substitution matrices).
+The default ``"auto"`` intelligently selects the optimal method. Parallel
+execution is supported via the ``n_jobs`` parameter for additional speedup
+on multi-core systems.
+
 28 October 2025: Biopython 1.86
 ===============================
 

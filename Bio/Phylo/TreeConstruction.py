@@ -14,7 +14,6 @@ from Bio.Phylo import BaseTree
 from Bio.Align import Alignment, MultipleSeqAlignment
 from Bio.Align import substitution_matrices
 
-
 # flake8: noqa
 
 
@@ -482,6 +481,9 @@ class DistanceCalculator:
 
     def __init__(self, model="identity", skip_letters=None):
         """Initialize with a distance model."""
+        # Store model name for parallel execution
+        self.model = model
+
         # Shim for backward compatibility (#491)
         if skip_letters:
             self.skip_letters = skip_letters
@@ -546,32 +548,204 @@ class DistanceCalculator:
             return 1  # max possible scaled distance
         return 1 - (score / max_score)
 
-    def get_distance(self, msa):
+    def get_distance(self, msa, *, method="auto", n_jobs=1):
         """Return a DistanceMatrix for an Alignment or MultipleSeqAlignment object.
 
-        :Parameters:
-            msa : Alignment or MultipleSeqAlignment object representing a
-                DNA or protein multiple sequence alignment.
+        Computes pairwise evolutionary distances using the specified substitution
+        model and computation method. Multiple methods are available with different
+        performance characteristics.
 
+        Arguments:
+         - msa - Alignment or MultipleSeqAlignment object representing a DNA or
+           protein multiple sequence alignment
+         - method - Computation method: ``"auto"`` (default), ``"python"``,
+           ``"numpy"``, ``"scipy"``, or ``"onehot"``. The ``"auto"`` setting
+           selects an appropriate method based on alignment size.
+         - n_jobs - Number of parallel jobs for computation. Use ``1`` for
+           serial execution (default), ``-1`` for all available CPUs, or
+           ``n > 1`` for a specific number of workers. Parallel execution
+           incurs multiprocessing overhead (process spawning, data pickling)
+           and is only beneficial for alignments with many sequences (N > 100).
+           For small alignments, serial execution may be faster despite having
+           multiple cores available.
+
+        Returns a :class:`DistanceMatrix` object containing pairwise distances
+        normalized between 0 (identical) and 1 (completely different).
+
+        **Available Methods**:
+
+        - ``"python"``: Original nested loop implementation (baseline)
+        - ``"numpy"``: NumPy vectorized computation over alignment positions
+        - ``"scipy"``: SciPy's optimized pdist (identity model only, requires SciPy)
+        - ``"onehot"``: One-hot encoding with matrix multiplication (high memory)
+        - ``"auto"``: Automatically selects based on alignment characteristics
+
+        Performance varies significantly with alignment size (number of sequences N,
+        alignment length L) and substitution model. The ``"auto"`` method attempts
+        to select the fastest option. For detailed benchmarks on your data, run
+        the benchmark script in ``benchmarks/quick_benchmark.py``.
+
+        **Parallel Execution Notes**:
+
+        Parallel execution (``n_jobs > 1``) distributes pairwise distance
+        calculations across multiple CPU cores using Python's multiprocessing
+        module. This incurs overhead from:
+
+        - Process spawning and management
+        - Pickling/unpickling sequence data to worker processes
+        - Inter-process communication
+
+        Parallel execution is most effective for large alignments (N > 100)
+        where computation time dominates overhead. For small alignments or
+        when using fast methods like ``"scipy"``, serial execution may be
+        faster despite having multiple cores available.
+
+        Example usage::
+
+            >>> from Bio import Align
+            >>> from Bio.Phylo.TreeConstruction import DistanceCalculator
+            >>> aln = Align.read("TreeConstruction/msa.phy", "phylip")
+            >>> calculator = DistanceCalculator("blosum62")
+            >>> dm = calculator.get_distance(aln)
+            >>> print(dm["Alpha", "Beta"])  # doctest: +ELLIPSIS
+            0.3690...
+
+        Using a specific method::
+
+            >>> dm = calculator.get_distance(aln, method="numpy")
+
+        Parallel execution for large alignments::
+
+            >>> # Use 4 CPU cores (only beneficial for large alignments)
+            >>> dm = calculator.get_distance(aln, method="numpy", n_jobs=4)
+
+        See also :class:`DistanceMatrix`, :class:`DistanceTreeConstructor`,
+        :meth:`DistanceTreeConstructor.upgma`, :meth:`DistanceTreeConstructor.nj`
         """
+        # Determine number of sequences for auto-selection
+        from Bio.Align import Alignment
+        from Bio.Align import MultipleSeqAlignment
+
         if isinstance(msa, Alignment):
-            names = [s.id for s in msa.sequences]
-            dm = DistanceMatrix(names)
-            n = len(names)
-            for i1 in range(n):
-                for i2 in range(i1):
-                    dm[names[i1], names[i2]] = self._pairwise(msa[i1], msa[i2])
+            n_seqs = len(msa.sequences)
+            seq_len = len(msa[0]) if n_seqs > 0 else 0
         elif isinstance(msa, MultipleSeqAlignment):
-            names = [s.id for s in msa]
-            dm = DistanceMatrix(names)
-            for seq1, seq2 in itertools.combinations(msa, 2):
-                dm[seq1.id, seq2.id] = self._pairwise(seq1, seq2)
+            n_seqs = len(msa)
+            seq_len = len(msa[0].seq) if n_seqs > 0 else 0
         else:
             raise TypeError(
                 "Must provide an Alignment object or a MultipleSeqAlignment object."
             )
 
-        return dm
+        # Validate n_jobs parameter
+        if n_jobs == 0 or n_jobs < -1:
+            raise ValueError(f"n_jobs must be >= 1 or -1 (for all CPUs), got {n_jobs}")
+
+        # Select computation strategy with alignment size info
+        strategy = self._get_strategy(method, n_seqs, seq_len)
+
+        # Use parallel execution if requested
+        if n_jobs != 1:
+            from Bio.Phylo._distance_strategies import compute_parallel
+
+            return compute_parallel(strategy, msa, self, n_jobs)
+
+        # Compute distance matrix using selected strategy (serial)
+        return strategy.compute(msa, self)
+
+    def _get_strategy(self, method, n_seqs=0, seq_len=0):
+        """Select and return appropriate computation strategy.
+
+        Arguments:
+         - method - Strategy name: "auto", "python", "numpy", "scipy", "onehot"
+         - n_seqs - Number of sequences in alignment (for auto-selection)
+         - seq_len - Length of sequences (for auto-selection)
+
+        Returns a DistanceComputationStrategy instance.
+        """
+        # Lazy import to avoid circular dependencies
+        from Bio.Phylo import _distance_strategies
+
+        # Auto-selection logic
+        if method == "auto":
+            method = self._select_method_auto(n_seqs, seq_len)
+
+        # Fail-fast: Check SciPy availability when explicitly requested
+        if method == "scipy":
+            try:
+                import scipy.spatial.distance  # noqa: F401
+            except ImportError:
+                from Bio import MissingPythonDependencyError
+
+                raise MissingPythonDependencyError(
+                    'SciPy is required for method="scipy". '
+                    "Install with: pip install scipy"
+                )
+
+        # Strategy mapping
+        strategies = {
+            "python": _distance_strategies.PythonLoopStrategy,
+            "numpy": _distance_strategies.NumPyVectorizedStrategy,
+            "scipy": _distance_strategies.SciPyDistanceStrategy,
+            "onehot": _distance_strategies.OneHotMatMulStrategy,
+        }
+
+        if method not in strategies:
+            available = ", ".join(f'"{m}"' for m in strategies.keys())
+            raise ValueError(
+                f"Unknown distance computation method '{method}'. "
+                f"Available methods: {available}"
+            )
+
+        return strategies[method]()
+
+    def _select_method_auto(self, n_seqs, seq_len):
+        """Automatically select the best computation method.
+
+        Selection criteria based on alignment characteristics:
+        - N < 10: use 'python' (very small, exact compatibility)
+        - Identity model + N > 100: prefer 'scipy' (if available) > 'numpy'
+        - Substitution matrix + N > 500: prefer 'onehot' > 'numpy'
+        - Default: 'numpy' (balanced performance)
+
+        Arguments:
+         - n_seqs - Number of sequences in alignment
+         - seq_len - Length of sequences
+
+        Returns method name as string.
+        """
+        # Very small alignments - use python for exact backward compatibility
+        if n_seqs < 10:
+            return "python"
+
+        # Identity model
+        if self.scoring_matrix is None:
+            # Large identity alignments - scipy is fastest
+            if n_seqs > 100:
+                try:
+                    import scipy.spatial.distance  # noqa: F401
+
+                    return "scipy"
+                except ImportError:
+                    pass
+            # Default for identity: numpy
+            return "numpy"
+
+        # Substitution matrix models
+        else:
+            # Very large alignments - onehot excels for substitution matrices
+            if n_seqs > 500:
+                # Check memory requirements
+                from Bio.Phylo import _distance_strategies
+
+                strategy = _distance_strategies.OneHotMatMulStrategy()
+                estimated_mem = strategy.estimate_memory(n_seqs, seq_len)
+                # Only use onehot if memory < 500MB (conservative)
+                if estimated_mem < 500 * 1024 * 1024:
+                    return "onehot"
+
+            # Default for substitution matrices: numpy
+            return "numpy"
 
 
 class TreeConstructor:
