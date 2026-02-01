@@ -203,6 +203,33 @@ class DistanceCalculatorTest(unittest.TestCase):
         self.assertEqual(dmat["Alpha", "Alpha"], 0.0)
         self.assertAlmostEqual(dmat["Alpha", "Gamma"], 4.0 / 5.0)
 
+    def test_method_parameter(self):
+        """Test method= parameter for using fast implementations."""
+        aln = Align.read("TreeConstruction/msa.phy", "phylip")
+
+        calculator = DistanceCalculator("identity")
+
+        # Default method (python)
+        dm_python = calculator.get_distance(aln)
+
+        # NumPy method should give same results
+        dm_numpy = calculator.get_distance(aln, method="numpy")
+        for name1 in dm_python.names:
+            for name2 in dm_python.names:
+                self.assertAlmostEqual(
+                    dm_python[name1, name2], dm_numpy[name1, name2], places=10
+                )
+
+        # Test with blosum62 model
+        calculator_blosum = DistanceCalculator("blosum62")
+        dm_python_b = calculator_blosum.get_distance(aln)
+        dm_numpy_b = calculator_blosum.get_distance(aln, method="numpy")
+        for name1 in dm_python_b.names:
+            for name2 in dm_python_b.names:
+                self.assertAlmostEqual(
+                    dm_python_b[name1, name2], dm_numpy_b[name1, name2], places=10
+                )
+
 
 class DistanceTreeConstructorTest(unittest.TestCase):
     """Test DistanceTreeConstructor."""

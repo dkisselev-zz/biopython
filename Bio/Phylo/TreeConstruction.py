@@ -482,6 +482,7 @@ class DistanceCalculator:
 
     def __init__(self, model="identity", skip_letters=None):
         """Initialize with a distance model."""
+        self.model = model  # Store model name for get_distance method parameter
         # Shim for backward compatibility (#491)
         if skip_letters:
             self.skip_letters = skip_letters
@@ -546,14 +547,29 @@ class DistanceCalculator:
             return 1  # max possible scaled distance
         return 1 - (score / max_score)
 
-    def get_distance(self, msa):
+    def get_distance(self, msa, method="python"):
         """Return a DistanceMatrix for an Alignment or MultipleSeqAlignment object.
 
         :Parameters:
             msa : Alignment or MultipleSeqAlignment object representing a
                 DNA or protein multiple sequence alignment.
+            method : str
+                Computation method: 'python' (default, legacy), 'numpy', 'scipy',
+                or 'onehot'. Non-python methods use optimized implementations from
+                Bio.Phylo.DistanceMatrix for significant speedups on large alignments.
 
         """
+        if method != "python":
+            # Use fast implementation from DistanceMatrix module
+            from Bio.Phylo.DistanceMatrix import FastDistanceCalculator
+
+            fast_calc = FastDistanceCalculator(
+                model=self.model,
+                method=method,
+                skip_letters=self.skip_letters if self.skip_letters else None,
+            )
+            return fast_calc.get_distance(msa)
+
         if isinstance(msa, Alignment):
             names = [s.id for s in msa.sequences]
             dm = DistanceMatrix(names)
