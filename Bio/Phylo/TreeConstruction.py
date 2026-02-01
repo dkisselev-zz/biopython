@@ -13,7 +13,7 @@ import numbers
 from Bio.Phylo import BaseTree
 from Bio.Align import Alignment, MultipleSeqAlignment
 from Bio.Align import substitution_matrices
-
+from Bio.Phylo._distance_methods import METHOD_REGISTRY, _resolve_n_jobs
 
 # flake8: noqa
 
@@ -480,8 +480,33 @@ class DistanceCalculator:
 
     models = ["identity"] + dna_models + protein_models
 
-    def __init__(self, model="identity", skip_letters=None):
-        """Initialize with a distance model."""
+    def __init__(self, model="identity", skip_letters=None, method="python", n_jobs=1):
+        """Initialize with a distance model.
+
+        Parameters
+        ----------
+        model : str
+            Scoring model name (default ``"identity"``).
+        skip_letters : tuple of str or None
+            Characters to skip.  Defaults to ``()`` for identity,
+            ``("-", "*")`` for scoring models.
+        method : str
+            Computation backend.  Available methods: ``"python"``,
+            ``"numpy"``, ``"scipy"``, ``"onehot"``.  Defaults to
+            ``"python"`` for zero behaviour change.
+        n_jobs : int
+            Number of parallel workers.  Only honoured by
+            ``method="python"``.  ``-1`` means ``os.cpu_count()``.  The
+            ``BIOPYTHON_DISTANCE_JOBS`` environment variable overrides
+            this value.
+        """
+        if method not in METHOD_REGISTRY:
+            raise ValueError(
+                "Method not supported. Available methods: " + ", ".join(METHOD_REGISTRY)
+            )
+        self._method = METHOD_REGISTRY[method]()
+        self._n_jobs = _resolve_n_jobs(n_jobs)
+
         # Shim for backward compatibility (#491)
         if skip_letters:
             self.skip_letters = skip_letters
@@ -506,45 +531,25 @@ class DistanceCalculator:
     def _pairwise(self, seq1, seq2):
         """Calculate pairwise distance from two sequences (PRIVATE).
 
+        Backward-compatible shim; delegates to the module-level
+        ``_pairwise_python`` in ``_distance_methods``.
+
         Returns a value between 0 (identical sequences) and 1 (completely
         different, or seq1 is an empty string.)
         """
-        score = 0
-        max_score = 0
-        if self.scoring_matrix is None:
-            # Score by character identity, not skipping any special letters
-            score = sum(
-                l1 == l2
-                for l1, l2 in zip(seq1, seq2)
-                if l1 not in self.skip_letters and l2 not in self.skip_letters
-            )
-            max_score = len(seq1)
-        else:
-            max_score1 = 0
-            max_score2 = 0
-            for i in range(0, len(seq1)):
-                l1 = seq1[i]
-                l2 = seq2[i]
-                if l1 in self.skip_letters or l2 in self.skip_letters:
-                    continue
-                try:
-                    max_score1 += self.scoring_matrix[l1, l1]
-                except IndexError:
-                    raise ValueError(
-                        f"Bad letter '{l1}' in sequence '{seq1.id}' at position '{i}'"
-                    ) from None
-                try:
-                    max_score2 += self.scoring_matrix[l2, l2]
-                except IndexError:
-                    raise ValueError(
-                        f"Bad letter '{l2}' in sequence '{seq2.id}' at position '{i}'"
-                    ) from None
-                score += self.scoring_matrix[l1, l2]
-            # Take the higher score if the matrix is asymmetrical
-            max_score = max(max_score1, max_score2)
-        if max_score == 0:
-            return 1  # max possible scaled distance
-        return 1 - (score / max_score)
+        from Bio.Phylo._distance_methods import (
+            _pairwise_python,
+            _scoring_matrix_to_dict,
+        )
+
+        sm_dict = (
+            _scoring_matrix_to_dict(self.scoring_matrix)
+            if self.scoring_matrix is not None
+            else None
+        )
+        s1 = str(seq1.seq) if hasattr(seq1, "seq") else str(seq1)
+        s2 = str(seq2.seq) if hasattr(seq2, "seq") else str(seq2)
+        return _pairwise_python(s1, s2, sm_dict, self.skip_letters)
 
     def get_distance(self, msa):
         """Return a DistanceMatrix for an Alignment or MultipleSeqAlignment object.
@@ -556,21 +561,25 @@ class DistanceCalculator:
         """
         if isinstance(msa, Alignment):
             names = [s.id for s in msa.sequences]
-            dm = DistanceMatrix(names)
-            n = len(names)
-            for i1 in range(n):
-                for i2 in range(i1):
-                    dm[names[i1], names[i2]] = self._pairwise(msa[i1], msa[i2])
+            sequences = [str(msa[i]) for i in range(len(names))]
         elif isinstance(msa, MultipleSeqAlignment):
             names = [s.id for s in msa]
-            dm = DistanceMatrix(names)
-            for seq1, seq2 in itertools.combinations(msa, 2):
-                dm[seq1.id, seq2.id] = self._pairwise(seq1, seq2)
+            sequences = [str(s.seq) for s in msa]
         else:
             raise TypeError(
                 "Must provide an Alignment object or a MultipleSeqAlignment object."
             )
 
+        flat_distances = self._method.compute(
+            sequences, self.scoring_matrix, self.skip_letters, self._n_jobs
+        )
+
+        dm = DistanceMatrix(names)
+        idx = 0
+        for i in range(1, len(names)):
+            for j in range(i):
+                dm[names[i], names[j]] = flat_distances[idx]
+                idx += 1
         return dm
 
 
