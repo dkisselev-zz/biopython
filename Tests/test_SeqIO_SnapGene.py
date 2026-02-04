@@ -8,6 +8,7 @@
 
 import datetime
 import unittest
+import pytest
 from io import BytesIO
 
 from Bio import SeqIO
@@ -220,43 +221,43 @@ class TestSnapGene(unittest.TestCase):
     def _check_multivalued_qualifier(self, qualifier, expected, actual):
         if qualifier in expected:
             for value in expected[qualifier]:
-                self.assertIn(value, actual.qualifiers[qualifier])
+                assert value in actual.qualifiers[qualifier]
 
     def _check_feature_segments(self, segments, feature):
-        self.assertIsInstance(feature.location, CompoundLocation)
-        self.assertEqual(len(segments), len(feature.location.parts))
+        assert isinstance(feature.location, CompoundLocation)
+        assert len(segments) == len(feature.location.parts)
         for i in range(len(segments)):
             segment = segments[i]
             location = feature.location.parts[i]
-            self.assertEqual(segment["start"], location.start)
-            self.assertEqual(segment["end"], location.end)
+            assert segment["start"] == location.start
+            assert segment["end"] == location.end
 
     def test_read(self):
         """Read sample files."""
         for sample in self.sample_data.values():
             record = SeqIO.read(sample["file"], "snapgene")
-            self.assertEqual(sample["name"], record.name)
-            self.assertEqual(sample["id"], record.id)
-            self.assertEqual(sample["description"], record.description)
-            self.assertEqual(sample["length"], len(record))
-            self.assertEqual(sample["date"], record.annotations["date"])
-            self.assertEqual(sample["topology"], record.annotations["topology"])
+            assert sample["name"] == record.name
+            assert sample["id"] == record.id
+            assert sample["description"] == record.description
+            assert sample["length"] == len(record)
+            assert sample["date"] == record.annotations["date"]
+            assert sample["topology"] == record.annotations["topology"]
 
-            self.assertEqual(len(sample["features"]), len(record.features))
+            assert len(sample["features"]) == len(record.features)
             for i in range(len(sample["features"])):
                 exp_feat = sample["features"][i]
                 read_feat = record.features[i]
-                self.assertEqual(exp_feat["type"], read_feat.type)
-                self.assertEqual(exp_feat["start"], read_feat.location.start)
-                self.assertEqual(exp_feat["end"], read_feat.location.end)
-                self.assertEqual(exp_feat["strand"], read_feat.location.strand)
+                assert exp_feat["type"] == read_feat.type
+                assert exp_feat["start"] == read_feat.location.start
+                assert exp_feat["end"] == read_feat.location.end
+                assert exp_feat["strand"] == read_feat.location.strand
                 self._check_multivalued_qualifier("label", exp_feat, read_feat)
                 self._check_multivalued_qualifier("note", exp_feat, read_feat)
                 self._check_multivalued_qualifier("parts", exp_feat, read_feat)
                 if "name" in exp_feat:
-                    self.assertEqual(exp_feat["name"], read_feat.qualifiers["name"][0])
+                    assert exp_feat["name"] == read_feat.qualifiers["name"][0]
                 else:
-                    self.assertTrue("name" not in read_feat.qualifiers)
+                    assert "name" not in read_feat.qualifiers
                 if "segments" in exp_feat:
                     self._check_feature_segments(exp_feat["segments"], read_feat)
 
@@ -269,7 +270,7 @@ class TestSnapGene(unittest.TestCase):
         for feature in record.features:
             if "XhoI-hht2(US)-Fwd" in feature.qualifiers["label"]:
                 count_primer_features += 1
-        self.assertEqual(count_primer_features, 1)
+        assert count_primer_features == 1
 
     def test_remove_linebreaks_from_qualifier_values(self):
         """Test that linebreaks are removed from qualifier values.
@@ -281,8 +282,8 @@ class TestSnapGene(unittest.TestCase):
         for feature in record.features:
             for qualifier in feature.qualifiers:
                 for value in feature.qualifiers[qualifier]:
-                    self.assertFalse("\n" in value)
-                    self.assertFalse("\r" in value)
+                    assert not "\n" in value
+                    assert not "\r" in value
 
 
 class TestCorruptedSnapGene(unittest.TestCase):
@@ -302,17 +303,13 @@ class TestCorruptedSnapGene(unittest.TestCase):
         """Read a file with missing or invalid cookie packet."""
         # Remove the first packet
         h = BytesIO(self.buffer[19:])
-        with self.assertRaisesRegex(
-            ValueError, "The file does not start with a SnapGene cookie packet"
-        ):
+        with pytest.raises(ValueError, match="The file does not start with a SnapGene cookie packet"):
             SeqIO.read(h, "snapgene")
         h.close()
 
         # Keep the first packet but destroy the magic cookie
         h = self.munge_buffer(5, [0x4B, 0x41, 0x42, 0x4F, 0x4F, 0x4D])
-        with self.assertRaisesRegex(
-            ValueError, "The file is not a valid SnapGene file"
-        ):
+        with pytest.raises(ValueError, match="The file is not a valid SnapGene file"):
             SeqIO.read(h, "snapgene")
         h.close()
 
@@ -321,7 +318,7 @@ class TestCorruptedSnapGene(unittest.TestCase):
         # Simulate a missing DNA packet by changing the tag byte to an
         # unknown packet type, so that the parser will skip the packet.
         h = self.munge_buffer(19, 0x80)
-        with self.assertRaisesRegex(ValueError, "No DNA packet in file"):
+        with pytest.raises(ValueError, match="No DNA packet in file"):
             SeqIO.read(h, "snapgene")
         h.close()
 
@@ -331,9 +328,7 @@ class TestCorruptedSnapGene(unittest.TestCase):
         buf = bytearray(self.buffer)
         buf.extend(self.buffer[19:1025])  # Append duplicated DNA packet
         h = BytesIO(buf)
-        with self.assertRaisesRegex(
-            ValueError, "The file contains more than one DNA packet"
-        ):
+        with pytest.raises(ValueError, match="The file contains more than one DNA packet"):
             SeqIO.read(h, "snapgene")
         h.close()
 
@@ -341,17 +336,16 @@ class TestCorruptedSnapGene(unittest.TestCase):
         """Read a file with incomplete packet."""
         # Truncate before the end of the length bytes
         h = BytesIO(self.buffer[3:])
-        with self.assertRaisesRegex(ValueError, "Unexpected end of packet"):
+        with pytest.raises(ValueError, match="Unexpected end of packet"):
             SeqIO.read(h, "snapgene")
         h.close()
 
         # Truncate before the end of the data
         h = BytesIO(self.buffer[10:])
-        with self.assertRaisesRegex(ValueError, "Unexpected end of packet"):
+        with pytest.raises(ValueError, match="Unexpected end of packet"):
             SeqIO.read(h, "snapgene")
         h.close()
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

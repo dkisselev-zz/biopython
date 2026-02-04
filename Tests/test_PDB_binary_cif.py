@@ -18,8 +18,6 @@ class TestBinaryCIFParser(unittest.TestCase):
             bcif_structure = bcif_parser.get_structure(
                 entry, f"PDB/{entry.lower()}.bcif.gz"
             )
-            self.assertTrue(
-                mmcif_structure.strictly_equals(
+            assert mmcif_structure.strictly_equals(
                     bcif_structure, compare_coordinates=True
                 )
-            )

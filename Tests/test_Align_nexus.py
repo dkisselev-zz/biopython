@@ -5,45 +5,35 @@
 # as part of this package.
 """Tests for Bio.Align.nexus module."""
 import unittest
+import pytest
 from io import StringIO
 from tempfile import NamedTemporaryFile
 
 from Bio import Align
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install numpy if you want to use Bio.Align.nexus."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 class TestNexusReading(unittest.TestCase):
     def check_reading_writing(self, path):
         alignments = Align.parse(path, "nexus")
         stream = StringIO()
         n = Align.write(alignments, stream, "nexus")
-        self.assertEqual(n, 1)
+        assert n == 1
         alignments = Align.parse(path, "nexus")
         alignments = list(alignments)
         alignment = alignments[0]
         stream.seek(0)
         saved_alignments = Align.parse(stream, "nexus")
         saved_alignments = list(saved_alignments)
-        self.assertEqual(len(alignments), len(saved_alignments))
+        assert len(alignments) == len(saved_alignments)
         saved_alignment = saved_alignments[0]
         for i, (sequence, saved_sequence) in enumerate(
             zip(alignment.sequences, saved_alignment.sequences)
         ):
-            self.assertEqual(sequence.id, saved_sequence.id)
-            self.assertEqual(sequence.seq, saved_sequence.seq)
-            self.assertEqual(sequence.annotations, saved_sequence.annotations)
-            self.assertEqual(alignment[i], saved_alignment[i])
-            self.assertTrue(
-                np.array_equal(alignment.coordinates, saved_alignment.coordinates)
-            )
+            assert sequence.id == saved_sequence.id
+            assert sequence.seq == saved_sequence.seq
+            assert sequence.annotations == saved_sequence.annotations
+            assert alignment[i] == saved_alignment[i]
+            assert np.array_equal(alignment.coordinates, saved_alignment.coordinates)
 
     def test_nexus1(self):
         path = "Nexus/test_Nexus_input.nex"
@@ -53,11 +43,11 @@ class TestNexusReading(unittest.TestCase):
         self.check_nexus1(alignments)
         with Align.parse(path, "nexus") as alignments:
             self.check_nexus1(alignments)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(path, "nexus") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         self.check_reading_writing(path)
         with open(path) as stream:
@@ -70,52 +60,36 @@ class TestNexusReading(unittest.TestCase):
 
     def check_nexus1(self, alignments):
         alignment = next(alignments)
-        self.assertEqual(len(alignment), 9)
-        self.assertEqual(alignment.shape, (9, 46))
-        self.assertEqual(alignment.sequences[0].id, "t1")
-        self.assertEqual(alignment.sequences[1].id, "t2 the name")
-        self.assertEqual(alignment.sequences[2].id, "isn'that [a] strange name?")
-        self.assertEqual(
-            alignment.sequences[3].id, "one should be punished, for (that)!"
-        )
-        self.assertEqual(alignment.sequences[4].id, "t5")
-        self.assertEqual(alignment.sequences[5].id, "t6")
-        self.assertEqual(alignment.sequences[6].id, "t7")
-        self.assertEqual(alignment.sequences[7].id, "t8")
-        self.assertEqual(alignment.sequences[8].id, "t9")
-        self.assertEqual(alignment.sequences[0].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[1].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[2].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[3].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[4].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[5].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[6].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[7].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[8].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(
-            alignment.sequences[0].seq, "ACGTcgtgtgtgctctttacgtgtgtgctcttt"
-        )
-        self.assertEqual(alignment.sequences[1].seq, "ACGcTcgtgtctttacacgtgtcttt")
-        self.assertEqual(alignment.sequences[2].seq, "ACcGcTcgtgtgtgctacacacgtgtgtgct")
-        self.assertEqual(alignment.sequences[3].seq, "ACGT")
-        self.assertEqual(
-            alignment.sequences[4].seq, "AC?GT?acgt???????????acgt????????"
-        )
-        self.assertEqual(
-            alignment.sequences[5].seq, "AcCaGtTc?aaaaaaaaaaacgactac?aaaaaaaaaa"
-        )
-        self.assertEqual(
-            alignment.sequences[6].seq, "A?CGgTgggggggggggggg???gggggggggggggggg"
-        )
-        self.assertEqual(
-            alignment.sequences[7].seq, "AtCtGtTtttttttttttt??ttttttttttttttttttt??"
-        )
-        self.assertEqual(
-            alignment.sequences[8].seq, "cccccccccccccccccccNcccccccccccccccccccccNcc"
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert len(alignment) == 9
+        assert alignment.shape == (9, 46)
+        assert alignment.sequences[0].id == "t1"
+        assert alignment.sequences[1].id == "t2 the name"
+        assert alignment.sequences[2].id == "isn'that [a] strange name?"
+        assert alignment.sequences[3].id == "one should be punished, for (that)!"
+        assert alignment.sequences[4].id == "t5"
+        assert alignment.sequences[5].id == "t6"
+        assert alignment.sequences[6].id == "t7"
+        assert alignment.sequences[7].id == "t8"
+        assert alignment.sequences[8].id == "t9"
+        assert alignment.sequences[0].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[1].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[2].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[3].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[4].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[5].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[6].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[7].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[8].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[0].seq == "ACGTcgtgtgtgctctttacgtgtgtgctcttt"
+        assert alignment.sequences[1].seq == "ACGcTcgtgtctttacacgtgtcttt"
+        assert alignment.sequences[2].seq == "ACcGcTcgtgtgtgctacacacgtgtgtgct"
+        assert alignment.sequences[3].seq == "ACGT"
+        assert alignment.sequences[4].seq == "AC?GT?acgt???????????acgt????????"
+        assert alignment.sequences[5].seq == "AcCaGtTc?aaaaaaaaaaacgactac?aaaaaaaaaa"
+        assert alignment.sequences[6].seq == "A?CGgTgggggggggggggg???gggggggggggggggg"
+        assert alignment.sequences[7].seq == "AtCtGtTtttttttttttt??ttttttttttttttttttt??"
+        assert alignment.sequences[8].seq == "cccccccccccccccccccNcccccccccccccccccccccNcc"
+        assert str(alignment) == """\
 t1                0 A-C-G-Tcgtgtgtgctct-t-t------acgtgtgtgctct-t-t 33
 t2 the na         0 A-C-GcTcgtg-----tct-t-t----acacgtg-----tct-t-t 26
 isn'that          0 A-CcGcTcgtgtgtgct--------acacacgtgtgtgct------ 31
@@ -125,10 +99,8 @@ t6                0 AcCaGtTc?--aaaaaaaa-a-aacgactac?--aaaaaaaa-a-a 38
 t7                0 A?C-GgTgggggggggggg-g-g??--?gggggggggggggg-g-g 39
 t8                0 AtCtGtTtttttttttttt-?-?ttttttttttttttttttt-?-? 42
 t9                0 cccccccccccccccccccNc-ccccccccccccccccccccNc-c 44
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 0,  1,  1,  2,  2,  3,  3,  4,  5,  6,  8, 12,
@@ -160,25 +132,16 @@ t9                0 cccccccccccccccccccNc-ccccccccccccccccccccNc-c 44
                            31, 33, 37, 38, 39, 41, 42, 43, 43, 44]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "A-C-G-Tcgtgtgtgctct-t-t------acgtgtgtgctct-t-t",
-        )
-        self.assertEqual(
-            alignment[1],
-            "A-C-GcTcgtg-----tct-t-t----acacgtg-----tct-t-t",
-        )
-        self.assertEqual(alignment[2], "A-CcGcTcgtgtgtgct--------acacacgtgtgtgct------")
-        self.assertEqual(alignment[3], "A-C-G-T---------------------------------------")
-        self.assertEqual(alignment[4], "A-C?G-T?-acgt??-???-???--??---?-acgt??-???-???")
-        self.assertEqual(alignment[5], "AcCaGtTc?--aaaaaaaa-a-aacgactac?--aaaaaaaa-a-a")
-        self.assertEqual(alignment[6], "A?C-GgTgggggggggggg-g-g??--?gggggggggggggg-g-g")
-        self.assertEqual(alignment[7], "AtCtGtTtttttttttttt-?-?ttttttttttttttttttt-?-?")
-        self.assertEqual(alignment[8], "cccccccccccccccccccNc-ccccccccccccccccccccNc-c")
-        self.assertEqual(
-            format(alignment, "nexus"),
-            """\
+        assert alignment[0] == "A-C-G-Tcgtgtgtgctct-t-t------acgtgtgtgctct-t-t"
+        assert alignment[1] == "A-C-GcTcgtg-----tct-t-t----acacgtg-----tct-t-t"
+        assert alignment[2] == "A-CcGcTcgtgtgtgct--------acacacgtgtgtgct------"
+        assert alignment[3] == "A-C-G-T---------------------------------------"
+        assert alignment[4] == "A-C?G-T?-acgt??-???-???--??---?-acgt??-???-???"
+        assert alignment[5] == "AcCaGtTc?--aaaaaaaa-a-aacgactac?--aaaaaaaa-a-a"
+        assert alignment[6] == "A?C-GgTgggggggggggg-g-g??--?gggggggggggggg-g-g"
+        assert alignment[7] == "AtCtGtTtttttttttttt-?-?ttttttttttttttttttt-?-?"
+        assert alignment[8] == "cccccccccccccccccccNc-ccccccccccccccccccccNc-c"
+        assert format(alignment, "nexus") == """\
 #NEXUS
 begin data;
 dimensions ntax=9 nchar=46;
@@ -195,10 +158,8 @@ t8                                    AtCtGtTtttttttttttt-?-?ttttttttttttttttttt
 t9                                    cccccccccccccccccccNc-ccccccccccccccccccccNc-c
 ;
 end;
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', '-', 'C', '-', 'G', '-', 'T', 'c', 'g', 't', 'g', 't', 'g',
@@ -239,16 +200,10 @@ np.array([['A', '-', 'C', '-', 'G', '-', 'T', 'c', 'g', 't', 'g', 't', 'g',
            'c', 'c', 'c', 'N', 'c', '-', 'c']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (862 aligned letters; 256 identities; 606 mismatches; 596 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (862 aligned letters; 256 identities; 606 mismatches; 596 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 862:
         identities = 256,
@@ -275,54 +230,46 @@ AlignmentCounts object with
             right_deletions = 83:
                 open_right_deletions = 5,
                 extend_right_deletions = 78.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 186)
-        self.assertEqual(counts.right_deletions, 83)
-        self.assertEqual(counts.internal_insertions, 254)
-        self.assertEqual(counts.internal_deletions, 73)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 269)
-        self.assertEqual(counts.internal_gaps, 327)
-        self.assertEqual(counts.insertions, 440)
-        self.assertEqual(counts.deletions, 156)
-        self.assertEqual(counts.gaps, 596)
-        self.assertEqual(counts.aligned, 862)
-        self.assertEqual(counts.identities, 256)
-        self.assertEqual(counts.mismatches, 606)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 186
+        assert counts.right_deletions == 83
+        assert counts.internal_insertions == 254
+        assert counts.internal_deletions == 73
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 269
+        assert counts.internal_gaps == 327
+        assert counts.insertions == 440
+        assert counts.deletions == 156
+        assert counts.gaps == 596
+        assert counts.aligned == 862
+        assert counts.identities == 256
+        assert counts.mismatches == 606
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_nexus2(self):
         path = "Nexus/codonposset.nex"
         alignments = Align.parse(path, "nexus")
         alignment = next(alignments)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 22))
-        self.assertEqual(alignment.sequences[0].id, "Aegotheles")
-        self.assertEqual(alignment.sequences[1].id, "Aerodramus")
-        self.assertEqual(alignment.sequences[0].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[1].annotations, {"molecule_type": "DNA"})
-        self.assertEqual(alignment.sequences[0].seq, "AAAAAGGCATTGTGGTGGGAAT")
-        self.assertEqual(alignment.sequences[1].seq, "?????????TTGTGGTGGGAAT")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[0, 22], [0, 22]]))
-        )
-        self.assertEqual(alignment[0], "AAAAAGGCATTGTGGTGGGAAT")
-        self.assertEqual(alignment[1], "?????????TTGTGGTGGGAAT")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 22)
+        assert alignment.sequences[0].id == "Aegotheles"
+        assert alignment.sequences[1].id == "Aerodramus"
+        assert alignment.sequences[0].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[1].annotations == {"molecule_type": "DNA"}
+        assert alignment.sequences[0].seq == "AAAAAGGCATTGTGGTGGGAAT"
+        assert alignment.sequences[1].seq == "?????????TTGTGGTGGGAAT"
+        assert np.array_equal(alignment.coordinates, np.array([[0, 22], [0, 22]]))
+        assert alignment[0] == "AAAAAGGCATTGTGGTGGGAAT"
+        assert alignment[1] == "?????????TTGTGGTGGGAAT"
+        assert str(alignment) == """\
 Aegothele         0 AAAAAGGCATTGTGGTGGGAAT 22
                   0 .........||||||||||||| 22
 Aerodramu         0 ?????????TTGTGGTGGGAAT 22
-""",
-        )
-        self.assertEqual(
-            format(alignment, "nexus"),
-            """\
+"""
+        assert format(alignment, "nexus") == """\
 #NEXUS
 begin data;
 dimensions ntax=2 nchar=22;
@@ -332,10 +279,8 @@ Aegotheles AAAAAGGCATTGTGGTGGGAAT
 Aerodramus ?????????TTGTGGTGGGAAT
 ;
 end;
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'A', 'A', 'A', 'A', 'G', 'G', 'C', 'A', 'T', 'T', 'G', 'T',
@@ -344,16 +289,10 @@ np.array([['A', 'A', 'A', 'A', 'A', 'G', 'G', 'C', 'A', 'T', 'T', 'G', 'T',
            'G', 'G', 'T', 'G', 'G', 'G', 'A', 'A', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (22 aligned letters; 13 identities; 9 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (22 aligned letters; 13 identities; 9 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 22:
         identities = 13,
@@ -380,24 +319,23 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 22)
-        self.assertEqual(counts.identities, 13)
-        self.assertEqual(counts.mismatches, 9)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 22
+        assert counts.identities == 13
+        assert counts.mismatches == 9
+        with pytest.raises(StopIteration):
             next(alignments)
         self.check_reading_writing(path)
 
@@ -407,10 +345,9 @@ class TestNexusBasic(unittest.TestCase):
         import io
 
         stream = io.StringIO()
-        with self.assertRaisesRegex(ValueError, "Empty file."):
+        with pytest.raises(ValueError, match="Empty file."):
             Align.parse(stream, "nexus")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

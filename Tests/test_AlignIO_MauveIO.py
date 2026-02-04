@@ -7,6 +7,7 @@
 
 import os
 import unittest
+import pytest
 from io import StringIO
 
 from Bio import SeqIO
@@ -28,9 +29,7 @@ class TestMauveIO(unittest.TestCase):
                 for record in alignment:
                     ids.append(record.id)
 
-        self.assertEqual(
-            ids,
-            [
+        assert ids == [
                 "1/0-5670",
                 "2/0-5670",
                 "1/5670-9940",
@@ -38,8 +37,7 @@ class TestMauveIO(unittest.TestCase):
                 "1/9940-14910",
                 "2/5670-7140",
                 "2/11410-12880",
-            ],
-        )
+            ]
 
         expected = """ATTCGCACAT AAGAATGTAC CTTGCTGTAA TTTATACTCA
             GCAGGTGGTG CAGACATCAT AACAAAAGAA GACTCTTGTT GTACTAGATA TTGTGTAGCA
@@ -66,10 +64,7 @@ class TestMauveIO(unittest.TestCase):
             ATGCATATAG GCATTAATTT TCTTGTCTCT TCAGCATGAG CAAGCATTTC TCTCAAATTC
             CAGGATACAG TTCCTAGAAT CTCTTCCTTA GCATTAGGTG CTTCTGAAGG TAGTACATAA
             AATGCAGATT TGCATTTCTT AAGAGCAGTC TTAGCTTCCT CAAGTGTATA """
-        self.assertEqual(
-            str(record.seq).replace("-", ""),
-            expected.replace(" ", "").replace("\n", ""),
-        )
+        assert str(record.seq).replace("-", "") == expected.replace(" ", "").replace("\n", "")
 
     def test_sequence_positions(self):
         with open(self.SIMPLE_FA) as handle:
@@ -98,7 +93,7 @@ class TestMauveIO(unittest.TestCase):
                         # We can't test sequences which don't provide
                         # proper annotation start/end/strand information
                         continue
-                    self.assertEqual(expected, actual)
+                    assert expected == actual
 
     def test_write_read(self):
         with open(self.SIMPLE_XMFA) as handle:
@@ -110,12 +105,11 @@ class TestMauveIO(unittest.TestCase):
         aln_list_out = list(MauveIterator(handle))
 
         for a1, a2 in zip(aln_list, aln_list_out):
-            self.assertEqual(len(a1), len(a2))
+            assert len(a1) == len(a2)
             for r1, r2 in zip(a1, a2):
-                self.assertEqual(r1.id, r2.id)
-                self.assertEqual(r1.seq, r2.seq)
+                assert r1.id == r2.id
+                assert r1.seq == r2.seq
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

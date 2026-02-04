@@ -8,6 +8,7 @@ import os.path
 import shutil
 import tempfile
 import unittest
+import pytest
 from io import StringIO
 
 from Bio import bgzf
@@ -20,19 +21,18 @@ class RandomAccess(unittest.TestCase):
     def test_plain(self):
         """Test plain text file."""
         with File._open_for_random_access("Quality/example.fastq") as handle:
-            self.assertIn("r", handle.mode)
-            self.assertIn("b", handle.mode)
+            assert "r" in handle.mode
+            assert "b" in handle.mode
 
     def test_bgzf(self):
         """Test BGZF compressed file."""
         with File._open_for_random_access("Quality/example.fastq.bgz") as handle:
-            self.assertIsInstance(handle, bgzf.BgzfReader)
+            assert isinstance(handle, bgzf.BgzfReader)
 
     def test_gzip(self):
         """Test gzip compressed file."""
-        self.assertRaises(
-            ValueError, File._open_for_random_access, "Quality/example.fastq.gz"
-        )
+        with pytest.raises(ValueError):
+            File._open_for_random_access("Quality/example.fastq.gz")
 
 
 class AsHandleTestCase(unittest.TestCase):
@@ -55,27 +55,20 @@ class AsHandleTestCase(unittest.TestCase):
         p = self._path("test_file.fasta")
         with open(p, "wb") as fp:
             with File.as_handle(fp) as handle:
-                self.assertEqual(
-                    fp,
-                    handle,
-                    "as_handle should return argument when given a file-like object",
-                )
-                self.assertFalse(handle.closed)
+                assert fp == handle, "as_handle should return argument when given a file-like object"
+                assert not handle.closed
 
-            self.assertFalse(
-                handle.closed,
-                "Exiting as_handle given a file-like object should not close the file",
-            )
+            assert not handle.closed, "Exiting as_handle given a file-like object should not close the file"
 
     def test_string_path(self):
         """Test as_handle with a string path argument."""
         p = self._path("test_file.fasta")
         mode = "wb"
         with File.as_handle(p, mode=mode) as handle:
-            self.assertEqual(p, handle.name)
-            self.assertEqual(mode, handle.mode)
-            self.assertFalse(handle.closed)
-        self.assertTrue(handle.closed)
+            assert p == handle.name
+            assert mode == handle.mode
+            assert not handle.closed
+        assert handle.closed
 
     def test_path_object(self):
         """Test as_handle with a pathlib.Path object."""
@@ -84,10 +77,10 @@ class AsHandleTestCase(unittest.TestCase):
         p = Path(self._path("test_file.fasta"))
         mode = "wb"
         with File.as_handle(p, mode=mode) as handle:
-            self.assertEqual(str(p.absolute()), handle.name)
-            self.assertEqual(mode, handle.mode)
-            self.assertFalse(handle.closed)
-        self.assertTrue(handle.closed)
+            assert str(p.absolute()) == handle.name
+            assert mode == handle.mode
+            assert not handle.closed
+        assert handle.closed
 
     def test_custom_path_like_object(self):
         """Test as_handle with a custom path-like object."""
@@ -102,25 +95,25 @@ class AsHandleTestCase(unittest.TestCase):
         p = CustomPathLike(self._path("test_file.fasta"))
         mode = "wb"
         with File.as_handle(p, mode=mode) as handle:
-            self.assertEqual(p.path, handle.name)
-            self.assertEqual(mode, handle.mode)
-            self.assertFalse(handle.closed)
-        self.assertTrue(handle.closed)
+            assert p.path == handle.name
+            assert mode == handle.mode
+            assert not handle.closed
+        assert handle.closed
 
     def test_stringio(self):
         """Testing passing StringIO handles."""
         s = StringIO()
         with File.as_handle(s) as handle:
-            self.assertIs(s, handle)
+            assert s is handle
 
 
 class BaseClassTests(unittest.TestCase):
     """Tests for _IndexedSeqFileProxy base class."""
 
     def test_instance_exception(self):
-        self.assertRaises(TypeError, File._IndexedSeqFileProxy)
+        with pytest.raises(TypeError):
+            File._IndexedSeqFileProxy()
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

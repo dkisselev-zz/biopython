@@ -9,16 +9,9 @@
 """Tests for PDB FragmentMapper module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import FragmentMapper
 from Bio.PDB import PDBParser
 from Bio.PDB import Selection
@@ -36,9 +29,8 @@ class FragmentMapperTests(unittest.TestCase):
         fm = FragmentMapper(m, 10, 5, "PDB")
         for r in Selection.unfold_entities(m, "R"):
             if r in fm:
-                self.assertTrue(str(fm[r]).startswith("<Fragment length=5 id="))
+                assert str(fm[r]).startswith("<Fragment length=5 id=")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

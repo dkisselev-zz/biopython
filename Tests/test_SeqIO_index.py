@@ -15,6 +15,7 @@ import os
 import tempfile
 import threading
 import unittest
+import pytest
 import warnings
 from io import BytesIO
 from io import StringIO
@@ -78,13 +79,14 @@ if sqlite3:
         def test_old(self):
             """Load existing index with no options (from parent directory)."""
             d = SeqIO.index_db("Roche/triple_sff.idx")
-            self.assertEqual(54, len(d))
-            self.assertRaises(FileNotFoundError, d.get_raw, "alpha")
+            assert 54 == len(d)
+            with pytest.raises(FileNotFoundError):
+                d.get_raw("alpha")
 
         def test_pathobj(self):
             """Load existing index from a pathlib.Path object."""
             d = SeqIO.index_db(Path("Roche/triple_sff.idx"))
-            self.assertEqual(54, len(d))
+            assert 54 == len(d)
 
         def test_old_check_same_thread(self):
             """Setting check_same_thread to False doesn't raise an exception."""
@@ -94,9 +96,7 @@ if sqlite3:
                 try:
                     d["alpha"]
                 except sqlite3.ProgrammingError:
-                    self.fail(
-                        "Raised sqlite3.ProgrammingError in violation of check_same_thread=False"
-                    )
+                    raise AssertionError("Raised sqlite3.ProgrammingError in violation of check_same_thread=False")
 
             reader = threading.Thread(target=reader_thread)
             reader.start()
@@ -105,47 +105,42 @@ if sqlite3:
         def test_old_rel(self):
             """Load existing index (with relative paths) with no options (from parent directory)."""
             d = SeqIO.index_db("Roche/triple_sff_rel_paths.idx")
-            self.assertEqual(54, len(d))
-            self.assertEqual(395, len(d["alpha"]))
+            assert 54 == len(d)
+            assert 395 == len(d["alpha"])
 
         def test_old_contents(self):
             """Check actual filenames in existing indexes."""
             filenames, flag = raw_filenames("Roche/triple_sff.idx")
-            self.assertIsNone(flag)
-            self.assertEqual(
-                filenames, ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"]
-            )
+            assert flag is None
+            assert filenames == ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"]
 
             filenames, flag = raw_filenames("Roche/triple_sff_rel_paths.idx")
-            self.assertTrue(flag)
-            self.assertEqual(
-                filenames, ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"]
-            )
+            assert flag
+            assert filenames == ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"]
 
         def test_old_same_dir(self):
             """Load existing index with no options (from same directory)."""
             os.chdir("Roche")
             d = SeqIO.index_db("triple_sff.idx")
-            self.assertEqual(54, len(d))
-            self.assertEqual(395, len(d["alpha"]))
+            assert 54 == len(d)
+            assert 395 == len(d["alpha"])
 
         def test_old_same_dir_rel(self):
             """Load existing index (with relative paths) with no options (from same directory)."""
             os.chdir("Roche")
             d = SeqIO.index_db("triple_sff_rel_paths.idx")
-            self.assertEqual(54, len(d))
-            self.assertEqual(395, len(d["alpha"]))
+            assert 54 == len(d)
+            assert 395 == len(d["alpha"])
 
         def test_old_format(self):
             """Load existing index with correct format."""
             d = SeqIO.index_db("Roche/triple_sff.idx", format="sff")
-            self.assertEqual(54, len(d))
+            assert 54 == len(d)
 
         def test_old_format_wrong(self):
             """Load existing index with wrong format."""
-            self.assertRaises(
-                ValueError, SeqIO.index_db, "Roche/triple_sff.idx", format="fasta"
-            )
+            with pytest.raises(ValueError):
+                SeqIO.index_db("Roche/triple_sff.idx", format="fasta")
 
         def test_old_files(self):
             """Load existing index with correct files (from parent directory)."""
@@ -153,8 +148,9 @@ if sqlite3:
                 "Roche/triple_sff.idx",
                 ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"],
             )
-            self.assertEqual(54, len(d))
-            self.assertRaises(FileNotFoundError, d.get_raw, "alpha")
+            assert 54 == len(d)
+            with pytest.raises(FileNotFoundError):
+                d.get_raw("alpha")
 
         def test_old_files_same_dir(self):
             """Load existing index with correct files (from same directory)."""
@@ -163,26 +159,18 @@ if sqlite3:
                 "triple_sff.idx",
                 ["E3MFGYR02_no_manifest.sff", "greek.sff", "paired.sff"],
             )
-            self.assertEqual(54, len(d))
-            self.assertEqual(395, len(d["alpha"]))
+            assert 54 == len(d)
+            assert 395 == len(d["alpha"])
 
         def test_old_files_wrong(self):
             """Load existing index with wrong files."""
-            self.assertRaises(
-                ValueError,
-                SeqIO.index_db,
-                "Roche/triple_sff.idx",
-                ["a.sff", "b.sff", "c.sff"],
-            )
+            with pytest.raises(ValueError):
+                SeqIO.index_db("Roche/triple_sff.idx", ["a.sff", "b.sff", "c.sff"])
 
         def test_old_files_wrong2(self):
             """Load existing index with wrong number of files."""
-            self.assertRaises(
-                ValueError,
-                SeqIO.index_db,
-                "Roche/triple_sff.idx",
-                ["E3MFGYR02_no_manifest.sff", "greek.sff"],
-            )
+            with pytest.raises(ValueError):
+                SeqIO.index_db("Roche/triple_sff.idx", ["E3MFGYR02_no_manifest.sff", "greek.sff"])
 
     class NewIndexTest(unittest.TestCase):
         """Check paths etc in newly built index."""
@@ -201,25 +189,22 @@ if sqlite3:
                 os.remove(index_file)
             # Build index...
             d = SeqIO.index_db(index_file, sff_files, "sff")
-            self.assertEqual(395, len(d["alpha"]))
+            assert 395 == len(d["alpha"])
             d._con.close()  # hack for PyPy
             d.close()
-            self.assertEqual(
-                [os.path.abspath(f) for f in sff_files],
-                [os.path.abspath(f) for f in d._filenames],
-            )
+            assert [os.path.abspath(f) for f in sff_files] == [os.path.abspath(f) for f in d._filenames]
 
             # Now directly check the filenames inside the SQLite index:
             filenames, flag = raw_filenames(index_file)
-            self.assertTrue(flag)
-            self.assertEqual(filenames, expt_sff_files)
+            assert flag
+            assert filenames == expt_sff_files
 
             # Load index...
             d = SeqIO.index_db(index_file, sff_files)
-            self.assertEqual(395, len(d["alpha"]))
+            assert 395 == len(d["alpha"])
             d._con.close()  # hack for PyPy
             d.close()
-            self.assertEqual([os.path.abspath(f) for f in sff_files], d._filenames)
+            assert [os.path.abspath(f) for f in sff_files] == d._filenames
 
             os.remove(index_file)
 
@@ -406,31 +391,31 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
             os.remove(self.index_tmp)
 
     def check_dict_methods(self, rec_dict, keys, ids, msg):
-        self.assertCountEqual(keys, rec_dict.keys(), msg=msg)
+        assert sorted(keys) == sorted(rec_dict.keys()), msg
         # This is redundant, I just want to make sure len works:
-        self.assertEqual(len(keys), len(rec_dict), msg=msg)
+        assert len(keys) == len(rec_dict), msg
         # Make sure boolean evaluation works
-        self.assertEqual(bool(keys), bool(rec_dict), msg=msg)
+        assert bool(keys) == bool(rec_dict), msg
         for key, id in zip(keys, ids):
-            self.assertIn(key, rec_dict, msg=msg)
-            self.assertEqual(id, rec_dict[key].id, msg=msg)
-            self.assertEqual(id, rec_dict.get(key).id, msg=msg)
+            assert key in rec_dict, msg
+            assert id == rec_dict[key].id, msg
+            assert id == rec_dict.get(key).id, msg
         # Check non-existent keys,
         assert chr(0) not in keys, "Bad example in test"
-        with self.assertRaises(KeyError, msg=msg):
+        with pytest.raises(KeyError):
             rec = rec_dict[chr(0)]
-        self.assertIsNone(rec_dict.get(chr(0)), msg=msg)
-        self.assertEqual(rec_dict.get(chr(0), chr(1)), chr(1), msg=msg)
-        with self.assertRaises(AttributeError, msg=msg):
+        assert rec_dict.get(chr(0)) is None, msg
+        assert rec_dict.get(chr(0), chr(1)) == chr(1), msg
+        with pytest.raises(AttributeError):
             rec_dict.iteritems
         for key, rec in rec_dict.items():
-            self.assertIn(key, keys, msg=msg)
-            self.assertIsInstance(rec, SeqRecord, msg=msg)
-            self.assertIn(rec.id, ids, msg=msg)
+            assert key in keys, msg
+            assert isinstance(rec, SeqRecord), msg
+            assert rec.id in ids, msg
         for rec in rec_dict.values():
-            self.assertIn(key, keys, msg=msg)
-            self.assertIsInstance(rec, SeqRecord, msg=msg)
-            self.assertIn(rec.id, ids, msg=msg)
+            assert key in keys, msg
+            assert isinstance(rec, SeqRecord), msg
+            assert rec.id in ids, msg
 
     def simple_check(self, filename, fmt, comp):
         """Check indexing (without a key function)."""
@@ -463,9 +448,9 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
             rec_dict.close()
 
             # check error conditions
-            with self.assertRaises(ValueError, msg=msg):
+            with pytest.raises(ValueError):
                 SeqIO.index_db(":memory:", format="dummy")
-            with self.assertRaises(ValueError, msg=msg):
+            with pytest.raises(ValueError):
                 SeqIO.index_db(":memory:", filenames=["dummy"])
 
             # Saving to file...
@@ -537,9 +522,9 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
             )
             self.check_dict_methods(rec_dict, key_list, id_list, msg=msg)
             # check error conditions
-            with self.assertRaises(ValueError, msg=msg):
+            with pytest.raises(ValueError):
                 SeqIO.index_db(":memory:", format="dummy", key_function=self.add_prefix)
-            with self.assertRaises(ValueError, msg=msg):
+            with pytest.raises(ValueError):
                 SeqIO.index_db(
                     ":memory:", filenames=["dummy"], key_function=self.add_prefix
                 )
@@ -606,23 +591,23 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
                     ":memory:", filename, fmt, key_function=str.lower
                 )
 
-        self.assertCountEqual(id_list, rec_dict.keys(), msg=msg)
+        assert sorted(id_list) == sorted(rec_dict.keys()), msg
         if sqlite3:
-            self.assertCountEqual(id_list, rec_dict_db.keys(), msg=msg)
+            assert sorted(id_list) == sorted(rec_dict_db.keys()), msg
         for key in id_list:
-            self.assertIn(key, rec_dict, msg=msg)
-            self.assertEqual(key, rec_dict[key].id.lower(), msg=msg)
-            self.assertEqual(key, rec_dict.get(key).id.lower(), msg=msg)
+            assert key in rec_dict, msg
+            assert key == rec_dict[key].id.lower(), msg
+            assert key == rec_dict.get(key).id.lower(), msg
             raw = rec_dict.get_raw(key)
-            self.assertIsInstance(raw, bytes, msg=msg)
-            self.assertTrue(raw.strip(), msg=msg)
-            self.assertIn(raw, raw_file, msg=msg)
+            assert isinstance(raw, bytes), msg
+            assert raw.strip(), msg
+            assert raw in raw_file, msg
 
             if sqlite3:
                 raw_db = rec_dict_db.get_raw(key)
                 # Via index using format-specific get_raw which scans the file,
                 # Via index_db in general using raw length found when indexing.
-                self.assertEqual(raw, raw_db, msg=msg)
+                assert raw == raw_db, msg
 
             rec1 = rec_dict[key]
             # Following isn't very elegant, but it lets me test the
@@ -647,8 +632,8 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
                     rec_dict._proxy, handle
                 )
             elif fmt == "uniprot-xml":
-                self.assertTrue(raw.startswith(b"<entry "), msg=msg)
-                self.assertTrue(raw.endswith(b"</entry>"), msg=msg)
+                assert raw.startswith(b"<entry "), msg
+                assert raw.endswith(b"</entry>"), msg
                 # Currently the __getitem__ method uses this
                 # trick too, but we hope to fix that later
                 raw = (
@@ -675,39 +660,33 @@ class IndexDictTests(SeqRecordTestBaseClass, SeqIOTestBaseClass):
         def test_alpha_fails_db(self):
             """Reject alphabet argument in Bio.SeqIO.index_db()."""
             # In historic usage, alphabet=... would be a Bio.Alphabet object.
-            self.assertRaises(
-                ValueError,
-                SeqIO.index_db,
-                ":memory:",
-                ["Fasta/dups.fasta"],
-                "fasta",
-                alphabet="XXX",
-            )
+            with pytest.raises(ValueError):
+                SeqIO.index_db(":memory:", ["Fasta/dups.fasta"], "fasta", alphabet="XXX")
 
     def test_alpha_fails(self):
         """Reject alphabet argument in Bio.SeqIO.index()."""
         # In historic usage, alphabet=... would be a Bio.Alphabet object.
-        self.assertRaises(
-            ValueError, SeqIO.index, "Fasta/dups.fasta", "fasta", alphabet="XXX"
-        )
+        with pytest.raises(ValueError):
+            SeqIO.index("Fasta/dups.fasta", "fasta", alphabet="XXX")
 
     if sqlite3:
 
         def test_duplicates_index_db(self):
             """Index file with duplicate identifiers with Bio.SeqIO.index_db()."""
-            self.assertRaises(
-                ValueError, SeqIO.index_db, ":memory:", ["Fasta/dups.fasta"], "fasta"
-            )
+            with pytest.raises(ValueError):
+                SeqIO.index_db(":memory:", ["Fasta/dups.fasta"], "fasta")
 
     def test_duplicates_index(self):
         """Index file with duplicate identifiers with Bio.SeqIO.index()."""
-        self.assertRaises(ValueError, SeqIO.index, "Fasta/dups.fasta", "fasta")
+        with pytest.raises(ValueError):
+            SeqIO.index("Fasta/dups.fasta", "fasta")
 
     def test_duplicates_to_dict(self):
         """Index file with duplicate identifiers with Bio.SeqIO.to_dict()."""
         with open("Fasta/dups.fasta") as handle:
             iterator = SeqIO.parse(handle, "fasta")
-            self.assertRaises(ValueError, SeqIO.to_dict, iterator)
+            with pytest.raises(ValueError):
+                SeqIO.to_dict(iterator)
 
     def test_simple_checks(self):
         for filename1, fmt in self.tests:
@@ -771,19 +750,19 @@ class IndexOrderingSingleFile(unittest.TestCase):
     def test_order_to_dict(self):
         """Check to_dict preserves order in indexed file."""
         d = SeqIO.to_dict(SeqIO.parse(self.f, "fasta"))
-        self.assertEqual(self.ids, list(d))
+        assert self.ids == list(d)
 
     def test_order_index(self):
         """Check index preserves order in indexed file."""
         d = SeqIO.index(self.f, "fasta")
-        self.assertEqual(self.ids, list(d))
+        assert self.ids == list(d)
 
     if sqlite3:
 
         def test_order_index_db(self):
             """Check index_db preserves ordering indexed file."""
             d = SeqIO.index_db(":memory:", [self.f], "fasta")
-            self.assertEqual(self.ids, list(d))
+            assert self.ids == list(d)
 
 
 if sqlite3:
@@ -796,9 +775,8 @@ if sqlite3:
             for f in files:
                 ids.extend(r.id for r in SeqIO.parse(f, "fasta"))
             d = SeqIO.index_db(":memory:", files, "fasta")
-            self.assertEqual(ids, list(d))
+            assert ids == list(d)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

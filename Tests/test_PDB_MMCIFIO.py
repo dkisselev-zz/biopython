@@ -16,6 +16,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 import warnings
 
 from Bio.PDB import Atom
@@ -53,8 +54,8 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(len(struct2), 1)
-            self.assertEqual(nresidues, 158)
+            assert len(struct2) == 1
+            assert nresidues == 158
         finally:
             os.remove(filename)
 
@@ -70,7 +71,7 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
         finally:
             os.remove(filename)
 
@@ -91,11 +92,11 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
 
             # Assert chain remained the same
             chain_id = [c.id for c in struct2.get_chains()][0]
-            self.assertEqual(chain_id, "X")
+            assert chain_id == "X"
         finally:
             os.remove(filename)
 
@@ -115,11 +116,11 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
 
             # Assert chain is default: "A"
             chain_id = [c.id for c in struct2.get_chains()][0]
-            self.assertEqual(chain_id, "A")
+            assert chain_id == "A"
         finally:
             os.remove(filename)
 
@@ -135,17 +136,17 @@ class WriteTest(unittest.TestCase):
         # Write full model to temp file
         self.io.set_structure(res)
 
-        self.assertIs(parent, res.parent)
+        assert parent is res.parent
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
         try:
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("res", filename)
             latoms = list(struct2.get_atoms())
-            self.assertEqual(len(latoms), 1)
-            self.assertEqual(latoms[0].name, "CA")
-            self.assertEqual(latoms[0].parent.resname, "DUM")
-            self.assertEqual(latoms[0].parent.parent.id, "A")
+            assert len(latoms) == 1
+            assert latoms[0].name == "CA"
+            assert latoms[0].parent.resname == "DUM"
+            assert latoms[0].parent.parent.id == "A"
         finally:
             os.remove(filename)
 
@@ -170,7 +171,7 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename, CAonly())
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 70)
+            assert nresidues == 70
         finally:
             os.remove(filename)
 
@@ -187,9 +188,9 @@ class WriteTest(unittest.TestCase):
             d2 = MMCIF2Dict(filename)
             k1 = sorted(d1.keys())
             k2 = sorted(d2.keys())
-            self.assertEqual(k1, k2)
+            assert k1 == k2
             for key in k1:
-                self.assertEqual(d1[key], d2[key])
+                assert d1[key] == d2[key]
         finally:
             os.remove(filename)
 
@@ -209,11 +210,9 @@ class WriteTest(unittest.TestCase):
             try:
                 self.io.save(filename)
                 struct_in = self.mmcif_parser.get_structure("1SSU_mod_in", filename)
-                self.assertEqual(len(struct_in), 2)
-                self.assertEqual(len(struct_in[1]), 2)
-                self.assertAlmostEqual(
-                    struct_in[1]["B"][1]["N"].get_coord()[0], 6.259, 3
-                )
+                assert len(struct_in) == 2
+                assert len(struct_in[1]) == 2
+                assert struct_in[1]["B"][1]["N"].get_coord()[0] == pytest.approx(6.259, abs=0.0005)
             finally:
                 os.remove(filename)
 
@@ -226,12 +225,11 @@ class WriteTest(unittest.TestCase):
             self.io.save(filename)
             struct2 = self.mmcif_parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(len(struct2), 1)
-            self.assertEqual(nresidues, 158)
+            assert len(struct2) == 1
+            assert nresidues == 158
         finally:
             os.remove(filename)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

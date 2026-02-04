@@ -8,6 +8,7 @@
 """Tests for Bio.SeqUtils.ProtParam and related code."""
 
 import unittest
+import pytest
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -36,28 +37,25 @@ class ProtParamTest(unittest.TestCase):
         for analysis in self.analyses:
             count_dict = analysis.count_amino_acids()
             for i in count_dict:
-                self.assertEqual(count_dict[i], self.text.count(i))
+                assert count_dict[i] == self.text.count(i)
 
     def test_amino_acids_percent(self):
         """Calculate amino acid percentages."""
         for analysis in self.analyses:
             seq_len = len(self.text)
             for i in analysis.amino_acids_percent:
-                self.assertAlmostEqual(
-                    analysis.amino_acids_percent[i],
-                    (self.text.count(i) * 100 / seq_len),
-                )
+                assert analysis.amino_acids_percent[i] == pytest.approx((self.text.count(i) * 100 / seq_len), abs=5e-8)
 
     def test_get_molecular_weight(self):
         """Calculate protein molecular weight."""
         for analysis in self.analyses:
-            self.assertAlmostEqual(analysis.molecular_weight(), 17103.16, 2)
+            assert analysis.molecular_weight() == pytest.approx(17103.16, abs=0.005)
 
     def test_get_monoisotopic_molecular_weight(self):
         """Calculate monoisotopic molecular weight."""
         for sequence in self.sequences:
             analysis = ProtParam.ProteinAnalysis(sequence, monoisotopic=True)
-            self.assertAlmostEqual(analysis.molecular_weight(), 17092.61, 2)
+            assert analysis.molecular_weight() == pytest.approx(17092.61, abs=0.005)
 
     def test_get_molecular_weight_identical(self):
         """Confirm protein molecular weight agrees with calculation from Bio.SeqUtils."""
@@ -66,7 +64,7 @@ class ProtParamTest(unittest.TestCase):
         mw_2 = molecular_weight(self.text, seq_type="protein")
         for analysis in self.analyses:
             mw_1 = analysis.molecular_weight()
-            self.assertAlmostEqual(mw_1, mw_2)
+            assert mw_1 == pytest.approx(mw_2, abs=5e-8)
 
     def test_get_monoisotopic_molecular_weight_identical(self):
         """Confirm protein molecular weight agrees with calculation from Bio.SeqUtils."""
@@ -76,19 +74,19 @@ class ProtParamTest(unittest.TestCase):
         for sequence in self.sequences:
             analysis = ProtParam.ProteinAnalysis(sequence, monoisotopic=True)
             mw_1 = analysis.molecular_weight()
-            self.assertAlmostEqual(mw_1, mw_2)
+            assert mw_1 == pytest.approx(mw_2, abs=5e-8)
 
     def test_aromaticity(self):
         """Calculate protein aromaticity."""
         for analysis in self.analyses:
             # Old test used a number rounded to two digits, so use the same
-            self.assertAlmostEqual(analysis.aromaticity(), 0.10, 2)
+            assert analysis.aromaticity() == pytest.approx(0.10, abs=0.005)
 
     def test_instability_index(self):
         """Calculate protein instability index."""
         for analysis in self.analyses:
             # Old test used a number rounded to two digits, so use the same
-            self.assertAlmostEqual(analysis.instability_index(), 41.98, 2)
+            assert analysis.instability_index() == pytest.approx(41.98, abs=0.005)
 
     def test_flexibility(self):
         """Calculate protein flexibility."""
@@ -147,31 +145,29 @@ class ProtParamTest(unittest.TestCase):
 
         for analysis in self.analyses:
             flexibility = analysis.flexibility()
-            self.assertEqual(
-                len(flexibility), len(expected_flexibility), "Output length differs"
-            )
+            assert len(flexibility) == len(expected_flexibility), "Output length differs"
             for f, e in zip(flexibility, expected_flexibility):
-                self.assertAlmostEqual(f, e)
+                assert f == pytest.approx(e, abs=5e-8)
 
     def test_isoelectric_point(self):
         """Calculate the isoelectric point."""
         for analysis in self.analyses:
             # Old test used a number rounded to two digits, so use the same
-            self.assertAlmostEqual(analysis.isoelectric_point(), 7.72, 2)
+            assert analysis.isoelectric_point() == pytest.approx(7.72, abs=0.005)
 
     def test_charge_at_pH(self):
         """Test charge_at_pH function."""
         for analysis in self.analyses:
-            self.assertAlmostEqual(analysis.charge_at_pH(7.72), 0.00, 2)
+            assert analysis.charge_at_pH(7.72) == pytest.approx(0.00, abs=0.005)
 
     def test_secondary_structure_fraction(self):
         """Calculate secondary structure fractions."""
         for analysis in self.analyses:
             helix, turn, sheet = analysis.secondary_structure_fraction()
             # Old test used numbers rounded to two digits, so use the same
-            self.assertAlmostEqual(helix, 0.33, 2)
-            self.assertAlmostEqual(turn, 0.29, 2)
-            self.assertAlmostEqual(sheet, 0.37, 2)
+            assert helix == pytest.approx(0.33, abs=0.005)
+            assert turn == pytest.approx(0.29, abs=0.005)
+            assert sheet == pytest.approx(0.37, abs=0.005)
 
     def test_protein_scale(self):
         """Calculate the Kite Doolittle scale."""
@@ -200,7 +196,7 @@ class ProtParamTest(unittest.TestCase):
         for analysis in self.analyses:
             for i, e in zip(analysis.protein_scale(ProtParamData.kd, 9, 0.4), expected):
                 # Expected values have 4 decimal places, so restrict to that exactness
-                self.assertAlmostEqual(i, e, places=4)
+                assert i == pytest.approx(e, abs=5e-05)
 
     def test_gravy(self):
         """Calculate gravy. Tests all pre-defined scales."""
@@ -237,23 +233,18 @@ class ProtParamTest(unittest.TestCase):
 
         for analysis in self.analyses:
             for scale, exp_v in expected_values.items():
-                self.assertAlmostEqual(analysis.gravy(scale=scale), exp_v, places=4)
+                assert analysis.gravy(scale=scale) == pytest.approx(exp_v, abs=5e-05)
 
-            with self.assertRaises(ValueError) as cm:
+            with pytest.raises(ValueError) as cm:
                 analysis.gravy("Wrong Scale")
-            self.assertEqual("scale: Wrong Scale not known", str(cm.exception))
+            assert "scale: Wrong Scale not known" == str(cm.value)
 
     def test_molar_extinction_coefficient(self):
         """Molar extinction coefficient."""
         for analysis in self.analyses:
-            self.assertAlmostEqual(
-                analysis.molar_extinction_coefficient()[0], 17420, places=5
-            )
-            self.assertAlmostEqual(
-                analysis.molar_extinction_coefficient()[1], 17545, places=5
-            )
+            assert analysis.molar_extinction_coefficient()[0] == pytest.approx(17420, abs=5e-06)
+            assert analysis.molar_extinction_coefficient()[1] == pytest.approx(17545, abs=5e-06)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

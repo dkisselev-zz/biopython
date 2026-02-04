@@ -6,6 +6,7 @@
 """Tests for CAPS module."""
 
 import unittest
+import pytest
 
 from Bio import CAPS
 from Bio.Align import Alignment
@@ -40,11 +41,11 @@ class TestCAPS(unittest.TestCase):
         align = createAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
 
-        self.assertEqual(len(capsmap.dcuts), 1)
-        self.assertEqual(capsmap.dcuts[0].enzyme, EcoRI)
-        self.assertEqual(capsmap.dcuts[0].start, 1)
-        self.assertEqual(capsmap.dcuts[0].cuts_in, [0])
-        self.assertEqual(capsmap.dcuts[0].blocked_in, [1])
+        assert len(capsmap.dcuts) == 1
+        assert capsmap.dcuts[0].enzyme == EcoRI
+        assert capsmap.dcuts[0].start == 1
+        assert capsmap.dcuts[0].cuts_in == [0]
+        assert capsmap.dcuts[0].blocked_in == [1]
 
     def test_trivial_msa(self):
         enzymes = [EcoRI]
@@ -52,11 +53,11 @@ class TestCAPS(unittest.TestCase):
         align = createMultipleSeqAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
 
-        self.assertEqual(len(capsmap.dcuts), 1)
-        self.assertEqual(capsmap.dcuts[0].enzyme, EcoRI)
-        self.assertEqual(capsmap.dcuts[0].start, 1)
-        self.assertEqual(capsmap.dcuts[0].cuts_in, [0])
-        self.assertEqual(capsmap.dcuts[0].blocked_in, [1])
+        assert len(capsmap.dcuts) == 1
+        assert capsmap.dcuts[0].enzyme == EcoRI
+        assert capsmap.dcuts[0].start == 1
+        assert capsmap.dcuts[0].cuts_in == [0]
+        assert capsmap.dcuts[0].blocked_in == [1]
 
     def test(self):
         alignment = [
@@ -76,20 +77,20 @@ class TestCAPS(unittest.TestCase):
             "GGTCACTATCTCCGTAACAAAATCGAAGGAAACACTAGCCGCGACGTTGAAGTAGCCATC"
             "AGCGAGGTCAACATCTGTAGCTACGATCCTTGGAACTTGCGCTGTAAGTTCCGAATTTTC",
         ]
-        self.assertEqual(len(alignment), 3)
+        assert len(alignment) == 3
         enzymes = [EcoRI, AluI]
         align = createAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
 
-        self.assertEqual(len(capsmap.dcuts), 2)
-        self.assertEqual(capsmap.dcuts[0].enzyme, EcoRI)
-        self.assertEqual(capsmap.dcuts[0].start, 5)
-        self.assertEqual(capsmap.dcuts[0].cuts_in, [0])
-        self.assertEqual(capsmap.dcuts[0].blocked_in, [1, 2])
-        self.assertEqual(capsmap.dcuts[1].enzyme, AluI)
-        self.assertEqual(capsmap.dcuts[1].start, 144)
-        self.assertEqual(capsmap.dcuts[1].cuts_in, [1, 2])
-        self.assertEqual(capsmap.dcuts[1].blocked_in, [0])
+        assert len(capsmap.dcuts) == 2
+        assert capsmap.dcuts[0].enzyme == EcoRI
+        assert capsmap.dcuts[0].start == 5
+        assert capsmap.dcuts[0].cuts_in == [0]
+        assert capsmap.dcuts[0].blocked_in == [1, 2]
+        assert capsmap.dcuts[1].enzyme == AluI
+        assert capsmap.dcuts[1].start == 144
+        assert capsmap.dcuts[1].cuts_in == [1, 2]
+        assert capsmap.dcuts[1].blocked_in == [0]
 
     def test_msa(self):
         alignment = [
@@ -109,34 +110,34 @@ class TestCAPS(unittest.TestCase):
             "GGTCACTATCTCCGTAACAAAATCGAAGGAAACACTAGCCGCGACGTTGAAGTAGCCATC"
             "AGCGAGGTCAACATCTGTAGCTACGATCCTTGGAACTTGCGCTGTAAGTTCCGAATTTTC",
         ]
-        self.assertEqual(len(alignment), 3)
+        assert len(alignment) == 3
         enzymes = [EcoRI, AluI]
         align = createMultipleSeqAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
 
-        self.assertEqual(len(capsmap.dcuts), 2)
-        self.assertEqual(capsmap.dcuts[0].enzyme, EcoRI)
-        self.assertEqual(capsmap.dcuts[0].start, 5)
-        self.assertEqual(capsmap.dcuts[0].cuts_in, [0])
-        self.assertEqual(capsmap.dcuts[0].blocked_in, [1, 2])
-        self.assertEqual(capsmap.dcuts[1].enzyme, AluI)
-        self.assertEqual(capsmap.dcuts[1].start, 144)
-        self.assertEqual(capsmap.dcuts[1].cuts_in, [1, 2])
-        self.assertEqual(capsmap.dcuts[1].blocked_in, [0])
+        assert len(capsmap.dcuts) == 2
+        assert capsmap.dcuts[0].enzyme == EcoRI
+        assert capsmap.dcuts[0].start == 5
+        assert capsmap.dcuts[0].cuts_in == [0]
+        assert capsmap.dcuts[0].blocked_in == [1, 2]
+        assert capsmap.dcuts[1].enzyme == AluI
+        assert capsmap.dcuts[1].start == 144
+        assert capsmap.dcuts[1].cuts_in == [1, 2]
+        assert capsmap.dcuts[1].blocked_in == [0]
 
     def testNoCAPS(self):
         alignment = ["aaaaaaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaa"]
         enzymes = []
         align = createAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
-        self.assertEqual(capsmap.dcuts, [])
+        assert capsmap.dcuts == []
 
     def testNoCAPS_msa(self):
         alignment = ["aaaaaaaaaaaaaaaaaaaa", "aaaaaaaaaaaaaaaaaaaa"]
         enzymes = []
         align = createMultipleSeqAlignment(alignment)
         capsmap = CAPS.CAPSMap(align, enzymes)
-        self.assertEqual(capsmap.dcuts, [])
+        assert capsmap.dcuts == []
 
     def test_uneven(self):
         alignment = [
@@ -146,9 +147,9 @@ class TestCAPS(unittest.TestCase):
         ]
         align = createMultipleSeqAlignment(alignment)
         align[1].seq = align[1].seq[:8]  # evil
-        self.assertRaises(CAPS.AlignmentHasDifferentLengthsError, CAPS.CAPSMap, align)
+        with pytest.raises(CAPS.AlignmentHasDifferentLengthsError):
+            CAPS.CAPSMap(align)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

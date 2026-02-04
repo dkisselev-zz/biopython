@@ -6,6 +6,7 @@
 """Unit test for Hie."""
 
 import unittest
+import pytest
 
 from Bio.SCOP import Hie
 
@@ -20,7 +21,7 @@ class HieTests(unittest.TestCase):
         with open(self.filename) as f:
             for record in Hie.parse(f):
                 count += 1
-        self.assertEqual(count, 21)
+        assert count == 21
 
     def testStr(self):
         """Test if we can convert each record to a string correctly."""
@@ -28,14 +29,14 @@ class HieTests(unittest.TestCase):
             for line in f:
                 record = Hie.Record(line)
                 # End of line is platform dependent. Strip it off
-                self.assertEqual(str(record).rstrip(), line.rstrip())
+                assert str(record).rstrip() == line.rstrip()
 
     def testError(self):
         """Test if a corrupt record raises the appropriate exception."""
         corruptRec = "4926sdfhjhfgyjdfyg"
-        self.assertRaises(ValueError, Hie.Record, corruptRec)
+        with pytest.raises(ValueError):
+            Hie.Record(corruptRec)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -6,26 +6,31 @@
 """Tests for Chi2 module."""
 
 import unittest
+import pytest
 
 from Bio.Phylo.PAML import chi2
 
 
 class ModTest(unittest.TestCase):
     def test_cdf_chi2(self):
-        self.assertRaises(ValueError, chi2.cdf_chi2, df=0, stat=3.84)
-        self.assertRaises(ValueError, chi2.cdf_chi2, df=1, stat=-3.84)
-        self.assertRaises(TypeError, chi2.cdf_chi2, df="d", stat="stat")
-        self.assertAlmostEqual(chi2.cdf_chi2(2, 3.84), 0.1466070, places=5)
+        with pytest.raises(ValueError):
+            chi2.cdf_chi2(df=0, stat=3.84)
+        with pytest.raises(ValueError):
+            chi2.cdf_chi2(df=1, stat=-3.84)
+        with pytest.raises(TypeError):
+            chi2.cdf_chi2(df="d", stat="stat")
+        assert chi2.cdf_chi2(2, 3.84) == pytest.approx(0.1466070, abs=5e-06)
 
     def test_ln_gamma(self):
-        self.assertRaises(ValueError, chi2._ln_gamma_function, -1)
-        self.assertAlmostEqual(chi2._ln_gamma_function(10), 12.80183, places=5)
+        with pytest.raises(ValueError):
+            chi2._ln_gamma_function(-1)
+        assert chi2._ln_gamma_function(10) == pytest.approx(12.80183, abs=5e-06)
 
     def test_incomplete_gamma(self):
-        self.assertRaises(ValueError, chi2._incomplete_gamma, x=0.5, alpha=-1)
-        self.assertAlmostEqual(chi2._incomplete_gamma(0.5, 0.5), 0.6826895, places=5)
+        with pytest.raises(ValueError):
+            chi2._incomplete_gamma(x=0.5, alpha=-1)
+        assert chi2._incomplete_gamma(0.5, 0.5) == pytest.approx(0.6826895, abs=5e-06)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

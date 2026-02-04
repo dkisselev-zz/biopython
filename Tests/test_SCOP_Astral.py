@@ -6,6 +6,7 @@
 """Unit test for Astral."""
 
 import unittest
+import pytest
 
 from Bio.SCOP import Astral
 from Bio.SCOP import Scop
@@ -17,38 +18,38 @@ class AstralTests(unittest.TestCase):
         self.astral = Astral(scop=self.scop, dir_path="SCOP", version="test")
 
     def testGetSeq(self):
-        self.assertEqual(self.astral.getSeqBySid("d3sdha_"), "AAAAA")
-        self.assertEqual(self.astral.getSeqBySid("d4hbib_"), "KKKKK")
+        assert self.astral.getSeqBySid("d3sdha_") == "AAAAA"
+        assert self.astral.getSeqBySid("d4hbib_") == "KKKKK"
 
         dom = self.scop.getDomainBySid("d3sdha_")
-        self.assertEqual(self.astral.getSeq(dom), "AAAAA")
+        assert self.astral.getSeq(dom) == "AAAAA"
 
     def testConstructWithCustomFile(self):
         scop = Scop(dir_path="SCOP", version="test")
         astral = Astral(
             scop=scop, astral_file="SCOP/scopseq-test/astral-scopdom-seqres-all-test.fa"
         )
-        self.assertEqual(astral.getSeqBySid("d3sdha_"), "AAAAA")
-        self.assertEqual(astral.getSeqBySid("d4hbib_"), "KKKKK")
+        assert astral.getSeqBySid("d3sdha_") == "AAAAA"
+        assert astral.getSeqBySid("d4hbib_") == "KKKKK"
 
     def testGetDomainsFromFile(self):
         filename = "SCOP/scopseq-test/astral-scopdom-seqres-sel-gs-bib-20-test.id"
         domains = self.astral.getAstralDomainsFromFile(filename)
 
-        self.assertEqual(len(domains), 3)
-        self.assertEqual(domains[0].sid, "d3sdha_")
-        self.assertEqual(domains[1].sid, "d4hbib_")
-        self.assertEqual(domains[2].sid, "d5hbia_")
+        assert len(domains) == 3
+        assert domains[0].sid == "d3sdha_"
+        assert domains[1].sid == "d4hbib_"
+        assert domains[2].sid == "d5hbia_"
 
     def testGetDomainsClustered(self):
         domains1 = self.astral.domainsClusteredById(20)
-        self.assertEqual(len(domains1), 3)
-        self.assertEqual(domains1[0].sid, "d3sdha_")
-        self.assertEqual(domains1[1].sid, "d4hbib_")
-        self.assertEqual(domains1[2].sid, "d5hbia_")
+        assert len(domains1) == 3
+        assert domains1[0].sid == "d3sdha_"
+        assert domains1[1].sid == "d4hbib_"
+        assert domains1[2].sid == "d5hbia_"
 
         domains2 = self.astral.domainsClusteredByEv(1e-15)
-        self.assertEqual(len(domains2), 1)
+        assert len(domains2) == 1
 
         # d1 = scop.getDomainBySid("d3sdha_")
         # self.assertEqual(d1.isIn(astral.getHashedDomainsClusteredByPercentId(20))
@@ -56,5 +57,4 @@ class AstralTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

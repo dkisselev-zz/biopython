@@ -7,6 +7,7 @@
 """Tests Bio.SeqFeature."""
 
 import unittest
+import pytest
 import warnings
 from copy import deepcopy
 from os import path
@@ -37,24 +38,12 @@ class TestReference(unittest.TestCase):
         rec1 = SeqIO.read(testfile, "genbank")
         rec2 = SeqIO.read(testfile, "genbank")
 
-        self.assertEqual(
-            rec1.annotations["references"][0], rec1.annotations["references"][0]
-        )
-        self.assertEqual(
-            rec1.annotations["references"][0], rec2.annotations["references"][0]
-        )
-        self.assertNotEqual(
-            rec1.annotations["references"][0], rec1.annotations["references"][1]
-        )
-        self.assertNotEqual(
-            rec1.annotations["references"][0], rec2.annotations["references"][1]
-        )
-        self.assertEqual(
-            rec1.annotations["references"][1], rec1.annotations["references"][1]
-        )
-        self.assertEqual(
-            rec1.annotations["references"][1], rec2.annotations["references"][1]
-        )
+        assert rec1.annotations["references"][0] == rec1.annotations["references"][0]
+        assert rec1.annotations["references"][0] == rec2.annotations["references"][0]
+        assert rec1.annotations["references"][0] != rec1.annotations["references"][1]
+        assert rec1.annotations["references"][0] != rec2.annotations["references"][1]
+        assert rec1.annotations["references"][1] == rec1.annotations["references"][1]
+        assert rec1.annotations["references"][1] == rec2.annotations["references"][1]
 
 
 class TestSimpleLocation(unittest.TestCase):
@@ -64,76 +53,76 @@ class TestSimpleLocation(unittest.TestCase):
         """Test adding and subtracting integer offsets."""
         loc1 = SimpleLocation(23, 42, -1)
         loc2 = SimpleLocation(123, 142, -1)
-        self.assertEqual(loc1 + 100, loc2)
-        self.assertEqual(loc1, loc2 + (-100))
-        self.assertEqual(loc1, loc2 - 100)
-        self.assertEqual(loc1 + 50, loc2 - 50)
-        with self.assertRaises(TypeError):
+        assert loc1 + 100 == loc2
+        assert loc1 == loc2 + (-100)
+        assert loc1 == loc2 - 100
+        assert loc1 + 50 == loc2 - 50
+        with pytest.raises(TypeError):
             loc1 + "Hello"
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             loc1 - "Hello"
 
     def test_eq_identical(self):
         """Test two identical locations are equal."""
         loc1 = SimpleLocation(23, 42, 1)
         loc2 = SimpleLocation(23, 42, 1)
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
         loc1 = SimpleLocation(23, 42, -1)
         loc2 = SimpleLocation(23, 42, -1)
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
         loc1 = SimpleLocation(BeforePosition(23), AfterPosition(42), 1)
         loc2 = SimpleLocation(23, 42, 1)
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
         loc1 = SimpleLocation(23, 42, 1, "foo", "bar")
         loc2 = SimpleLocation(23, 42, 1, "foo", "bar")
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
     def test_eq_not_identical(self):
         """Test two different locations are not equal."""
         loc1 = SimpleLocation(22, 42, 1)
         loc2 = SimpleLocation(23, 42, 1)
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(23, 42, 1)
         loc2 = SimpleLocation(23, 43, 1)
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(23, 42, 1)
         loc2 = SimpleLocation(23, 42, -1)
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(23, 42, 1)
         loc2 = (23, 42, 1)
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(23, 42, 1, "foo")
         loc2 = SimpleLocation(23, 42, 1, "bar")
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(23, 42, 1, "foo", "bar")
         loc2 = SimpleLocation(23, 42, 1, "foo", "baz")
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
     def test_start_before_end(self):
         expected = "must be greater than or equal to start location"
-        with self.assertRaises(ValueError) as err:
+        with pytest.raises(ValueError) as err:
             SimpleLocation(42, 23, 1)
-        self.assertIn(expected, str(err.exception))
+        assert expected in str(err.value)
 
-        with self.assertRaises(ValueError) as err:
+        with pytest.raises(ValueError) as err:
             SimpleLocation(42, 0, 1)
-        self.assertIn(expected, str(err.exception))
+        assert expected in str(err.value)
 
-        with self.assertRaises(ValueError) as err:
+        with pytest.raises(ValueError) as err:
             SimpleLocation(BeforePosition(42), AfterPosition(23), -1)
-        self.assertIn(expected, str(err.exception))
+        assert expected in str(err.value)
 
-        with self.assertRaises(ValueError) as err:
+        with pytest.raises(ValueError) as err:
             SimpleLocation(42, AfterPosition(0), 1)
-        self.assertIn(expected, str(err.exception))
+        assert expected in str(err.value)
 
         # Features with UnknownPositions should pass check
         SimpleLocation(42, UnknownPosition())
@@ -150,11 +139,11 @@ class TestCompoundLocation(unittest.TestCase):
         """Test two identical locations are equal."""
         loc1 = SimpleLocation(12, 17, 1) + SimpleLocation(23, 42, 1)
         loc2 = SimpleLocation(12, 17, 1) + SimpleLocation(23, 42, 1)
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
         loc1 = SimpleLocation(12, 17, 1) + SimpleLocation(23, 42, 1)
         loc2 = CompoundLocation([SimpleLocation(12, 17, 1), SimpleLocation(23, 42, 1)])
-        self.assertEqual(loc1, loc2)
+        assert loc1 == loc2
 
     def test_eq_not_identical(self):
         """Test two different locations are not equal."""
@@ -164,21 +153,21 @@ class TestCompoundLocation(unittest.TestCase):
             + SimpleLocation(23, 42, 1)
             + SimpleLocation(50, 60, 1)
         )
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(12, 17, 1) + SimpleLocation(23, 42, 1)
         loc2 = SimpleLocation(12, 17, -1) + SimpleLocation(23, 42, -1)
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = CompoundLocation([SimpleLocation(12, 17, 1), SimpleLocation(23, 42, 1)])
         loc2 = CompoundLocation(
             [SimpleLocation(12, 17, 1), SimpleLocation(23, 42, 1)], "order"
         )
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
         loc1 = SimpleLocation(12, 17, 1) + SimpleLocation(23, 42, 1)
         loc2 = 5
-        self.assertNotEqual(loc1, loc2)
+        assert loc1 != loc2
 
 
 class TestSeqFeature(unittest.TestCase):
@@ -193,14 +182,14 @@ class TestSeqFeature(unittest.TestCase):
             },
         )
         f2 = deepcopy(f1)
-        self.assertEqual(f1, f2)
+        assert f1 == f2
 
     def test_translation_checks_cds(self):
         """Test that a CDS feature is subject to respective checks."""
         seq = Seq.Seq("GGTTACACTTACCGATAATGTCTCTGATGA")
         f = SeqFeature(SimpleLocation(0, 30), type="CDS")
         f.qualifiers["transl_table"] = [11]
-        with self.assertRaises(TranslationError):
+        with pytest.raises(TranslationError):
             f.translate(seq)
 
 
@@ -214,41 +203,41 @@ class TestLocations(unittest.TestCase):
         between_pos_e = BetweenPosition(24, left=20, right=24)
         before_pos = BeforePosition(15)
         after_pos = AfterPosition(40)
-        self.assertEqual(int(within_pos_s), 10)
-        self.assertEqual(str(within_pos_s), "(10.13)")
-        self.assertEqual(int(within_pos_e), 13)
-        self.assertEqual(str(within_pos_e), "(10.13)")
-        self.assertEqual(int(between_pos_e), 24)
-        self.assertEqual(str(between_pos_e), "(20^24)")
-        self.assertEqual(str(before_pos), "<15")
-        self.assertEqual(str(after_pos), ">40")
+        assert int(within_pos_s) == 10
+        assert str(within_pos_s) == "(10.13)"
+        assert int(within_pos_e) == 13
+        assert str(within_pos_e) == "(10.13)"
+        assert int(between_pos_e) == 24
+        assert str(between_pos_e) == "(20^24)"
+        assert str(before_pos) == "<15"
+        assert str(after_pos) == ">40"
         # put these into Locations
         location1 = SimpleLocation(exact_pos, within_pos_e)
         location2 = SimpleLocation(before_pos, between_pos_e)
         location3 = SimpleLocation(within_pos_s, after_pos)
-        self.assertEqual(str(location1), "[5:(10.13)]")
-        self.assertEqual(str(location1.start), "5")
-        self.assertEqual(str(location1.end), "(10.13)")
-        self.assertEqual(str(location2), "[<15:(20^24)]")
-        self.assertEqual(str(location2.start), "<15")
-        self.assertEqual(str(location2.end), "(20^24)")
-        self.assertEqual(str(location3), "[(10.13):>40]")
-        self.assertEqual(str(location3.start), "(10.13)")
-        self.assertEqual(str(location3.end), ">40")
+        assert str(location1) == "[5:(10.13)]"
+        assert str(location1.start) == "5"
+        assert str(location1.end) == "(10.13)"
+        assert str(location2) == "[<15:(20^24)]"
+        assert str(location2.start) == "<15"
+        assert str(location2.end) == "(20^24)"
+        assert str(location3) == "[(10.13):>40]"
+        assert str(location3.start) == "(10.13)"
+        assert str(location3.end) == ">40"
         # --- test non-fuzzy representations
-        self.assertEqual(int(location1.start), 5)
-        self.assertEqual(int(location1.end), 13)
-        self.assertEqual(int(location2.start), 15)
-        self.assertEqual(int(location2.end), 24)
-        self.assertEqual(int(location3.start), 10)
-        self.assertEqual(int(location3.end), 40)
+        assert int(location1.start) == 5
+        assert int(location1.end) == 13
+        assert int(location2.start) == 15
+        assert int(location2.end) == 24
+        assert int(location3.start) == 10
+        assert int(location3.end) == 40
 
     def test_fromstring_is_static(self):
         """Test whether Location.fromstring is static.
         See `#4984 <https://github.com/biopython/biopython/pull/4984#issuecomment-2758280951>`_.
         """
         is_static = isinstance(Location.__dict__["fromstring"], staticmethod)
-        self.assertTrue(is_static)
+        assert is_static
         # with old implementation
         # behaviour of CompoundLocation.fromstring would change
         # depending on whether we call from instance or class
@@ -256,7 +245,7 @@ class TestLocations(unittest.TestCase):
         f2 = SimpleLocation(50, 59)
         instance = CompoundLocation([f1, f2])
         spec = "10..40"
-        self.assertEqual(Location.fromstring(spec), instance.fromstring(spec))
+        assert Location.fromstring(spec) == instance.fromstring(spec)
 
 
 class TestPositions(unittest.TestCase):
@@ -269,24 +258,21 @@ class TestPositions(unittest.TestCase):
         between_pos = BetweenPosition(24, left=20, right=24)
         oneof_pos = OneOfPosition(1888, [ExactPosition(1888), ExactPosition(1901)])
         # test __getnewargs__
-        self.assertEqual(within_pos.__getnewargs__(), (10, 10, 13))
-        self.assertEqual(between_pos.__getnewargs__(), (24, 20, 24))
-        self.assertEqual(
-            oneof_pos.__getnewargs__(),
-            (1888, [ExactPosition(1888), ExactPosition(1901)]),
-        )
+        assert within_pos.__getnewargs__() == (10, 10, 13)
+        assert between_pos.__getnewargs__() == (24, 20, 24)
+        assert oneof_pos.__getnewargs__() == (1888, [ExactPosition(1888), ExactPosition(1901)])
         # test pickle behaviour
         within_pos2 = pickle.loads(pickle.dumps(within_pos))
         between_pos2 = pickle.loads(pickle.dumps(between_pos))
         oneof_pos2 = pickle.loads(pickle.dumps(oneof_pos))
-        self.assertEqual(within_pos, within_pos2)
-        self.assertEqual(between_pos, between_pos2)
-        self.assertEqual(oneof_pos, oneof_pos2)
-        self.assertEqual(within_pos._left, within_pos2._left)
-        self.assertEqual(within_pos._right, within_pos2._right)
-        self.assertEqual(between_pos._left, between_pos2._left)
-        self.assertEqual(between_pos._right, between_pos2._right)
-        self.assertEqual(oneof_pos.position_choices, oneof_pos2.position_choices)
+        assert within_pos == within_pos2
+        assert between_pos == between_pos2
+        assert oneof_pos == oneof_pos2
+        assert within_pos._left == within_pos2._left
+        assert within_pos._right == within_pos2._right
+        assert between_pos._left == between_pos2._left
+        assert between_pos._right == between_pos2._right
+        assert oneof_pos.position_choices == oneof_pos2.position_choices
 
 
 class TestExtract(unittest.TestCase):
@@ -295,21 +281,15 @@ class TestExtract(unittest.TestCase):
         parent_record = SeqRecord.SeqRecord(seq=Seq.Seq("actg"))
         another_record = SeqRecord.SeqRecord(seq=Seq.Seq("gtcagctac"))
         location = SimpleLocation(5, 8, ref="ANOTHER.7")
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Feature references another sequence \(ANOTHER\.7\), references mandatory",
-        ):
+        with pytest.raises(ValueError, match=r"Feature references another sequence \(ANOTHER\.7\), references mandatory"):
             location.extract(parent_record)
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Feature references another sequence \(ANOTHER\.7\), not found in references",
-        ):
+        with pytest.raises(ValueError, match=r"Feature references another sequence \(ANOTHER\.7\), not found in references"):
             location.extract(parent_record, references={"SOMEOTHER.2": another_record})
         record = location.extract(
             parent_record, references={"ANOTHER.7": another_record}
         )
-        self.assertEqual(type(record), SeqRecord.SeqRecord)
-        self.assertEqual(record.seq, "cta")
+        assert type(record) == SeqRecord.SeqRecord
+        assert record.seq == "cta"
 
     def test_reference_in_location_sequence(self):
         """Test location with reference to another sequence."""
@@ -319,29 +299,23 @@ class TestExtract(unittest.TestCase):
         sequence = location.extract(
             parent_sequence, references={"ANOTHER.7": another_sequence}
         )
-        self.assertEqual(type(sequence), Seq.Seq)
-        self.assertEqual(sequence, "cta")
+        assert type(sequence) == Seq.Seq
+        assert sequence == "cta"
 
     def test_reference_in_compound_location_record(self):
         """Test compound location with reference to another record."""
         parent_record = SeqRecord.SeqRecord(Seq.Seq("aaccaaccaaccaaccaa"))
         another_record = SeqRecord.SeqRecord(Seq.Seq("ttggttggttggttggtt"))
         location = SimpleLocation(2, 6) + SimpleLocation(5, 8, ref="ANOTHER.7")
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Feature references another sequence \(ANOTHER\.7\), references mandatory",
-        ):
+        with pytest.raises(ValueError, match=r"Feature references another sequence \(ANOTHER\.7\), references mandatory"):
             location.extract(parent_record)
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Feature references another sequence \(ANOTHER\.7\), not found in references",
-        ):
+        with pytest.raises(ValueError, match=r"Feature references another sequence \(ANOTHER\.7\), not found in references"):
             location.extract(parent_record, references={"SOMEOTHER.2": another_record})
         record = location.extract(
             parent_record, references={"ANOTHER.7": another_record}
         )
-        self.assertEqual(type(record), SeqRecord.SeqRecord)
-        self.assertEqual(record.seq, "ccaatgg")
+        assert type(record) == SeqRecord.SeqRecord
+        assert record.seq == "ccaatgg"
 
     def test_reference_in_compound_location_sequence(self):
         """Test compound location with reference to another sequence."""
@@ -351,32 +325,21 @@ class TestExtract(unittest.TestCase):
         sequence = location.extract(
             parent_sequence, references={"ANOTHER.7": another_sequence}
         )
-        self.assertEqual(type(sequence), Seq.Seq)
-        self.assertEqual(sequence, "ccaatgg")
+        assert type(sequence) == Seq.Seq
+        assert sequence == "ccaatgg"
 
     def test_origin_spanning_location(self):
         """Test location spanning origin."""
         # Regular origin-spanning sequence
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=BiopythonParserWarning)
-            self.assertEqual(
-                str(SimpleLocation.fromstring("4..2", 4, True)), "join{[3:4], [0:2]}"
-            )
-            self.assertEqual(
-                str(SimpleLocation.fromstring("complement(4..2)", 4, True)),
-                "join{[0:2](-), [3:4](-)}",
-            )
+            assert str(SimpleLocation.fromstring("4..2", 4, True)) == "join{[3:4], [0:2]}"
+            assert str(SimpleLocation.fromstring("complement(4..2)", 4, True)) == "join{[0:2](-), [3:4](-)}"
 
             # Origin-spanning location containing the entire sequence
-            self.assertEqual(
-                str(SimpleLocation.fromstring("3..2", 4, True)), "join{[2:4], [0:2]}"
-            )
-            self.assertEqual(
-                str(SimpleLocation.fromstring("complement(3..2)", 4, True)),
-                "join{[0:2](-), [2:4](-)}",
-            )
+            assert str(SimpleLocation.fromstring("3..2", 4, True)) == "join{[2:4], [0:2]}"
+            assert str(SimpleLocation.fromstring("complement(3..2)", 4, True)) == "join{[0:2](-), [2:4](-)}"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -6,18 +6,16 @@
 """Unit tests for Bio.Phylo functions with external dependencies."""
 
 import unittest
+import pytest
 from io import StringIO
 
 # Check for any missing dependencies at the top level so we can skip
-from Bio import MissingExternalDependencyError
 from Bio import Phylo
 
 try:
     import matplotlib
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install matplotlib if you want to use Bio.Phylo._utils."
-    ) from None
+    pytest.skip("Install matplotlib if you want to use Bio.Phylo._utils.", allow_module_level=True)
 
 # Don't use the Wx backend for matplotlib, use the simpler postscript
 # backend -- we're not going to display or save the plot anyway, so it
@@ -28,9 +26,7 @@ try:
     from matplotlib import pyplot
 except ImportError:
     # Can fail here with font problems
-    raise MissingExternalDependencyError(
-        "Install matplotlib if you want to use Bio.Phylo._utils."
-    ) from None
+    pytest.skip("Install matplotlib if you want to use Bio.Phylo._utils.", allow_module_level=True)
 
 
 # Example PhyloXML file
@@ -96,5 +92,4 @@ class UtilTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

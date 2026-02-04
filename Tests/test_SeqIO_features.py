@@ -12,6 +12,7 @@ import datetime
 import locale
 import os
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
@@ -92,21 +93,17 @@ assert gbk_template.count("%") == 1, gbk_template
 class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
     def compare_feature(self, old, new, msg=None):
         """Check two SeqFeatures agree."""
-        self.assertEqual(old.type, new.type, msg=msg)
-        self.assertEqual(old.location.start, new.location.start, msg=msg)
+        assert old.type == new.type, msg
+        assert old.location.start == new.location.start, msg
         if old.location.strand is not None:
-            self.assertEqual(old.location.strand, new.location.strand, msg=msg)
-        self.assertEqual(old.location.ref, new.location.ref, msg=msg)
-        self.assertEqual(old.location.ref_db, new.location.ref_db, msg=msg)
-        self.assertEqual(
-            getattr(old.location, "operator", None),
-            getattr(new.location, "operator", None),
-            msg=msg,
-        )
-        self.assertEqual(old.location.start, new.location.start, msg=msg)
-        self.assertEqual(str(old.location.start), str(new.location.start), msg=msg)
-        self.assertEqual(old.location.end, new.location.end, msg=msg)
-        self.assertEqual(str(old.location.end), str(new.location.end), msg=msg)
+            assert old.location.strand == new.location.strand, msg
+        assert old.location.ref == new.location.ref, msg
+        assert old.location.ref_db == new.location.ref_db, msg
+        assert getattr(old.location, "operator", None) == getattr(new.location, "operator", None), msg
+        assert old.location.start == new.location.start, msg
+        assert str(old.location.start) == str(new.location.start), msg
+        assert old.location.end == new.location.end, msg
+        assert str(old.location.end) == str(new.location.end), msg
         # This only checks key shared qualifiers
         # Would a white list be easier?
         # for key in ["name","gene","translation","codon_table","codon_start","locus_tag"]:
@@ -117,7 +114,7 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
             err_msg = f"qualifier mismatch for {key}"
             if msg:
                 err_msg = f"{msg}; {err_msg}"
-            self.assertEqual(old.qualifiers[key], new.qualifiers[key], msg=err_msg)
+            assert old.qualifiers[key] == new.qualifiers[key], err_msg
 
     def compare_record(self, old, new, msg=None, expect_minor_diffs=False):
         # Note the name matching is a bit fuzzy
@@ -130,15 +127,12 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
             )
             if msg:
                 err_msg = f"{msg}; {err_msg}"
-            self.assertTrue(
-                old.id == new.id
+            assert (old.id == new.id
                 or old.name == new.name
                 or old.id in new.id
                 or new.id in old.id
-                or old.id.replace(" ", "_") == new.id.replace(" ", "_"),
-                msg=err_msg,
-            )
-        self.assertEqual(len(old.seq), len(new.seq), msg=msg)
+                or old.id.replace(" ", "_") == new.id.replace(" ", "_")), err_msg
+        assert len(old.seq) == len(new.seq), msg
         if len(old.seq) < 200:
             old_seq = old.seq
         else:
@@ -161,11 +155,11 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
         if msg:
             err_msg = f"{msg}; {err_msg}"
         if old_seq is None and new_seq is None:
-            self.assertEqual(repr(old_seq_upper), repr(new_seq_upper), msg=err_msg)
+            assert repr(old_seq_upper) == repr(new_seq_upper), err_msg
         else:
-            self.assertEqual(old_seq_upper, new_seq_upper, msg=err_msg)
+            assert old_seq_upper == new_seq_upper, err_msg
         if old.features and new.features:
-            self.assertEqual(len(old.features), len(new.features), msg=msg)
+            assert len(old.features) == len(new.features), msg
             for old_feature, new_feature in zip(old.features, new.features):
                 # This assumes they are in the same order
                 self.compare_feature(old_feature, new_feature, msg=msg)
@@ -173,7 +167,7 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
         # Just insist on at least one word in common:
         if old.description or new.description:
             words = set(old.description.split()).intersection(new.description.split())
-            self.assertGreater(len(words), 0, msg=msg)
+            assert len(words) > 0, msg
         # This only checks common annotation
         # Would a white list be easier?
         for key in set(old.annotations).intersection(new.annotations):
@@ -186,30 +180,26 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
                 # EMBL allows e.g. "genomics DNA" where GenBank is limited.
                 common_words = set(old.annotations[key].split())
                 common_words = common_words.intersection(new.annotations[key].split())
-                self.assertGreater(len(common_words), 0, msg=msg)
+                assert len(common_words) > 0, msg
             elif key == "comment":
                 # Ignore whitespace
-                self.assertEqual(
-                    old.annotations[key].split(), new.annotations[key].split(), msg=msg
-                )
+                assert old.annotations[key].split() == new.annotations[key].split(), msg
             elif key == "references":
                 if expect_minor_diffs:
                     # TODO - Implement EMBL output of references
                     continue
-                self.assertEqual(
-                    len(old.annotations[key]), len(new.annotations[key]), msg=msg
-                )
+                assert len(old.annotations[key]) == len(new.annotations[key]), msg
                 for r1, r2 in zip(old.annotations[key], new.annotations[key]):
-                    self.assertEqual(r1.title, r2.title, msg=msg)
-                    self.assertEqual(r1.authors, r2.authors, msg=msg)
-                    self.assertEqual(r1.journal, r2.journal, msg=msg)
+                    assert r1.title == r2.title, msg
+                    assert r1.authors == r2.authors, msg
+                    assert r1.journal == r2.journal, msg
                     if r1.consrtm and r2.consrtm:
                         # Not held in EMBL files
-                        self.assertEqual(r1.consrtm, r2.consrtm, msg=msg)
+                        assert r1.consrtm == r2.consrtm, msg
                     if r1.medline_id and r2.medline_id:
                         # Not held in EMBL files
-                        self.assertEqual(r1.medline_id, r2.medline_id, msg=msg)
-                    self.assertEqual(r1.pubmed_id, r2.pubmed_id, msg=msg)
+                        assert r1.medline_id == r2.medline_id, msg
+                    assert r1.pubmed_id == r2.pubmed_id, msg
             elif key == "date" and (
                 isinstance(old.annotations[key], datetime.datetime)
                 or isinstance(old.annotations[key], datetime.date)
@@ -230,11 +220,9 @@ class SeqIOFeatureTestBaseClass(SeqIOTestBaseClass):
                     "DEC",
                 ]
                 oa = f"{oa.day:02d}-{months[oa.month - 1]}-{oa.year}"
-                self.assertEqual(oa, new.annotations[key], msg=msg)
+                assert oa == new.annotations[key], msg
             else:
-                self.assertEqual(
-                    repr(old.annotations[key]), repr(new.annotations[key]), msg=msg
-                )
+                assert repr(old.annotations[key]) == repr(new.annotations[key]), msg
 
 
 class GenBankLocations(SeqIOFeatureTestBaseClass):
@@ -242,15 +230,13 @@ class GenBankLocations(SeqIOFeatureTestBaseClass):
 
     def check_loc(self, expected_location_obj, input_location_str, round_trip=True):
         rec = SeqIO.read(StringIO(gbk_template % input_location_str), "gb")
-        self.assertEqual(len(rec.features), 2)
-        self.assertEqual(rec.features[0].type, "source")
-        self.assertEqual(rec.features[1].type, "misc_feature")
+        assert len(rec.features) == 2
+        assert rec.features[0].type == "source"
+        assert rec.features[1].type == "misc_feature"
         # TODO - Do we have object equality defined?
-        self.assertEqual(str(expected_location_obj), str(rec.features[1].location))
+        assert str(expected_location_obj) == str(rec.features[1].location)
         if round_trip:
-            self.assertEqual(
-                input_location_str, _get_location_string(rec.features[1], 99999)
-            )
+            assert input_location_str == _get_location_string(rec.features[1], 99999)
 
     def test_rev_comp_styles(self):
         # These two are equivalent locations
@@ -300,25 +286,26 @@ class SeqFeatureExtractionWritingReading(SeqIOFeatureTestBaseClass):
     """Tests for SeqFeature sequence extract method, writing, and reading."""
 
     def check(self, parent_seq, feature, answer_str, location_str):
-        self.assertEqual(location_str, _get_location_string(feature, len(parent_seq)))
+        assert location_str == _get_location_string(feature, len(parent_seq))
 
         new = feature.extract(parent_seq)
-        self.assertIsInstance(new, Seq)
-        self.assertEqual(new, answer_str)
+        assert isinstance(new, Seq)
+        assert new == answer_str
 
         new = feature.extract(str(parent_seq))
-        self.assertIsInstance(new, str)
-        self.assertEqual(new, answer_str)
+        assert isinstance(new, str)
+        assert new == answer_str
 
         new = feature.extract(MutableSeq(parent_seq))
-        self.assertIsInstance(new, Seq)  # Not MutableSeq!
-        self.assertEqual(new, answer_str)
+        assert isinstance(new, Seq)  # Not MutableSeq!
+        assert new == answer_str
 
         new = feature.extract(Seq(None, len(parent_seq)))
-        self.assertIsInstance(new, Seq)
-        self.assertEqual(len(new), len(answer_str))
+        assert isinstance(new, Seq)
+        assert len(new) == len(answer_str)
         if len(answer_str) > 0:
-            self.assertRaises(UndefinedSequenceError, str, new)
+            with pytest.raises(UndefinedSequenceError):
+                str(new)
 
         if _get_location_string(feature, 1326) != location_str:
             # This is to avoid issues with the N^1 between feature which only
@@ -327,12 +314,12 @@ class SeqFeatureExtractionWritingReading(SeqIOFeatureTestBaseClass):
         # This template is DNA, but that will still be OK for protein features
         # as they have no strand information... but see below for strand fun
         rec = SeqIO.read(StringIO(gbk_template % location_str), "gb")
-        self.assertEqual(1326, len(rec))
-        self.assertEqual(2, len(rec.features))
-        self.assertEqual(rec.features[0].type, "source")
-        self.assertEqual(rec.features[1].type, "misc_feature")
+        assert 1326 == len(rec)
+        assert 2 == len(rec.features)
+        assert rec.features[0].type == "source"
+        assert rec.features[1].type == "misc_feature"
         new_f = rec.features[1]
-        self.assertEqual(location_str, _get_location_string(new_f, 1326))
+        assert location_str == _get_location_string(new_f, 1326)
 
         feature.type = "misc_feature"  # hack as may not be misc_feature
         if not feature.location.strand:
@@ -342,24 +329,22 @@ class SeqFeatureExtractionWritingReading(SeqIOFeatureTestBaseClass):
         # Some feature method tests
         parent = "ACGT" * 250
         s = feature.extract(parent)
-        self.assertEqual(len(feature), len(s))
+        assert len(feature) == len(s)
         for i in feature:
-            self.assertIn(i, feature)
-        self.assertEqual(set(feature), {i for i in range(1000) if i in feature})
+            assert i in feature
+        assert set(feature) == {i for i in range(1000) if i in feature}
         if feature.location.strand == +1:
-            self.assertEqual(s, "".join(parent[i] for i in feature))
+            assert s == "".join(parent[i] for i in feature)
         if len(feature):
-            self.assertEqual(feature.location.start, min(feature.location))
-            self.assertEqual(feature.location.end, max(feature.location) + 1)
-        self.assertLessEqual(
-            len(feature), feature.location.end - feature.location.start
-        )
+            assert feature.location.start == min(feature.location)
+            assert feature.location.end == max(feature.location) + 1
+        assert len(feature) <= feature.location.end - feature.location.start
 
     def test_simple_rna(self):
         """Feature on RNA (simple, default strand)."""
         s = Seq("GAUCRYWSMKHBVDN")
         f = SeqFeature(SimpleLocation(5, 10))
-        self.assertIsNone(f.location.strand)
+        assert f.location.strand is None
         self.check(s, f, "YWSMK", "6..10")
 
     def test_simple_dna(self):
@@ -402,14 +387,14 @@ class SeqFeatureExtractionWritingReading(SeqIOFeatureTestBaseClass):
         """Feature on DNA (simple, strand +1)."""
         s = Seq("GATCRYWSMKHBVDN")
         f = SeqFeature(SimpleLocation(5, 10, strand=1))
-        self.assertEqual(f.location.strand, +1)
+        assert f.location.strand == +1
         self.check(s, f, "YWSMK", "6..10")
 
     def test_simple_dna_strand_minus(self):
         """Feature on DNA (simple, strand -1)."""
         s = Seq("GATCRYWSMKHBVDN")
         f = SeqFeature(SimpleLocation(5, 10, strand=-1))
-        self.assertEqual(f.location.strand, -1)
+        assert f.location.strand == -1
         self.check(s, f, "MKSWR", "complement(6..10)")
 
     def test_simple_dna_join(self):
@@ -540,13 +525,13 @@ class SeqFeatureCreation(unittest.TestCase):
     def test_qualifiers(self):
         """Pass in qualifiers to SeqFeatures."""
         f = SeqFeature(SimpleLocation(10, 20, strand=+1), type="CDS")
-        self.assertEqual(f.qualifiers, {})
+        assert f.qualifiers == {}
         f = SeqFeature(
             SimpleLocation(10, 20, strand=+1),
             type="CDS",
             qualifiers={"test": ["a test"]},
         )
-        self.assertEqual(f.qualifiers["test"], ["a test"])
+        assert f.qualifiers["test"] == ["a test"]
 
 
 class FeatureWriting(SeqIOFeatureTestBaseClass):
@@ -572,27 +557,27 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         # Note we don't have to explicitly give an ExactPosition object,
         # an integer will also work:
         f = SeqFeature(SimpleLocation(10, 20, strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "11..20")
-        self.assertEqual(_get_location_string(f._flip(20), 20), "complement(1..10)")
-        self.assertEqual(_get_location_string(f._flip(100), 100), "complement(81..90)")
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "11..20"
+        assert _get_location_string(f._flip(20), 20) == "complement(1..10)"
+        assert _get_location_string(f._flip(100), 100) == "complement(81..90)"
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(30, 40, strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(31..40)")
-        self.assertEqual(_get_location_string(f._flip(40), 40), "1..10")
-        self.assertEqual(_get_location_string(f._flip(100), 100), "61..70")
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(31..40)"
+        assert _get_location_string(f._flip(40), 40) == "1..10"
+        assert _get_location_string(f._flip(100), 100) == "61..70"
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(ExactPosition(50), ExactPosition(60), strand=+1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "51..60")
-        self.assertEqual(_get_location_string(f._flip(60), 60), "complement(1..10)")
-        self.assertEqual(_get_location_string(f._flip(100), 100), "complement(41..50)")
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "51..60"
+        assert _get_location_string(f._flip(60), 60) == "complement(1..10)"
+        assert _get_location_string(f._flip(100), 100) == "complement(41..50)"
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -601,58 +586,58 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         for s in [0, None]:
             # Check flipping of a simple strand 0 feature:
             f = SeqFeature(SimpleLocation(0, 100, strand=s), type="source")
-            self.assertEqual(_get_location_string(f, 100), "1..100")
-            self.assertEqual(_get_location_string(f._flip(100), 100), "1..100")
-            self.assertEqual(_get_location_string(f._flip(200), 200), "101..200")
-            self.assertEqual(f._flip(100).location.strand, f.location.strand)
+            assert _get_location_string(f, 100) == "1..100"
+            assert _get_location_string(f._flip(100), 100) == "1..100"
+            assert _get_location_string(f._flip(200), 200) == "101..200"
+            assert f._flip(100).location.strand == f.location.strand
 
         # Test for compound locations (see https://github.com/biopython/biopython/issues/4611)
 
         # flip with +1/-1 strands does not invert the order in compound locations
         loc = SimpleLocation(4, 6, 1) + SimpleLocation(0, 1, 1)
-        self.assertEqual(str(loc._flip(6)), "join{[0:2](-), [5:6](-)}")
+        assert str(loc._flip(6)) == "join{[0:2](-), [5:6](-)}"
         loc = SimpleLocation(4, 6, -1) + SimpleLocation(0, 1, -1)
-        self.assertEqual(str(loc._flip(6)), "join{[0:2](+), [5:6](+)}")
+        assert str(loc._flip(6)) == "join{[0:2](+), [5:6](+)}"
 
         # flip with None strand inverts the order in compound locations
         loc = SimpleLocation(4, 6, None) + SimpleLocation(0, 1, None)
-        self.assertEqual(str(loc._flip(6)), "join{[5:6], [0:2]}")
+        assert str(loc._flip(6)) == "join{[5:6], [0:2]}"
 
     def test_between(self):
         """GenBank/EMBL write/read simple between locations."""
         # Note we don't use the BetweenPosition any more!
         f = SeqFeature(SimpleLocation(10, 10, strand=+1), type="variation")
-        self.assertEqual(_get_location_string(f, 100), "10^11")
-        self.assertEqual(_get_location_string(f._flip(20), 20), "complement(10^11)")
-        self.assertEqual(_get_location_string(f._flip(100), 100), "complement(90^91)")
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "10^11"
+        assert _get_location_string(f._flip(20), 20) == "complement(10^11)"
+        assert _get_location_string(f._flip(100), 100) == "complement(90^91)"
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
         f = SeqFeature(SimpleLocation(20, 20, strand=-1), type="variation")
-        self.assertEqual(_get_location_string(f, 100), "complement(20^21)")
-        self.assertEqual(_get_location_string(f._flip(40), 40), "20^21")
-        self.assertEqual(_get_location_string(f._flip(100), 100), "80^81")
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(20^21)"
+        assert _get_location_string(f._flip(40), 40) == "20^21"
+        assert _get_location_string(f._flip(100), 100) == "80^81"
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
         self.write_read_checks()
 
     def test_unknown(self):
         """GenBank/EMBL write/read with unknown end points."""
         f = SeqFeature(SimpleLocation(10, 15, strand=+1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "11..15")
+        assert _get_location_string(f, 100) == "11..15"
         self.record.features.append(f)
         f = SeqFeature(SimpleLocation(10, UnknownPosition(), strand=+1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "11..>11")
+        assert _get_location_string(f, 100) == "11..>11"
         self.record.features.append(f)
         f = SeqFeature(SimpleLocation(UnknownPosition(), 15, strand=+1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "<15..15")
+        assert _get_location_string(f, 100) == "<15..15"
         self.record.features.append(f)
         f = SeqFeature(SimpleLocation(10, 15, strand=-1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "complement(11..15)")
+        assert _get_location_string(f, 100) == "complement(11..15)"
         f = SeqFeature(SimpleLocation(10, UnknownPosition(), strand=-1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "complement(11..>11)")
+        assert _get_location_string(f, 100) == "complement(11..>11)"
         self.record.features.append(f)
         f = SeqFeature(SimpleLocation(UnknownPosition(), 15, strand=-1), type="region")
-        self.assertEqual(_get_location_string(f, 100), "complement(<15..15)")
+        assert _get_location_string(f, 100) == "complement(<15..15)"
         self.record.features.append(f)
         # This doesn't round trip
         # self.write_read_checks()
@@ -663,55 +648,40 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         f2 = SeqFeature(SimpleLocation(25, 40, strand=+1))
         f = make_join_feature([f1, f2])
         self.record.features.append(f)
-        self.assertEqual(_get_location_string(f, 500), "join(11..20,26..40)")
-        self.assertEqual(
-            _get_location_string(f._flip(60), 60), "complement(join(21..35,41..50))"
-        )
-        self.assertEqual(
-            _get_location_string(f._flip(100), 100), "complement(join(61..75,81..90))"
-        )
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 500) == "join(11..20,26..40)"
+        assert _get_location_string(f._flip(60), 60) == "complement(join(21..35,41..50))"
+        assert _get_location_string(f._flip(100), 100) == "complement(join(61..75,81..90))"
+        assert f._flip(100).location.strand == -1
         for sub_loc in f._flip(100).location.parts:
-            self.assertEqual(sub_loc.strand, -1)
+            assert sub_loc.strand == -1
         f1 = SeqFeature(SimpleLocation(110, 120, strand=+1))
         f2 = SeqFeature(SimpleLocation(125, 140, strand=+1))
         f3 = SeqFeature(SimpleLocation(145, 150, strand=+1))
         f = make_join_feature([f1, f2, f3], "CDS")
-        self.assertEqual(
-            _get_location_string(f, 500), "join(111..120,126..140,146..150)"
-        )
-        self.assertEqual(
-            _get_location_string(f._flip(150), 150),
-            "complement(join(1..5,11..25,31..40))",
-        )
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 500) == "join(111..120,126..140,146..150)"
+        assert _get_location_string(f._flip(150), 150) == "complement(join(1..5,11..25,31..40))"
+        assert f._flip(100).location.strand == -1
         for sub_loc in f._flip(100).location.parts:
-            self.assertEqual(sub_loc.strand, -1)
+            assert sub_loc.strand == -1
         self.record.features.append(f)
         f1 = SeqFeature(SimpleLocation(210, 220, strand=-1))
         f2 = SeqFeature(SimpleLocation(225, 240, strand=-1))
         f = make_join_feature([f1, f2], ftype="gene")
-        self.assertEqual(
-            _get_location_string(f, 500), "complement(join(211..220,226..240))"
-        )
-        self.assertEqual(_get_location_string(f._flip(300), 300), "join(61..75,81..90)")
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 500) == "complement(join(211..220,226..240))"
+        assert _get_location_string(f._flip(300), 300) == "join(61..75,81..90)"
+        assert f._flip(100).location.strand == +1
         for sub_loc in f._flip(100).location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         self.record.features.append(f)
         f1 = SeqFeature(SimpleLocation(310, 320, strand=-1))
         f2 = SeqFeature(SimpleLocation(325, 340, strand=-1))
         f3 = SeqFeature(SimpleLocation(345, 350, strand=-1))
         f = make_join_feature([f1, f2, f3], "CDS")
-        self.assertEqual(
-            _get_location_string(f, 500), "complement(join(311..320,326..340,346..350))"
-        )
-        self.assertEqual(
-            _get_location_string(f._flip(350), 350), "join(1..5,11..25,31..40)"
-        )
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 500) == "complement(join(311..320,326..340,346..350))"
+        assert _get_location_string(f._flip(350), 350) == "join(1..5,11..25,31..40)"
+        assert f._flip(100).location.strand == +1
         for sub_loc in f._flip(100).location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         self.record.features.append(f)
         self.write_read_checks()
 
@@ -722,17 +692,15 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         f2 = SeqFeature(SimpleLocation(25, AfterPosition(40), strand=+1))
         f = make_join_feature([f1, f2])
         self.record.features.append(f)
-        self.assertEqual(_get_location_string(f, 500), "join(<11..20,26..>40)")
-        self.assertEqual(
-            _get_location_string(f._flip(100), 100), "complement(join(<61..75,81..>90))"
-        )
-        self.assertEqual(f.location.strand, +1)
+        assert _get_location_string(f, 500) == "join(<11..20,26..>40)"
+        assert _get_location_string(f._flip(100), 100) == "complement(join(<61..75,81..>90))"
+        assert f.location.strand == +1
         for sub_loc in f.location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         tmp = f._flip(100)
-        self.assertEqual(tmp.location.strand, -1)
+        assert tmp.location.strand == -1
         for sub_loc in tmp.location.parts:
-            self.assertEqual(sub_loc.strand, -1)
+            assert sub_loc.strand == -1
 
         f1 = SeqFeature(
             SimpleLocation(
@@ -746,22 +714,16 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             SimpleLocation(145, WithinPosition(160, left=150, right=160), strand=+1)
         )
         f = make_join_feature([f1, f2, f3], "CDS")
-        self.assertEqual(
-            _get_location_string(f, 500),
-            "join(one-of(108,111)..120,126..140,146..(150.160))",
-        )
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(200), 200),
-            "complement(join((41.51)..55,61..75,81..one-of(90,93)))",
-        )
-        self.assertEqual(f.location.strand, +1)
+        assert _get_location_string(f, 500) == "join(one-of(108,111)..120,126..140,146..(150.160))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(200), 200) == "complement(join((41.51)..55,61..75,81..one-of(90,93)))"
+        assert f.location.strand == +1
         for sub_loc in f.location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         tmp = f._flip(100)
-        self.assertEqual(tmp.location.strand, -1)
+        assert tmp.location.strand == -1
         for sub_loc in tmp.location.parts:
-            self.assertEqual(sub_loc.strand, -1)
+            assert sub_loc.strand == -1
         self.record.features.append(f)
 
         f1 = SeqFeature(SimpleLocation(BeforePosition(210), 220, strand=-1))
@@ -769,20 +731,16 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             SimpleLocation(225, WithinPosition(244, left=240, right=244), strand=-1)
         )
         f = make_join_feature([f1, f2], "gene")
-        self.assertEqual(
-            _get_location_string(f, 500), "complement(join(<211..220,226..(240.244)))"
-        )
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(300), 300), "join((57.61)..75,81..>90)"
-        )
-        self.assertEqual(f.location.strand, -1)
+        assert _get_location_string(f, 500) == "complement(join(<211..220,226..(240.244)))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(300), 300) == "join((57.61)..75,81..>90)"
+        assert f.location.strand == -1
         for sub_loc in f.location.parts:
-            self.assertEqual(sub_loc.strand, -1)
+            assert sub_loc.strand == -1
         tmp = f._flip(100)
-        self.assertEqual(tmp.location.strand, +1)
+        assert tmp.location.strand == +1
         for sub_loc in tmp.location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         self.record.features.append(f)
 
         f1 = SeqFeature(SimpleLocation(AfterPosition(310), 320, strand=-1))
@@ -793,20 +751,14 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             SimpleLocation(345, WithinPosition(355, left=350, right=355), strand=-1)
         )
         f = make_join_feature([f1, f2, f3], "CDS")
-        self.assertEqual(
-            _get_location_string(f, 500),
-            "complement(join(>311..320,326..one-of(340,337),346..(350.355)))",
-        )
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(400), 400),
-            "join((46.51)..55,one-of(64,61)..75,81..<90)",
-        )
-        self.assertEqual(f.location.strand, -1)
+        assert _get_location_string(f, 500) == "complement(join(>311..320,326..one-of(340,337),346..(350.355)))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(400), 400) == "join((46.51)..55,one-of(64,61)..75,81..<90)"
+        assert f.location.strand == -1
         tmp = f._flip(100)
-        self.assertEqual(tmp.location.strand, +1)
+        assert tmp.location.strand == +1
         for sub_loc in tmp.location.parts:
-            self.assertEqual(sub_loc.strand, +1)
+            assert sub_loc.strand == +1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -815,57 +767,57 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         """Features: write/read simple before locations."""
         s = "N" * 200
         f = SeqFeature(SimpleLocation(BeforePosition(5), 10, strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "<6..10")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(20), 20), "complement(11..>15)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "<6..10"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(20), 20) == "complement(11..>15)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(BeforePosition(15), BeforePosition(20), strand=+1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "<16..<20")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(20), 20), "complement(>1..>5)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "<16..<20"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(20), 20) == "complement(>1..>5)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(25, BeforePosition(30), strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "26..<30")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(40), 40), "complement(>11..15)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "26..<30"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(40), 40) == "complement(>11..15)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(BeforePosition(35), 40, strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(<36..40)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(40), 40), "1..>5")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(<36..40)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(40), 40) == "1..>5"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(BeforePosition(45), BeforePosition(50), strand=-1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "complement(<46..<50)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), ">51..>55")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(<46..<50)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == ">51..>55"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(55, BeforePosition(60), strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(56..<60)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), ">41..45")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(56..<60)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == ">41..45"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -874,57 +826,57 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         """Features: write/read simple after locations."""
         s = "N" * 200
         f = SeqFeature(SimpleLocation(AfterPosition(5), 10, strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), ">6..10")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "complement(91..<95)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == ">6..10"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "complement(91..<95)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(AfterPosition(15), AfterPosition(20), strand=+1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), ">16..>20")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(20), 20), "complement(<1..<5)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == ">16..>20"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(20), 20) == "complement(<1..<5)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(25, AfterPosition(30), strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "26..>30")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(30), 30), "complement(<1..5)")
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "26..>30"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(30), 30) == "complement(<1..5)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(AfterPosition(35), 40, strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(>36..40)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "61..<65")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(>36..40)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "61..<65"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(AfterPosition(45), AfterPosition(50), strand=-1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "complement(>46..>50)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "<51..<55")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(>46..>50)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "<51..<55"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(SimpleLocation(55, AfterPosition(60), strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(56..>60)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "<41..45")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(56..>60)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "<41..45"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -934,71 +886,58 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         s = "N" * 100
         start = OneOfPosition(0, [ExactPosition(0), ExactPosition(3), ExactPosition(6)])
         f = SeqFeature(SimpleLocation(start, 21, strand=+1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "one-of(1,4,7)..21")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(100), 100), "complement(80..one-of(94,97,100))"
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "one-of(1,4,7)..21"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "complement(80..one-of(94,97,100))"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         start = OneOfPosition(10, [ExactPosition(x) for x in [10, 13, 16]])
         end = OneOfPosition(50, [ExactPosition(x) for x in [41, 44, 50]])
         f = SeqFeature(SimpleLocation(start, end, strand=+1), type="gene")
-        self.assertEqual(
-            _get_location_string(f, 100), "one-of(11,14,17)..one-of(41,44,50)"
-        )
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(50), 50),
-            "complement(one-of(1,7,10)..one-of(34,37,40))",
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "one-of(11,14,17)..one-of(41,44,50)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(50), 50) == "complement(one-of(1,7,10)..one-of(34,37,40))"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         end = OneOfPosition(33, [ExactPosition(x) for x in [30, 33]])
         f = SeqFeature(SimpleLocation(27, end, strand=+1), type="gene")
-        self.assertEqual(_get_location_string(f, 100), "28..one-of(30,33)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(40), 40), "complement(one-of(8,11)..13)"
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "28..one-of(30,33)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(40), 40) == "complement(one-of(8,11)..13)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         start = OneOfPosition(36, [ExactPosition(x) for x in [36, 40]])
         f = SeqFeature(SimpleLocation(start, 46, strand=-1), type="CDS")
-        self.assertEqual(_get_location_string(f, 100), "complement(one-of(37,41)..46)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(50), 50), "5..one-of(10,14)")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(one-of(37,41)..46)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(50), 50) == "5..one-of(10,14)"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         start = OneOfPosition(45, [ExactPosition(x) for x in [45, 60]])
         end = OneOfPosition(90, [ExactPosition(x) for x in [70, 90]])
         f = SeqFeature(SimpleLocation(start, end, strand=-1), type="CDS")
-        self.assertEqual(
-            _get_location_string(f, 100), "complement(one-of(46,61)..one-of(70,90))"
-        )
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(100), 100), "one-of(11,31)..one-of(40,55)"
-        )
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(one-of(46,61)..one-of(70,90))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "one-of(11,31)..one-of(40,55)"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         end = OneOfPosition(63, [ExactPosition(x) for x in [60, 63]])
         f = SeqFeature(SimpleLocation(55, end, strand=-1), type="tRNA")
-        self.assertEqual(_get_location_string(f, 100), "complement(56..one-of(60,63))")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "one-of(38,41)..45")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(56..one-of(60,63))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "one-of(38,41)..45"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -1010,13 +949,11 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             SimpleLocation(WithinPosition(2, left=2, right=8), 10, strand=+1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "(3.9)..10")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(20), 20), "complement(11..(12.18))"
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "(3.9)..10"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(20), 20) == "complement(11..(12.18))"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(
@@ -1027,36 +964,32 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             ),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "(13.19)..(20.28)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(30), 30), "complement((3.11)..(12.18))"
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "(13.19)..(20.28)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(30), 30) == "complement((3.11)..(12.18))"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(25, WithinPosition(33, left=30, right=33), strand=+1),
             type="misc_feature",
         )
-        self.assertEqual(_get_location_string(f, 100), "26..(30.33)")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(
-            _get_location_string(f._flip(40), 40), "complement((8.11)..15)"
-        )
-        self.assertEqual(f.location.strand, +1)
-        self.assertEqual(f._flip(100).location.strand, -1)
+        assert _get_location_string(f, 100) == "26..(30.33)"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(40), 40) == "complement((8.11)..15)"
+        assert f.location.strand == +1
+        assert f._flip(100).location.strand == -1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(WithinPosition(35, left=35, right=39), 40, strand=-1),
             type="rRNA",
         )
-        self.assertEqual(_get_location_string(f, 100), "complement((36.40)..40)")
-        self.assertEqual(_get_location_string(f._flip(40), 40), "1..(1.5)")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement((36.40)..40)"
+        assert _get_location_string(f._flip(40), 40) == "1..(1.5)"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(
@@ -1067,22 +1000,22 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
             ),
             type="repeat_region",
         )
-        self.assertEqual(_get_location_string(f, 100), "complement((46.48)..(50.53))")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(60), 60), "(8.11)..(13.15)")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement((46.48)..(50.53))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(60), 60) == "(8.11)..(13.15)"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         f = SeqFeature(
             SimpleLocation(55, WithinPosition(65, left=60, right=65), strand=-1),
             type="CDS",
         )
-        self.assertEqual(_get_location_string(f, 100), "complement(56..(60.65))")
-        self.assertEqual(len(f), len(f.extract(s)))
-        self.assertEqual(_get_location_string(f._flip(100), 100), "(36.41)..45")
-        self.assertEqual(f.location.strand, -1)
-        self.assertEqual(f._flip(100).location.strand, +1)
+        assert _get_location_string(f, 100) == "complement(56..(60.65))"
+        assert len(f) == len(f.extract(s))
+        assert _get_location_string(f._flip(100), 100) == "(36.41)..45"
+        assert f.location.strand == -1
+        assert f._flip(100).location.strand == +1
         self.record.features.append(f)
 
         self.write_read_checks()
@@ -1119,11 +1052,11 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         stream = StringIO()
         with warnings.catch_warnings(record=True) as w:
             SeqIO.write([self.record], stream, "gb")
-            self.assertEqual(len(w), 1, "a warning should be raised")
-            self.assertIn("Invalid date format", str(w[0].message))
+            assert len(w) == 1, "a warning should be raised"
+            assert "Invalid date format" in str(w[0].message)
         stream.seek(0)
-        self.assertIn("1980", stream.getvalue())
-        self.assertNotIn(self.record.annotations["date"], stream.getvalue())
+        assert "1980" in stream.getvalue()
+        assert self.record.annotations["date"] not in stream.getvalue()
 
     def test_invalid_date_locale(self):
         # Using a date not in english which is not accepted by the writer
@@ -1131,11 +1064,11 @@ class FeatureWriting(SeqIOFeatureTestBaseClass):
         stream = StringIO()
         with warnings.catch_warnings(record=True) as w:
             SeqIO.write([self.record], stream, "gb")
-            self.assertEqual(len(w), 1, "a warning should be raised")
-            self.assertIn("Invalid date", str(w[0].message))
+            assert len(w) == 1, "a warning should be raised"
+            assert "Invalid date" in str(w[0].message)
         stream.seek(0)
-        self.assertIn("1980", stream.getvalue())
-        self.assertNotIn(self.record.annotations["date"], stream.getvalue())
+        assert "1980" in stream.getvalue()
+        assert self.record.annotations["date"] not in stream.getvalue()
 
 
 class NC_000932(SeqIOFeatureTestBaseClass):
@@ -1167,22 +1100,22 @@ class NC_000932(SeqIOFeatureTestBaseClass):
         fasta = list(SeqIO.parse(self.faa_filename, "fasta"))
         self.compare_records(gb_cds, fasta)
         cds_features = [f for f in gb_record.features if f.type == "CDS"]
-        self.assertEqual(len(cds_features), len(fasta))
+        assert len(cds_features) == len(fasta)
         for f, r in zip(cds_features, fasta):
             if r.id in self.skip_trans_test:
                 continue
             # Get the nucleotides and translate them
             nuc = f.extract(gb_record.seq)
-            self.assertEqual(len(nuc), len(f))
+            assert len(nuc) == len(f)
             try:
                 pro = nuc.translate(table=self.table, cds=True)
             except TranslationError as e:
                 msg = f"{e}\n{r.id!r}, {nuc!r}, {self.table!r}\n{f}"
-                self.fail(msg)
+                raise AssertionError(msg)
             if pro[-1] == "*":
-                self.assertEqual(pro[:-1], r.seq)
+                assert pro[:-1] == r.seq
             else:
-                self.assertEqual(pro, r.seq)
+                assert pro == r.seq
 
 
 class NC_005816(NC_000932):
@@ -1212,7 +1145,7 @@ class NC_005816(NC_000932):
         """Checking translation of FASTA features (faa vs ffn)."""
         faa_records = list(SeqIO.parse(self.faa_filename, "fasta"))
         ffn_records = list(SeqIO.parse(self.ffn_filename, "fasta"))
-        self.assertEqual(len(faa_records), len(ffn_records))
+        assert len(faa_records) == len(ffn_records)
         for faa, fna in zip(faa_records, ffn_records):
             translation = fna.seq.translate(self.table, cds=True)
             if faa.id in self.skip_trans_test:
@@ -1225,7 +1158,7 @@ class NC_005816(NC_000932):
                 t.format("fasta"),
                 faa.format("fasta"),
             )
-            self.assertTrue(translation == faa.seq or translation != faa.seq + "*")
+            assert translation == faa.seq or translation != faa.seq + "*"
 
     def test_Genome(self):
         """Checking GenBank sequence vs FASTA fna file."""
@@ -1250,13 +1183,13 @@ class NC_005816(NC_000932):
         gb_record = SeqIO.read(self.gb_filename, "genbank")
         features = [f for f in gb_record.features if f.type == "CDS"]
         fa_records = list(SeqIO.parse(self.ffn_filename, "fasta"))
-        self.assertEqual(len(fa_records), len(features))
+        assert len(fa_records) == len(features)
         # This assumes they are in the same order...
         for fa_record, f in zip(fa_records, features):
             # TODO - check the FASTA ID line against the coordinates?
             f_seq = f.extract(gb_record.seq)
-            self.assertEqual(fa_record.seq, f_seq)
-            self.assertEqual(len(f_seq), len(f))
+            assert fa_record.seq == f_seq
+            assert len(f_seq) == len(f)
 
 
 class TestWriteRead(SeqIOFeatureTestBaseClass):
@@ -1371,5 +1304,4 @@ class TestWriteRead(SeqIOFeatureTestBaseClass):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

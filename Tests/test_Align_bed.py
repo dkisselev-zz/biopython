@@ -6,6 +6,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 from io import StringIO
 
 import numpy as np
@@ -39,17 +40,16 @@ class TestAlign_dna_rna(unittest.TestCase):
 
     def check_alignments(self, alignments):
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 1711))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr3")
-        self.assertEqual(alignment.query.id, "NR_046654.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 1711)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr3"
+        assert alignment.query.id == "NR_046654.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[42530895, 42530958, 42532020,
@@ -58,11 +58,9 @@ class TestAlign_dna_rna(unittest.TestCase):
                                  43,       43,        0]])
                 # fmt: on
             )
-        )
         alignment.target.seq = self.dna
         alignment.query.seq = self.rna[alignment.query.id]
-        self.assertTrue(
-            np.array_equal(
+        assert np.array_equal(
                 alignment.substitutions,
                 # fmt: off
             np.array([[36.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
@@ -75,11 +73,8 @@ class TestAlign_dna_rna(unittest.TestCase):
                       [ 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                      ])
             )
-        )
-        self.assertEqual(alignment.substitutions.alphabet, "ACGTacgt")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.substitutions.alphabet == "ACGTacgt"
+        assert str(alignment) == """\
 chr3       42530895 CGGAAGTACTTCTGGGGGTACATACTCATCGGCTGGGGTATGGTACCAGGGAGGGCTTCC
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 NR_046654       181 CGGAAGTACTTCTGGGGGTACATACTCATCGGCTGGGGTATGGTACCAGGGAGGGCTTCC
@@ -195,23 +190,14 @@ NR_046654        43 ------------------------------------------------CTAGCATCCTTC
 chr3       42532575 CCAGGTATGCATCTGCTGCCAAGCCAGGgag 42532606
                1680 ||||||||||||||||||||||||||||...     1711
 NR_046654        31 CCAGGTATGCATCTGCTGCCAAGCCAGGGAG        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr3	42530895	42532606	NR_046654.1	1000	-	42530895	42532606	0	3	63,75,43,	0,1125,1668,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (181 aligned letters; 175 identities; 6 mismatches; 1530 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (181 aligned letters; 175 identities; 6 mismatches; 1530 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 181:
         identities = 175,
@@ -238,35 +224,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 1530)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1530)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 1530)
-        self.assertEqual(counts.gaps, 1530)
-        self.assertEqual(counts.aligned, 181)
-        self.assertEqual(counts.identities, 175)
-        self.assertEqual(counts.mismatches, 6)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 1530
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1530
+        assert counts.insertions == 0
+        assert counts.deletions == 1530
+        assert counts.gaps == 1530
+        assert counts.aligned == 181
+        assert counts.identities == 175
+        assert counts.mismatches == 6
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 978)
-        self.assertEqual(alignment.shape, (2, 1711))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr3")
-        self.assertEqual(alignment.query.id, "NR_046654.1_modified")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 978
+        assert alignment.shape == (2, 1711)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr3"
+        assert alignment.query.id == "NR_046654.1_modified"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[42530895, 42530922, 42530958, 42532020, 42532037,
@@ -275,10 +259,7 @@ AlignmentCounts object with
                                  99,       43,       43,        0]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr3       42530895 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 NR_046654       179 ????????????????????????????????????????????????????????????
@@ -394,23 +375,14 @@ NR_046654        43 ------------------------------------------------????????????
 chr3       42532575 ??????????????????????????????? 42532606
                1680 |||||||||||||||||||||||||||||||     1711
 NR_046654        31 ???????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr3	42530895	42532606	NR_046654.1_modified	978	-	42530895	42532606	0	5	27,36,17,56,43,	0,27,1125,1144,1668,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (179 aligned letters; 0 identities; 0 mismatches; 1532 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (179 aligned letters; 0 identities; 0 mismatches; 1532 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 179:
         identities = 0,
@@ -437,33 +409,31 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 1532)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1532)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 1532)
-        self.assertEqual(counts.gaps, 1532)
-        self.assertEqual(counts.aligned, 179)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 1532
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1532
+        assert counts.insertions == 0
+        assert counts.deletions == 1532
+        assert counts.gaps == 1532
+        assert counts.aligned == 179
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 5407))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr3")
-        self.assertEqual(alignment.query.id, "NR_111921.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 5407)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr3"
+        assert alignment.query.id == "NR_111921.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[48663767, 48663813, 48665640,
@@ -472,11 +442,9 @@ AlignmentCounts object with
                                 128,      128,      204]])
                 # fmt: on
             )
-        )
         alignment.target.seq = self.dna
         alignment.query.seq = self.rna[alignment.query.id]
-        self.assertTrue(
-            np.array_equal(
+        assert np.array_equal(
                 alignment.substitutions,
                 # fmt: off
             np.array([[53.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
@@ -489,11 +457,8 @@ AlignmentCounts object with
                       [ 0.,  0.,  0.,  7.,  0.,  0.,  0.,  0.],
                      ])
             )
-        )
-        self.assertEqual(alignment.substitutions.alphabet, "ACGTacgt")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.substitutions.alphabet == "ACGTacgt"
+        assert str(alignment) == """\
 chr3       48663767 CACGAGAGGAGCGGAGGCGAGGGGTGAACGCGGAGCACTCCAATCGGTCAGTCATTGTTT
                   0 ||||||||||||||||||||||||||||||||||||||||||||||--------------
 NR_111921         0 CACGAGAGGAGCGGAGGCGAGGGGTGAACGCGGAGCACTCCAATCG--------------
@@ -857,23 +822,14 @@ NR_111921       137 CTGGAGTGCAGTGGCTGTTCACAAGCGTGAAAGCAAAGATTAAAAAATTTGTTTTTATAT
 chr3       48669167 TAAAAAA 48669174
                5400 |||||||     5407
 NR_111921       197 TAAAAAA      204
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr3	48663767	48669174	NR_111921.1	1000	+	48663767	48669174	0	3	46,82,76,	0,1873,5331,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (204 aligned letters; 165 identities; 39 mismatches; 5203 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (204 aligned letters; 165 identities; 39 mismatches; 5203 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 204:
         identities = 165,
@@ -900,35 +856,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 5203)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 5203)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 5203)
-        self.assertEqual(counts.gaps, 5203)
-        self.assertEqual(counts.aligned, 204)
-        self.assertEqual(counts.identities, 165)
-        self.assertEqual(counts.mismatches, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 5203
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 5203
+        assert counts.insertions == 0
+        assert counts.deletions == 5203
+        assert counts.gaps == 5203
+        assert counts.aligned == 204
+        assert counts.identities == 165
+        assert counts.mismatches == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 972)
-        self.assertEqual(alignment.shape, (2, 5407))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr3")
-        self.assertEqual(alignment.query.id, "NR_111921.1_modified")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 972
+        assert alignment.shape == (2, 5407)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr3"
+        assert alignment.query.id == "NR_111921.1_modified"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[48663767, 48663795, 48663796, 48663813, 48665640,
@@ -937,12 +891,9 @@ AlignmentCounts object with
                                 121,      127,      127,      203]])
                 # fmt: on
             )
-        )
         # The modified RNAs have gaps in their sequence. As this information is
         # not stored in a BED file, we cannot calculate the substitution matrix.
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr3       48663767 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||-|||||||||||||||||--------------
 NR_111921         0 ????????????????????????????-?????????????????--------------
@@ -1306,23 +1257,14 @@ NR_111921       136 ????????????????????????????????????????????????????????????
 chr3       48669167 ??????? 48669174
                5400 |||||||     5407
 NR_111921       196 ???????      203
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr3	48663767	48669174	NR_111921.1_modified	972	+	48663767	48669174	0	5	28,17,76,6,76,	0,29,1873,1949,5331,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (203 aligned letters; 0 identities; 0 mismatches; 5204 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (203 aligned letters; 0 identities; 0 mismatches; 5204 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 203:
         identities = 0,
@@ -1349,22 +1291,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 5204)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 5204)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 5204)
-        self.assertEqual(counts.gaps, 5204)
-        self.assertEqual(counts.aligned, 203)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 5204
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 5204
+        assert counts.insertions == 0
+        assert counts.deletions == 5204
+        assert counts.gaps == 5204
+        assert counts.aligned == 203
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_reading(self):
         """Test parsing dna_rna.bed."""
@@ -1375,11 +1317,11 @@ AlignmentCounts object with
         self.check_alignments(alignments)
         with Align.parse(path, "bed") as alignments:
             self.check_alignments(alignments)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(path, "bed") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
 
     def test_writing(self):
@@ -1390,11 +1332,11 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 4)
+        assert n == 4
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
 
 class TestAlign_dna(unittest.TestCase):
@@ -1403,47 +1345,34 @@ class TestAlign_dna(unittest.TestCase):
         path = "Blat/psl_34_001.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 16))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 16)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61646095, 61646111],
                           [       0,       16]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       61646095 ???????????????? 61646111
                   0 ||||||||||||||||       16
 hg19_dna          0 ????????????????       16
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	61646095	61646111	hg19_dna	1000	+	61646095	61646111	0	1	16,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16:
         identities = 0,
@@ -1470,63 +1399,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 16)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 16
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 33))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 33)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[10271783, 10271816],
                           [       0,       33]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       10271783 ????????????????????????????????? 10271816
                   0 |||||||||||||||||||||||||||||||||       33
 hg19_dna          0 ?????????????????????????????????       33
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	10271783	10271816	hg19_dna	1000	+	10271783	10271816	0	1	33,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 33:
         identities = 0,
@@ -1553,63 +1468,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 33)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 33
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 17))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 17)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[53575980, 53575997],
                           [      17,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2       53575980 ????????????????? 53575997
                   0 |||||||||||||||||       17
 hg19_dna         17 ?????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	53575980	53575997	hg19_dna	1000	-	53575980	53575997	0	1	17,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 17:
         identities = 0,
@@ -1636,63 +1537,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 17)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 17
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 854)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr9")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 854
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr9"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[85737865, 85737906],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr9       85737865 ????????????????????????????????????????? 85737906
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr9	85737865	85737906	hg19_dna	854	+	85737865	85737906	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -1719,63 +1606,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr8")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr8"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[95160479, 95160520],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr8       95160479 ????????????????????????????????????????? 95160520
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr8	95160479	95160520	hg19_dna	1000	+	95160479	95160520	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -1802,63 +1675,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[42144400, 42144436],
                           [       0,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      42144400 ???????????????????????????????????? 42144436
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna          0 ????????????????????????????????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	42144400	42144436	hg19_dna	834	+	42144400	42144436	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -1885,63 +1744,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 682)
-        self.assertEqual(alignment.shape, (2, 44))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 682
+        assert alignment.shape == (2, 44)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[183925984, 183925990, 183926028],
                           [        0,         6,        44]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      183925984 ???????????????????????????????????????????? 183926028
                   0 ||||||||||||||||||||||||||||||||||||||||||||        44
 hg19_dna          0 ????????????????????????????????????????????        44
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	183925984	183926028	hg19_dna	682	+	183925984	183926028	0	2	6,38,	0,6,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 44:
         identities = 0,
@@ -1968,43 +1813,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 44)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 44
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 890)
-        self.assertEqual(alignment.shape, (2, 170))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 890
+        assert alignment.shape == (2, 170)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[35483340, 35483365, 35483499, 35483510],
                           [       0,       25,       25,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      35483340 ????????????????????????????????????????????????????????????
                   0 |||||||||||||||||||||||||-----------------------------------
 hg19_dna          0 ?????????????????????????-----------------------------------
@@ -2016,23 +1856,14 @@ hg19_dna         25 ------------------------------------------------------------
 chr19      35483460 ?????????????????????????????????????????????????? 35483510
                 120 ---------------------------------------|||||||||||      170
 hg19_dna         25 ---------------------------------------???????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	35483340	35483510	hg19_dna	890	+	35483340	35483510	0	2	25,11,	0,159,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -2059,63 +1890,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 134)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 134)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 134)
-        self.assertEqual(counts.gaps, 134)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 134
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 134
+        assert counts.insertions == 0
+        assert counts.deletions == 134
+        assert counts.gaps == 134
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[23891310, 23891349],
                           [       0,       39]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      23891310 ??????????????????????????????????????? 23891349
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna          0 ???????????????????????????????????????       39
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	23891310	23891349	hg19_dna	1000	+	23891310	23891349	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -2142,63 +1959,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 930)
-        self.assertEqual(alignment.shape, (2, 28))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 930
+        assert alignment.shape == (2, 28)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[43252217, 43252245],
                           [       0,       28]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      43252217 ???????????????????????????? 43252245
                   0 ||||||||||||||||||||||||||||       28
 hg19_dna          0 ????????????????????????????       28
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	43252217	43252245	hg19_dna	930	+	43252217	43252245	0	1	28,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -2225,63 +2028,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 912)
-        self.assertEqual(alignment.shape, (2, 51))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 912
+        assert alignment.shape == (2, 51)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[52759147, 52759154, 52759160, 52759198],
                           [       0,        7,        7,       45]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      52759147 ??????????????????????????????????????????????????? 52759198
                   0 |||||||------||||||||||||||||||||||||||||||||||||||       51
 hg19_dna          0 ???????------??????????????????????????????????????       45
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	52759147	52759198	hg19_dna	912	+	52759147	52759198	0	2	7,38,	0,13,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 45:
         identities = 0,
@@ -2308,63 +2097,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 45)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 45
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 50))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 50)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1207056, 1207106],
                           [      0,      50]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1        1207056 ?????????????????????????????????????????????????? 1207106
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||      50
 hg19_dna          0 ??????????????????????????????????????????????????      50
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	1207056	1207106	hg19_dna	1000	+	1207056	1207106	0	1	50,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 50:
         identities = 0,
@@ -2391,63 +2166,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 50)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 50
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 824)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 824
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61700837, 61700871],
                           [       0,       34]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       61700837 ?????????????????????????????????? 61700871
                   0 ||||||||||||||||||||||||||||||||||       34
 hg19_dna          0 ??????????????????????????????????       34
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	61700837	61700871	hg19_dna	824	+	61700837	61700871	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -2474,63 +2235,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 572)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 572
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[37558157, 37558167, 37558173, 37558191],
                           [      28,       18,       18,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       37558157 ?????????????????????????????????? 37558191
                   0 ||||||||||------||||||||||||||||||       34
 hg19_dna         28 ??????????------??????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	37558157	37558191	hg19_dna	572	-	37558157	37558191	0	2	10,18,	0,16,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -2557,63 +2304,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 892)
-        self.assertEqual(alignment.shape, (2, 37))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 892
+        assert alignment.shape == (2, 37)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[48997405, 48997442],
                           [      37,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      48997405 ????????????????????????????????????? 48997442
                   0 |||||||||||||||||||||||||||||||||||||       37
 hg19_dna         37 ?????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	48997405	48997442	hg19_dna	892	-	48997405	48997442	0	1	37,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 37:
         identities = 0,
@@ -2640,63 +2373,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 37)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 37
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[120641740, 120641776],
                           [       36,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      120641740 ???????????????????????????????????? 120641776
                   0 ||||||||||||||||||||||||||||||||||||        36
 hg19_dna         36 ????????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	120641740	120641776	hg19_dna	946	-	120641740	120641776	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -2723,63 +2442,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[54017130, 54017169],
                           [      39,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      54017130 ??????????????????????????????????????? 54017169
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna         39 ???????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	54017130	54017169	hg19_dna	1000	-	54017130	54017169	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -2806,63 +2511,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 848)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 848
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[553742, 553781],
                           [    39,      0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19        553742 ??????????????????????????????????????? 553781
                   0 |||||||||||||||||||||||||||||||||||||||     39
 hg19_dna         39 ???????????????????????????????????????      0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	553742	553781	hg19_dna	848	-	553742	553781	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -2889,63 +2580,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[99388555, 99388591],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10      99388555 ???????????????????????????????????? 99388591
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	99388555	99388591	hg19_dna	834	-	99388555	99388591	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -2972,63 +2649,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 920)
-        self.assertEqual(alignment.shape, (2, 25))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 920
+        assert alignment.shape == (2, 25)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[112178171, 112178196],
                           [       25,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10     112178171 ????????????????????????? 112178196
                   0 |||||||||||||||||||||||||        25
 hg19_dna         25 ?????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	112178171	112178196	hg19_dna	920	-	112178171	112178196	0	1	25,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 25:
         identities = 0,
@@ -3055,63 +2718,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 25)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 25
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[39368490, 39368526],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       39368490 ???????????????????????????????????? 39368526
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	39368490	39368526	hg19_dna	946	-	39368490	39368526	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -3138,63 +2787,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 942)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 942
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[220325687, 220325721],
                           [       34,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1      220325687 ?????????????????????????????????? 220325721
                   0 ||||||||||||||||||||||||||||||||||        34
 hg19_dna         34 ??????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	220325687	220325721	hg19_dna	942	-	220325687	220325721	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -3221,22 +2856,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_34_001(self):
         """Test writing the alignments in psl_34_001.bed."""
@@ -3246,58 +2881,45 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 22)
+        assert n == 22
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
     def test_reading_psl_34_003(self):
         """Test parsing psl_34_003.bed."""
         path = "Blat/psl_34_003.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 16))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg18_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 16)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg18_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61646095, 61646111],
                           [       0,       16]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       61646095 ???????????????? 61646111
                   0 ||||||||||||||||       16
 hg18_dna          0 ????????????????       16
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	61646095	61646111	hg18_dna	1000	+	61646095	61646111	0	1	16,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16:
         identities = 0,
@@ -3324,63 +2946,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 16)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 16
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 33))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg18_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 33)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg18_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[10271783, 10271816],
                           [       0,       33]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       10271783 ????????????????????????????????? 10271816
                   0 |||||||||||||||||||||||||||||||||       33
 hg18_dna          0 ?????????????????????????????????       33
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	10271783	10271816	hg18_dna	1000	+	10271783	10271816	0	1	33,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 33:
         identities = 0,
@@ -3407,63 +3015,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 33)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 33
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 17))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg18_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 17)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg18_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[53575980, 53575997],
                           [      17,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2       53575980 ????????????????? 53575997
                   0 |||||||||||||||||       17
 hg18_dna         17 ?????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	53575980	53575997	hg18_dna	1000	-	53575980	53575997	0	1	17,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 17:
         identities = 0,
@@ -3490,22 +3084,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 17)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 17
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_34_003(self):
         """Test writing the alignments in psl_34_003.bed."""
@@ -3515,58 +3109,45 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
     def test_reading_psl_34_004(self):
         """Test parsing psl_34_004.bed."""
         path = "Blat/psl_34_004.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 854)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr9")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 854
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr9"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[85737865, 85737906],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr9       85737865 ????????????????????????????????????????? 85737906
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr9	85737865	85737906	hg19_dna	854	+	85737865	85737906	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -3593,63 +3174,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr8")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr8"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[95160479, 95160520],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr8       95160479 ????????????????????????????????????????? 95160520
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr8	95160479	95160520	hg19_dna	1000	+	95160479	95160520	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -3676,63 +3243,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[42144400, 42144436],
                           [       0,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      42144400 ???????????????????????????????????? 42144436
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna          0 ????????????????????????????????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	42144400	42144436	hg19_dna	834	+	42144400	42144436	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -3759,63 +3312,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 682)
-        self.assertEqual(alignment.shape, (2, 44))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 682
+        assert alignment.shape == (2, 44)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[183925984, 183925990, 183926028],
                           [        0,         6,        44]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      183925984 ???????????????????????????????????????????? 183926028
                   0 ||||||||||||||||||||||||||||||||||||||||||||        44
 hg19_dna          0 ????????????????????????????????????????????        44
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	183925984	183926028	hg19_dna	682	+	183925984	183926028	0	2	6,38,	0,6,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 44:
         identities = 0,
@@ -3842,43 +3381,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 44)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 44
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 890)
-        self.assertEqual(alignment.shape, (2, 170))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 890
+        assert alignment.shape == (2, 170)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[35483340, 35483365, 35483499, 35483510],
                           [       0,       25,       25,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      35483340 ????????????????????????????????????????????????????????????
                   0 |||||||||||||||||||||||||-----------------------------------
 hg19_dna          0 ?????????????????????????-----------------------------------
@@ -3890,23 +3424,14 @@ hg19_dna         25 ------------------------------------------------------------
 chr19      35483460 ?????????????????????????????????????????????????? 35483510
                 120 ---------------------------------------|||||||||||      170
 hg19_dna         25 ---------------------------------------???????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	35483340	35483510	hg19_dna	890	+	35483340	35483510	0	2	25,11,	0,159,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -3933,63 +3458,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 134)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 134)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 134)
-        self.assertEqual(counts.gaps, 134)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 134
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 134
+        assert counts.insertions == 0
+        assert counts.deletions == 134
+        assert counts.gaps == 134
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[23891310, 23891349],
                           [       0,       39]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      23891310 ??????????????????????????????????????? 23891349
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna          0 ???????????????????????????????????????       39
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	23891310	23891349	hg19_dna	1000	+	23891310	23891349	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -4016,63 +3527,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 930)
-        self.assertEqual(alignment.shape, (2, 28))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 930
+        assert alignment.shape == (2, 28)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[43252217, 43252245],
                           [       0,       28]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      43252217 ???????????????????????????? 43252245
                   0 ||||||||||||||||||||||||||||       28
 hg19_dna          0 ????????????????????????????       28
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	43252217	43252245	hg19_dna	930	+	43252217	43252245	0	1	28,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -4099,63 +3596,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 912)
-        self.assertEqual(alignment.shape, (2, 51))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 912
+        assert alignment.shape == (2, 51)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[52759147, 52759154, 52759160, 52759198],
                           [       0,        7,        7,       45]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      52759147 ??????????????????????????????????????????????????? 52759198
                   0 |||||||------||||||||||||||||||||||||||||||||||||||       51
 hg19_dna          0 ???????------??????????????????????????????????????       45
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	52759147	52759198	hg19_dna	912	+	52759147	52759198	0	2	7,38,	0,13,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 45:
         identities = 0,
@@ -4182,63 +3665,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 45)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 45
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 50))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 50)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1207056, 1207106],
                           [      0,      50]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1        1207056 ?????????????????????????????????????????????????? 1207106
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||      50
 hg19_dna          0 ??????????????????????????????????????????????????      50
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	1207056	1207106	hg19_dna	1000	+	1207056	1207106	0	1	50,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 50:
         identities = 0,
@@ -4265,63 +3734,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 50)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 50
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 824)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 824
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61700837, 61700871],
                           [       0,       34]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       61700837 ?????????????????????????????????? 61700871
                   0 ||||||||||||||||||||||||||||||||||       34
 hg19_dna          0 ??????????????????????????????????       34
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	61700837	61700871	hg19_dna	824	+	61700837	61700871	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -4348,63 +3803,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 572)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 572
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[37558157, 37558167, 37558173, 37558191],
                           [      28,       18,       18,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       37558157 ?????????????????????????????????? 37558191
                   0 ||||||||||------||||||||||||||||||       34
 hg19_dna         28 ??????????------??????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	37558157	37558191	hg19_dna	572	-	37558157	37558191	0	2	10,18,	0,16,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -4431,63 +3872,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 892)
-        self.assertEqual(alignment.shape, (2, 37))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 892
+        assert alignment.shape == (2, 37)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[48997405, 48997442],
                           [      37,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      48997405 ????????????????????????????????????? 48997442
                   0 |||||||||||||||||||||||||||||||||||||       37
 hg19_dna         37 ?????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	48997405	48997442	hg19_dna	892	-	48997405	48997442	0	1	37,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 37:
         identities = 0,
@@ -4514,63 +3941,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 37)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 37
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[120641740, 120641776],
                           [       36,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      120641740 ???????????????????????????????????? 120641776
                   0 ||||||||||||||||||||||||||||||||||||        36
 hg19_dna         36 ????????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	120641740	120641776	hg19_dna	946	-	120641740	120641776	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -4597,63 +4010,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[54017130, 54017169],
                           [      39,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      54017130 ??????????????????????????????????????? 54017169
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna         39 ???????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	54017130	54017169	hg19_dna	1000	-	54017130	54017169	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -4680,63 +4079,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 848)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 848
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[553742, 553781],
                           [    39,      0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19        553742 ??????????????????????????????????????? 553781
                   0 |||||||||||||||||||||||||||||||||||||||     39
 hg19_dna         39 ???????????????????????????????????????      0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	553742	553781	hg19_dna	848	-	553742	553781	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -4763,63 +4148,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[99388555, 99388591],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10      99388555 ???????????????????????????????????? 99388591
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	99388555	99388591	hg19_dna	834	-	99388555	99388591	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -4846,63 +4217,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 920)
-        self.assertEqual(alignment.shape, (2, 25))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 920
+        assert alignment.shape == (2, 25)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[112178171, 112178196],
                           [       25,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10     112178171 ????????????????????????? 112178196
                   0 |||||||||||||||||||||||||        25
 hg19_dna         25 ?????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	112178171	112178196	hg19_dna	920	-	112178171	112178196	0	1	25,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 25:
         identities = 0,
@@ -4929,63 +4286,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 25)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 25
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[39368490, 39368526],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       39368490 ???????????????????????????????????? 39368526
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	39368490	39368526	hg19_dna	946	-	39368490	39368526	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -5012,63 +4355,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 942)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 942
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[220325687, 220325721],
                           [       34,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1      220325687 ?????????????????????????????????? 220325721
                   0 ||||||||||||||||||||||||||||||||||        34
 hg19_dna         34 ??????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	220325687	220325721	hg19_dna	942	-	220325687	220325721	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -5095,22 +4424,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_34_004(self):
         """Test writing the alignments in psl_34_004.bed."""
@@ -5120,58 +4449,45 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 19)
+        assert n == 19
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
     def test_reading_psl_34_005(self):
         """Test parsing psl_34_005.bed."""
         path = "Blat/psl_34_005.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 16))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 16)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61646095, 61646111],
                           [       0,       16]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       61646095 ???????????????? 61646111
                   0 ||||||||||||||||       16
 hg19_dna          0 ????????????????       16
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	61646095	61646111	hg19_dna	1000	+	61646095	61646111	0	1	16,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16:
         identities = 0,
@@ -5198,63 +4514,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 16)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 16
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 33))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 33)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[10271783, 10271816],
                           [       0,       33]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       10271783 ????????????????????????????????? 10271816
                   0 |||||||||||||||||||||||||||||||||       33
 hg19_dna          0 ?????????????????????????????????       33
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	10271783	10271816	hg19_dna	1000	+	10271783	10271816	0	1	33,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (33 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 33:
         identities = 0,
@@ -5281,63 +4583,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 33)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 33
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 17))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 17)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[53575980, 53575997],
                           [      17,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2       53575980 ????????????????? 53575997
                   0 |||||||||||||||||       17
 hg19_dna         17 ?????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	53575980	53575997	hg19_dna	1000	-	53575980	53575997	0	1	17,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (17 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 17:
         identities = 0,
@@ -5364,63 +4652,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 17)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 17
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 854)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr9")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 854
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr9"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[85737865, 85737906],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr9       85737865 ????????????????????????????????????????? 85737906
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr9	85737865	85737906	hg19_dna	854	+	85737865	85737906	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -5447,63 +4721,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 41))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr8")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 41)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr8"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[95160479, 95160520],
                           [       0,       41]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr8       95160479 ????????????????????????????????????????? 95160520
                   0 |||||||||||||||||||||||||||||||||||||||||       41
 hg19_dna          0 ?????????????????????????????????????????       41
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr8	95160479	95160520	hg19_dna	1000	+	95160479	95160520	0	1	41,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (41 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 41:
         identities = 0,
@@ -5530,63 +4790,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[42144400, 42144436],
                           [       0,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      42144400 ???????????????????????????????????? 42144436
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna          0 ????????????????????????????????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	42144400	42144436	hg19_dna	834	+	42144400	42144436	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -5613,63 +4859,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 682)
-        self.assertEqual(alignment.shape, (2, 44))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 682
+        assert alignment.shape == (2, 44)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[183925984, 183925990, 183926028],
                           [        0,         6,        44]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      183925984 ???????????????????????????????????????????? 183926028
                   0 ||||||||||||||||||||||||||||||||||||||||||||        44
 hg19_dna          0 ????????????????????????????????????????????        44
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	183925984	183926028	hg19_dna	682	+	183925984	183926028	0	2	6,38,	0,6,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (44 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 44:
         identities = 0,
@@ -5696,43 +4928,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 44)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 44
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 890)
-        self.assertEqual(alignment.shape, (2, 170))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 890
+        assert alignment.shape == (2, 170)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[35483340, 35483365, 35483499, 35483510],
                           [       0,       25,       25,       36]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      35483340 ????????????????????????????????????????????????????????????
                   0 |||||||||||||||||||||||||-----------------------------------
 hg19_dna          0 ?????????????????????????-----------------------------------
@@ -5744,23 +4971,14 @@ hg19_dna         25 ------------------------------------------------------------
 chr19      35483460 ?????????????????????????????????????????????????? 35483510
                 120 ---------------------------------------|||||||||||      170
 hg19_dna         25 ---------------------------------------???????????       36
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	35483340	35483510	hg19_dna	890	+	35483340	35483510	0	2	25,11,	0,159,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 134 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -5787,63 +5005,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 134)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 134)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 134)
-        self.assertEqual(counts.gaps, 134)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 134
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 134
+        assert counts.insertions == 0
+        assert counts.deletions == 134
+        assert counts.gaps == 134
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[23891310, 23891349],
                           [       0,       39]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      23891310 ??????????????????????????????????????? 23891349
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna          0 ???????????????????????????????????????       39
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	23891310	23891349	hg19_dna	1000	+	23891310	23891349	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -5870,63 +5074,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 930)
-        self.assertEqual(alignment.shape, (2, 28))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr18")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 930
+        assert alignment.shape == (2, 28)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr18"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[43252217, 43252245],
                           [       0,       28]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr18      43252217 ???????????????????????????? 43252245
                   0 ||||||||||||||||||||||||||||       28
 hg19_dna          0 ????????????????????????????       28
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr18	43252217	43252245	hg19_dna	930	+	43252217	43252245	0	1	28,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -5953,63 +5143,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 912)
-        self.assertEqual(alignment.shape, (2, 51))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 912
+        assert alignment.shape == (2, 51)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[52759147, 52759154, 52759160, 52759198],
                           [       0,        7,        7,       45]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      52759147 ??????????????????????????????????????????????????? 52759198
                   0 |||||||------||||||||||||||||||||||||||||||||||||||       51
 hg19_dna          0 ???????------??????????????????????????????????????       45
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	52759147	52759198	hg19_dna	912	+	52759147	52759198	0	2	7,38,	0,13,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (45 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 45:
         identities = 0,
@@ -6036,63 +5212,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 45)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 45
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 50))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 50)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1207056, 1207106],
                           [      0,      50]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1        1207056 ?????????????????????????????????????????????????? 1207106
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||      50
 hg19_dna          0 ??????????????????????????????????????????????????      50
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	1207056	1207106	hg19_dna	1000	+	1207056	1207106	0	1	50,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (50 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 50:
         identities = 0,
@@ -6119,63 +5281,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 50)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 50
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 824)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 824
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[61700837, 61700871],
                           [       0,       34]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       61700837 ?????????????????????????????????? 61700871
                   0 ||||||||||||||||||||||||||||||||||       34
 hg19_dna          0 ??????????????????????????????????       34
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	61700837	61700871	hg19_dna	824	+	61700837	61700871	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -6202,63 +5350,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 572)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 572
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[37558157, 37558167, 37558173, 37558191],
                           [      28,       18,       18,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       37558157 ?????????????????????????????????? 37558191
                   0 ||||||||||------||||||||||||||||||       34
 hg19_dna         28 ??????????------??????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	37558157	37558191	hg19_dna	572	-	37558157	37558191	0	2	10,18,	0,16,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (28 aligned letters; 0 identities; 0 mismatches; 6 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 28:
         identities = 0,
@@ -6285,63 +5419,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 6)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 6)
-        self.assertEqual(counts.aligned, 28)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 6
+        assert counts.insertions == 0
+        assert counts.deletions == 6
+        assert counts.gaps == 6
+        assert counts.aligned == 28
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 892)
-        self.assertEqual(alignment.shape, (2, 37))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr22")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 892
+        assert alignment.shape == (2, 37)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr22"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[48997405, 48997442],
                           [      37,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr22      48997405 ????????????????????????????????????? 48997442
                   0 |||||||||||||||||||||||||||||||||||||       37
 hg19_dna         37 ?????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr22	48997405	48997442	hg19_dna	892	-	48997405	48997442	0	1	37,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (37 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 37:
         identities = 0,
@@ -6368,63 +5488,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 37)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 37
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[120641740, 120641776],
                           [       36,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr2      120641740 ???????????????????????????????????? 120641776
                   0 ||||||||||||||||||||||||||||||||||||        36
 hg19_dna         36 ????????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr2	120641740	120641776	hg19_dna	946	-	120641740	120641776	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -6451,63 +5557,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[54017130, 54017169],
                           [      39,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19      54017130 ??????????????????????????????????????? 54017169
                   0 |||||||||||||||||||||||||||||||||||||||       39
 hg19_dna         39 ???????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	54017130	54017169	hg19_dna	1000	-	54017130	54017169	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -6534,63 +5626,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 848)
-        self.assertEqual(alignment.shape, (2, 39))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr19")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 848
+        assert alignment.shape == (2, 39)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr19"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[553742, 553781],
                           [    39,      0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr19        553742 ??????????????????????????????????????? 553781
                   0 |||||||||||||||||||||||||||||||||||||||     39
 hg19_dna         39 ???????????????????????????????????????      0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr19	553742	553781	hg19_dna	848	-	553742	553781	0	1	39,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (39 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 39:
         identities = 0,
@@ -6617,63 +5695,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 39)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 39
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 834)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 834
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[99388555, 99388591],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10      99388555 ???????????????????????????????????? 99388591
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	99388555	99388591	hg19_dna	834	-	99388555	99388591	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -6700,63 +5764,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 920)
-        self.assertEqual(alignment.shape, (2, 25))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr10")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 920
+        assert alignment.shape == (2, 25)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr10"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[112178171, 112178196],
                           [       25,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr10     112178171 ????????????????????????? 112178196
                   0 |||||||||||||||||||||||||        25
 hg19_dna         25 ?????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr10	112178171	112178196	hg19_dna	920	-	112178171	112178196	0	1	25,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (25 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 25:
         identities = 0,
@@ -6783,63 +5833,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 25)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 25
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 946)
-        self.assertEqual(alignment.shape, (2, 36))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 946
+        assert alignment.shape == (2, 36)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[39368490, 39368526],
                           [      36,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1       39368490 ???????????????????????????????????? 39368526
                   0 ||||||||||||||||||||||||||||||||||||       36
 hg19_dna         36 ????????????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	39368490	39368526	hg19_dna	946	-	39368490	39368526	0	1	36,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (36 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 36:
         identities = 0,
@@ -6866,63 +5902,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 36)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 36
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 942)
-        self.assertEqual(alignment.shape, (2, 34))
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "hg19_dna")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 942
+        assert alignment.shape == (2, 34)
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "hg19_dna"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[220325687, 220325721],
                           [       34,         0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr1      220325687 ?????????????????????????????????? 220325721
                   0 ||||||||||||||||||||||||||||||||||        34
 hg19_dna         34 ??????????????????????????????????         0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr1	220325687	220325721	hg19_dna	942	-	220325687	220325721	0	1	34,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (34 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 34:
         identities = 0,
@@ -6949,22 +5971,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 34)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 34
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_34_005(self):
         """Test writing the alignments in psl_34_005.bed."""
@@ -6974,11 +5996,11 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 22)
+        assert n == 22
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
 
 class TestAlign_dnax_prot(unittest.TestCase):
@@ -6987,26 +6009,22 @@ class TestAlign_dnax_prot(unittest.TestCase):
         path = "Blat/psl_35_001.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75566694, 75566850],
                           [       0,      156]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75566694 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -7018,23 +6036,14 @@ CAG33136.        60 ????????????????????????????????????????????????????????????
 chr13      75566814 ???????????????????????????????????? 75566850
                 120 ||||||||||||||||||||||||||||||||||||      156
 CAG33136.       120 ????????????????????????????????????      156
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75566694	75566850	CAG33136.1	1000	+	75566694	75566850	0	1	156,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -7061,42 +6070,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 156)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 156
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75560749, 75560881],
                           [       0,      132]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75560749 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -7108,23 +6112,14 @@ CAG33136.        60 ????????????????????????????????????????????????????????????
 chr13      75560869 ???????????? 75560881
                 120 ||||||||||||      132
 CAG33136.       120 ????????????      132
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75560749	75560881	CAG33136.1	1000	+	75560749	75560881	0	1	132,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (132 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (132 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 132:
         identities = 0,
@@ -7151,42 +6146,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 132)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 132
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 986)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 986
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75549820, 75549865, 75567225, 75567312],
                           [       0,       45,       45,      132]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75549820 ????????????????????????????????????????????????????????????
                   0 |||||||||||||||||||||||||||||||||||||||||||||---------------
 CAG33136.         0 ?????????????????????????????????????????????---------------
@@ -8354,23 +7344,14 @@ CAG33136.        45 -----???????????????????????????????????????????????????????
 chr13      75567280 ???????????????????????????????? 75567312
               17460 ||||||||||||||||||||||||||||||||    17492
 CAG33136.       100 ????????????????????????????????      132
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75549820	75567312	CAG33136.1	986	+	75549820	75567312	0	2	45,87,	0,17405,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (132 aligned letters; 0 identities; 0 mismatches; 17360 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (132 aligned letters; 0 identities; 0 mismatches; 17360 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 132:
         identities = 0,
@@ -8397,42 +7378,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 17360)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 17360)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 17360)
-        self.assertEqual(counts.gaps, 17360)
-        self.assertEqual(counts.aligned, 132)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 17360
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 17360
+        assert counts.insertions == 0
+        assert counts.deletions == 17360
+        assert counts.gaps == 17360
+        assert counts.aligned == 132
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75604767, 75604827, 75605728, 75605809],
                           [       0,       60,       60,      141]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75604767 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -8504,23 +7480,14 @@ CAG33136.        60 -???????????????????????????????????????????????????????????
 chr13      75605787 ?????????????????????? 75605809
                1020 ||||||||||||||||||||||     1042
 CAG33136.       119 ??????????????????????      141
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75604767	75605809	CAG33136.1	1000	+	75604767	75605809	0	2	60,81,	0,961,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (141 aligned letters; 0 identities; 0 mismatches; 901 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (141 aligned letters; 0 identities; 0 mismatches; 901 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 141:
         identities = 0,
@@ -8547,42 +7514,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 901)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 901)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 901)
-        self.assertEqual(counts.gaps, 901)
-        self.assertEqual(counts.aligned, 141)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 901
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 901
+        assert counts.insertions == 0
+        assert counts.deletions == 901
+        assert counts.gaps == 901
+        assert counts.aligned == 141
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75594914, 75594989],
                           [       0,       75]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75594914 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -8590,23 +7552,14 @@ CAG33136.         0 ????????????????????????????????????????????????????????????
 chr13      75594974 ??????????????? 75594989
                  60 |||||||||||||||       75
 CAG33136.        60 ???????????????       75
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75594914	75594989	CAG33136.1	1000	+	75594914	75594989	0	1	75,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (75 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (75 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 75:
         identities = 0,
@@ -8633,62 +7586,48 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 75)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 75
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1000)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr13")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 1000
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr13"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[75569459, 75569507],
                           [       0,       48]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr13      75569459 ???????????????????????????????????????????????? 75569507
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||       48
 CAG33136.         0 ????????????????????????????????????????????????       48
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr13	75569459	75569507	CAG33136.1	1000	+	75569459	75569507	0	1	48,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (48 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (48 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 48:
         identities = 0,
@@ -8715,42 +7654,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 48)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 48
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 530)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 530
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[41260685, 41260787],
                           [       0,      102]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       41260685 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -8758,23 +7692,14 @@ CAG33136.         0 ????????????????????????????????????????????????????????????
 chr4       41260745 ?????????????????????????????????????????? 41260787
                  60 ||||||||||||||||||||||||||||||||||||||||||      102
 CAG33136.        60 ??????????????????????????????????????????      102
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	41260685	41260787	CAG33136.1	530	+	41260685	41260787	0	1	102,	0,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (102 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (102 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 102:
         identities = 0,
@@ -8801,42 +7726,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 102)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 102
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 166)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr4")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 166
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr4"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[41257605, 41257731, 41263227, 41263290],
                           [       0,      126,      126,      189]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 chr4       41257605 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -9216,23 +8136,14 @@ CAG33136.       126 ------------------------------------------??????????????????
 chr4       41263245 ????????????????????????????????????????????? 41263290
                5640 |||||||||||||||||||||||||||||||||||||||||||||     5685
 CAG33136.       144 ?????????????????????????????????????????????      189
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 chr4	41257605	41263290	CAG33136.1	166	+	41257605	41263290	0	2	126,63,	0,5622,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (189 aligned letters; 0 identities; 0 mismatches; 5496 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (189 aligned letters; 0 identities; 0 mismatches; 5496 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 189:
         identities = 0,
@@ -9259,22 +8170,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 5496)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 5496)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 5496)
-        self.assertEqual(counts.gaps, 5496)
-        self.assertEqual(counts.aligned, 189)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 5496
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 5496
+        assert counts.insertions == 0
+        assert counts.deletions == 5496
+        assert counts.gaps == 5496
+        assert counts.aligned == 189
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_35_001(self):
         """Test writing the alignments in psl_35_001.bed."""
@@ -9284,27 +8195,26 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 8)
+        assert n == 8
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
     def test_reading_psl_35_002(self):
         """Test parsing psl_35_002.bed."""
         path = "Blat/psl_35_002.bed"
         alignments = Align.parse(path, "bed")
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 972)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "KI537979")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 972
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "KI537979"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[9712654, 9712786, 9715941, 9716097, 9716445, 9716532, 9718374,
@@ -9313,10 +8223,7 @@ AlignmentCounts object with
                                423,     423,     498,     498,     558,     558,     639]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 KI537979    9712654 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -11448,23 +10355,14 @@ CAG33136.       561 ????????????????????????????????????????????????????????????
 KI537979    9744574 ?????????????????? 9744592
               31920 ||||||||||||||||||   31938
 CAG33136.       621 ??????????????????     639
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 KI537979	9712654	9744592	CAG33136.1	972	+	9712654	9744592	0	7	132,156,87,48,75,60,81,	0,3287,3791,5720,26610,31052,31857,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (639 aligned letters; 0 identities; 0 mismatches; 31299 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (639 aligned letters; 0 identities; 0 mismatches; 31299 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 639:
         identities = 0,
@@ -11491,42 +10389,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 31299)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 31299)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 31299)
-        self.assertEqual(counts.gaps, 31299)
-        self.assertEqual(counts.aligned, 639)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 31299
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 31299
+        assert counts.insertions == 0
+        assert counts.deletions == 31299
+        assert counts.gaps == 31299
+        assert counts.aligned == 639
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 792)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "KI538594")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 792
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "KI538594"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[2103463, 2103523, 2103522, 2104149],
                           [      0,      60,      60,     687]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 KI538594    2103463 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.         0 ????????????????????????????????????????????????????????????
@@ -11578,23 +10471,14 @@ CAG33136.       600 ????????????????????????????????????????????????????????????
 KI538594    2104122 ??????????????????????????? 2104149
                 660 |||||||||||||||||||||||||||     687
 CAG33136.       660 ???????????????????????????     687
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 KI538594	2103463	2104149	CAG33136.1	792	+	2103463	2104149	0	2	60,627,	0,59,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (687 aligned letters; 0 identities; 0 mismatches; -1 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (687 aligned letters; 0 identities; 0 mismatches; -1 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 687:
         identities = 0,
@@ -11621,42 +10505,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, -1)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, -1)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, -1)
-        self.assertEqual(counts.gaps, -1)
-        self.assertEqual(counts.aligned, 687)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == -1
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == -1
+        assert counts.insertions == 0
+        assert counts.deletions == -1
+        assert counts.gaps == -1
+        assert counts.aligned == 687
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 902)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "KI537194")
-        self.assertEqual(alignment.query.id, "CAG33136.1")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 902
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "KI537194"
+        assert alignment.query.id == "CAG33136.1"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[20872390, 20872471, 20872472, 20873021],
                           [     630,      549,      549,        0]]),
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 KI537194   20872390 ????????????????????????????????????????????????????????????
                   0 ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 CAG33136.       630 ????????????????????????????????????????????????????????????
@@ -11700,23 +10579,14 @@ CAG33136.        91 ????????????????????????????????????????????????????????????
 KI537194   20872990 ??????????????????????????????? 20873021
                 600 |||||||||||||||||||||||||||||||      631
 CAG33136.        31 ???????????????????????????????        0
-""",
-        )
-        self.assertEqual(
-            format(alignment, "bed"),
-            """\
+"""
+        assert format(alignment, "bed") == """\
 KI537194	20872390	20873021	CAG33136.1	902	-	20872390	20873021	0	2	81,549,	0,82,
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (630 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (630 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 630:
         identities = 0,
@@ -11743,22 +10613,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 1)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 1)
-        self.assertEqual(counts.gaps, 1)
-        self.assertEqual(counts.aligned, 630)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 1
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1
+        assert counts.insertions == 0
+        assert counts.deletions == 1
+        assert counts.gaps == 1
+        assert counts.aligned == 630
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_writing_psl_35_002(self):
         """Test writing the alignments in psl_35_002.bed."""
@@ -11768,11 +10638,11 @@ AlignmentCounts object with
         alignments = Align.parse(path, "bed")
         stream = StringIO()
         n = Align.write(alignments, stream, "bed")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         written_data = stream.read()
         stream.close()
-        self.assertEqual(original_data, written_data)
+        assert original_data == written_data
 
 
 class TestAlign_bed12(unittest.TestCase):
@@ -11784,47 +10654,37 @@ class TestAlign_bed12(unittest.TestCase):
             alignments = Align.parse(path, "bed")
             alignment = next(alignments)
             if bedN >= 5:
-                self.assertEqual(alignment.score, 960, msg=filename)
-            self.assertEqual(alignment.shape, (2, 4000), msg=filename)
-            self.assertLess(
-                alignment.coordinates[0, 0], alignment.coordinates[0, -1], msg=filename
-            )
-            self.assertLess(
-                alignment.coordinates[1, 0], alignment.coordinates[1, -1], msg=filename
-            )
-            self.assertEqual(len(alignment), 2, msg=filename)
-            self.assertIs(alignment.sequences[0], alignment.target, msg=filename)
-            self.assertIs(alignment.sequences[1], alignment.query, msg=filename)
-            self.assertEqual(alignment.target.id, "chr22", msg=filename)
+                assert alignment.score == 960, filename
+            assert alignment.shape == (2, 4000), filename
+            assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1], filename
+            assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1], filename
+            assert len(alignment) == 2, filename
+            assert alignment.sequences[0] is alignment.target, filename
+            assert alignment.sequences[1] is alignment.query, filename
+            assert alignment.target.id == "chr22", filename
             if bedN >= 4:
-                self.assertEqual(alignment.query.id, "mRNA1", msg=filename)
+                assert alignment.query.id == "mRNA1", filename
             else:
-                self.assertIsNone(alignment.query.id, msg=filename)
+                assert alignment.query.id is None, filename
             if bedN == 12:
-                self.assertTrue(
-                    np.array_equal(
+                assert np.array_equal(
                         alignment.coordinates,
                         # fmt: off
                         np.array([[1000, 1567, 4512, 5000],
                                   [   0,  567,  567, 1055]]),
                         # fmt: on
-                    ),
-                    msg=filename,
-                )
+                    ), filename
             else:
-                self.assertTrue(
-                    np.array_equal(
+                assert np.array_equal(
                         alignment.coordinates,
                         np.array([[1000, 5000], [0, 4000]]),
-                    ),
-                    msg=filename,
-                )
+                    ), filename
             if bedN >= 7:
-                self.assertEqual(alignment.thickStart, 1200, msg=filename)
+                assert alignment.thickStart == 1200, filename
             if bedN >= 8:
-                self.assertEqual(alignment.thickEnd, 4900, msg=filename)
+                assert alignment.thickEnd == 4900, filename
             if bedN >= 9:
-                self.assertEqual(alignment.itemRgb, "255,0,0", msg=filename)
+                assert alignment.itemRgb == "255,0,0", filename
             words = [
                 "chr22",
                 "1000",
@@ -11839,19 +10699,12 @@ class TestAlign_bed12(unittest.TestCase):
                 "567,488,",
                 "0,3512,",
             ]
-            self.assertEqual(
-                alignment.format("bed", bedN), "\t".join(words[:bedN]) + "\n"
-            )
+            assert alignment.format("bed", bedN) == "\t".join(words[:bedN]) + "\n"
             counts = alignment.counts()
             if bedN <= 9:
-                self.assertEqual(
-                    repr(counts),
-                    "<AlignmentCounts object (4000 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-                    % id(counts),
-                )
-                self.assertEqual(
-                    str(counts),
-                    """\
+                assert (repr(counts) == "<AlignmentCounts object (4000 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+                    % id(counts))
+                assert str(counts) == """\
 AlignmentCounts object with
     aligned = 4000:
         identities = 0,
@@ -11878,17 +10731,11 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-                )
+"""
             else:  # bedN == 12
-                self.assertEqual(
-                    repr(counts),
-                    "<AlignmentCounts object (1055 aligned letters; 0 identities; 0 mismatches; 2945 gaps) at 0x%x>"
-                    % id(counts),
-                )
-                self.assertEqual(
-                    str(counts),
-                    """\
+                assert (repr(counts) == "<AlignmentCounts object (1055 aligned letters; 0 identities; 0 mismatches; 2945 gaps) at 0x%x>"
+                    % id(counts))
+                assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1055:
         identities = 0,
@@ -11915,88 +10762,68 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-                )
-            self.assertEqual(counts.left_insertions, 0)
-            self.assertEqual(counts.left_deletions, 0)
-            self.assertEqual(counts.right_insertions, 0)
-            self.assertEqual(counts.right_deletions, 0)
-            self.assertEqual(counts.internal_insertions, 0)
+"""
+            assert counts.left_insertions == 0
+            assert counts.left_deletions == 0
+            assert counts.right_insertions == 0
+            assert counts.right_deletions == 0
+            assert counts.internal_insertions == 0
             if bedN == 12:
-                self.assertEqual(counts.internal_deletions, 2945)
-                self.assertEqual(counts.internal_gaps, 2945)
-                self.assertEqual(counts.deletions, 2945)
-                self.assertEqual(counts.gaps, 2945)
-                self.assertEqual(counts.aligned, 1055)
+                assert counts.internal_deletions == 2945
+                assert counts.internal_gaps == 2945
+                assert counts.deletions == 2945
+                assert counts.gaps == 2945
+                assert counts.aligned == 1055
             else:
-                self.assertEqual(counts.internal_deletions, 0)
-                self.assertEqual(counts.internal_gaps, 0)
-                self.assertEqual(counts.deletions, 0)
-                self.assertEqual(counts.gaps, 0)
-                self.assertEqual(counts.aligned, 4000)
-            self.assertEqual(counts.left_gaps, 0)
-            self.assertEqual(counts.right_gaps, 0)
-            self.assertEqual(counts.insertions, 0)
+                assert counts.internal_deletions == 0
+                assert counts.internal_gaps == 0
+                assert counts.deletions == 0
+                assert counts.gaps == 0
+                assert counts.aligned == 4000
+            assert counts.left_gaps == 0
+            assert counts.right_gaps == 0
+            assert counts.insertions == 0
             alignment = next(alignments)
             if bedN >= 5:
-                self.assertEqual(alignment.score, 900, msg=filename)
-            self.assertEqual(alignment.shape, (2, 4000), msg=filename)
-            self.assertLess(
-                alignment.coordinates[0, 0], alignment.coordinates[0, -1], msg=filename
-            )
+                assert alignment.score == 900, filename
+            assert alignment.shape == (2, 4000), filename
+            assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1], filename
             if bedN >= 6:
-                self.assertGreater(
-                    alignment.coordinates[1, 0],
-                    alignment.coordinates[1, -1],
-                    msg=filename,
-                )
+                assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1], filename
             else:
-                self.assertLess(
-                    alignment.coordinates[1, 0],
-                    alignment.coordinates[1, -1],
-                    msg=filename,
-                )
-            self.assertEqual(len(alignment), 2, msg=filename)
-            self.assertIs(alignment.sequences[0], alignment.target, msg=filename)
-            self.assertIs(alignment.sequences[1], alignment.query, msg=filename)
-            self.assertEqual(alignment.target.id, "chr22", msg=filename)
+                assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1], filename
+            assert len(alignment) == 2, filename
+            assert alignment.sequences[0] is alignment.target, filename
+            assert alignment.sequences[1] is alignment.query, filename
+            assert alignment.target.id == "chr22", filename
             if bedN >= 4:
-                self.assertEqual(alignment.query.id, "mRNA2", msg=filename)
+                assert alignment.query.id == "mRNA2", filename
             else:
-                self.assertIsNone(alignment.query.id, msg=filename)
+                assert alignment.query.id is None, filename
             if bedN == 12:
-                self.assertTrue(
-                    np.array_equal(
+                assert np.array_equal(
                         alignment.coordinates,
                         # fmt: off
                         np.array([[2000, 2433, 5601, 6000],
                                   [ 832,  399,  399,    0]])
                         # fmt: on
-                    ),
-                    msg=filename,
-                )
+                    ), filename
             elif bedN >= 6:
-                self.assertTrue(
-                    np.array_equal(
+                assert np.array_equal(
                         alignment.coordinates,
                         np.array([[2000, 6000], [4000, 0]]),
-                    ),
-                    msg=filename,
-                )
+                    ), filename
             else:
-                self.assertTrue(
-                    np.array_equal(
+                assert np.array_equal(
                         alignment.coordinates,
                         np.array([[2000, 6000], [0, 4000]]),
-                    ),
-                    msg=filename,
-                )
+                    ), filename
             if bedN >= 7:
-                self.assertEqual(alignment.thickStart, 2300, msg=filename)
+                assert alignment.thickStart == 2300, filename
             if bedN >= 8:
-                self.assertEqual(alignment.thickEnd, 5960, msg=filename)
+                assert alignment.thickEnd == 5960, filename
             if bedN >= 9:
-                self.assertEqual(alignment.itemRgb, "0,255,0", msg=filename)
+                assert alignment.itemRgb == "0,255,0", filename
             words = [
                 "chr22",
                 "2000",
@@ -12011,19 +10838,12 @@ AlignmentCounts object with
                 "433,399,",
                 "0,3601,",
             ]
-            self.assertEqual(
-                alignment.format("bed", bedN), "\t".join(words[:bedN]) + "\n"
-            )
+            assert alignment.format("bed", bedN) == "\t".join(words[:bedN]) + "\n"
             counts = alignment.counts()
             if bedN <= 9:
-                self.assertEqual(
-                    repr(counts),
-                    "<AlignmentCounts object (4000 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-                    % id(counts),
-                )
-                self.assertEqual(
-                    str(counts),
-                    """\
+                assert (repr(counts) == "<AlignmentCounts object (4000 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+                    % id(counts))
+                assert str(counts) == """\
 AlignmentCounts object with
     aligned = 4000:
         identities = 0,
@@ -12050,17 +10870,11 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-                )
+"""
             else:  # bedN == 12
-                self.assertEqual(
-                    repr(counts),
-                    "<AlignmentCounts object (832 aligned letters; 0 identities; 0 mismatches; 3168 gaps) at 0x%x>"
-                    % id(counts),
-                )
-                self.assertEqual(
-                    str(counts),
-                    """\
+                assert (repr(counts) == "<AlignmentCounts object (832 aligned letters; 0 identities; 0 mismatches; 3168 gaps) at 0x%x>"
+                    % id(counts))
+                assert str(counts) == """\
 AlignmentCounts object with
     aligned = 832:
         identities = 0,
@@ -12087,31 +10901,30 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-                )
-            self.assertEqual(counts.left_insertions, 0)
-            self.assertEqual(counts.left_deletions, 0)
-            self.assertEqual(counts.right_insertions, 0)
-            self.assertEqual(counts.right_deletions, 0)
-            self.assertEqual(counts.internal_insertions, 0)
+"""
+            assert counts.left_insertions == 0
+            assert counts.left_deletions == 0
+            assert counts.right_insertions == 0
+            assert counts.right_deletions == 0
+            assert counts.internal_insertions == 0
             if bedN == 12:
-                self.assertEqual(counts.internal_deletions, 3168)
-                self.assertEqual(counts.deletions, 3168)
-                self.assertEqual(counts.internal_gaps, 3168)
-                self.assertEqual(counts.gaps, 3168)
-                self.assertEqual(counts.aligned, 832)
+                assert counts.internal_deletions == 3168
+                assert counts.deletions == 3168
+                assert counts.internal_gaps == 3168
+                assert counts.gaps == 3168
+                assert counts.aligned == 832
             else:
-                self.assertEqual(counts.internal_deletions, 0)
-                self.assertEqual(counts.deletions, 0)
-                self.assertEqual(counts.internal_gaps, 0)
-                self.assertEqual(counts.gaps, 0)
-                self.assertEqual(counts.aligned, 4000)
-            self.assertEqual(counts.left_gaps, 0)
-            self.assertEqual(counts.right_gaps, 0)
-            self.assertEqual(counts.insertions, 0)
-            with self.assertRaises(StopIteration) as cm:
+                assert counts.internal_deletions == 0
+                assert counts.deletions == 0
+                assert counts.internal_gaps == 0
+                assert counts.gaps == 0
+                assert counts.aligned == 4000
+            assert counts.left_gaps == 0
+            assert counts.right_gaps == 0
+            assert counts.insertions == 0
+            with pytest.raises(StopIteration) as cm:
                 next(alignments)
-                self.fail(f"More than two alignments reported in {filename}")
+                raise AssertionError(f"More than two alignments reported in {filename}")
 
     def test_writing(self):
         """Test writing the alignments in bed12.bed as BED3 through BED12."""
@@ -12123,11 +10936,11 @@ AlignmentCounts object with
             alignments = Align.parse(path, "bed")
             stream = StringIO()
             n = Align.write(alignments, stream, "bed", bedN=bedN)
-            self.assertEqual(n, 2, msg=filename)
+            assert n == 2, filename
             stream.seek(0)
             written_data = stream.read()
             stream.close()
-            self.assertEqual(original_data, written_data, msg=filename)
+            assert original_data == written_data, filename
 
 
 class TestAlign_strand(unittest.TestCase):
@@ -12142,49 +10955,37 @@ class TestAlign_strand(unittest.TestCase):
         line = """\
 target	2	12	query	8	-	2	12	0	4	1,2,3,2,	0,2,4,8,
 """
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 target            0 AA--CAGC-AGCGTGTCG 15
                   0 ----|-||-|||-||--- 18
 query            11 --TTC-GCTAGC-TG---  0
-""",
-        )
-        self.assertEqual(format(alignment, "bed"), line)
+"""
+        assert format(alignment, "bed") == line
         alignment.coordinates = alignment.coordinates[:, ::-1]
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 target           15 CGACACGCT-GCTG--TT  0
                   0 ---||-|||-||-|---- 18
 query             0 ---CA-GCTAGC-GAA-- 11
-""",
-        )
-        self.assertEqual(format(alignment, "bed"), line)
+"""
+        assert format(alignment, "bed") == line
         alignment.coordinates = alignment.coordinates[:, ::-1]
         line = """\
 target	3	13	query	0	-	3	13	0	4	2,3,2,1,	0,3,6,9,
 """
         alignment = alignment.reverse_complement()
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 target            0 CGACACGCT-GCTG--TT 15
                   0 ---||-|||-||-|---- 18
 query            11 ---CA-GCTAGC-GAA--  0
-""",
-        )
-        self.assertEqual(format(alignment, "bed"), line)
+"""
+        assert format(alignment, "bed") == line
         alignment.coordinates = alignment.coordinates[:, ::-1]
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 target           15 AA--CAGC-AGCGTGTCG  0
                   0 ----|-||-|||-||--- 18
 query             0 --TTC-GCTAGC-TG--- 11
-""",
-        )
-        self.assertEqual(format(alignment, "bed"), line)
+"""
+        assert format(alignment, "bed") == line
 
 
 class TestAlign_searching(unittest.TestCase):
@@ -12192,25 +10993,18 @@ class TestAlign_searching(unittest.TestCase):
 
     def check_alignments(self, alignments):
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1)
-        self.assertEqual(alignment.shape, (2, 90))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "name1")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[10, 100], [0, 90]]))
-        )
+        assert alignment.score == 1
+        assert alignment.shape == (2, 90)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "name1"
+        assert np.array_equal(alignment.coordinates, np.array([[10, 100], [0, 90]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (90 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (90 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 90:
         identities = 0,
@@ -12237,41 +11031,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 90)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 90
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 2)
-        self.assertEqual(alignment.shape, (2, 10))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "name2")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[29, 39], [10, 0]]))
-        )
+        assert alignment.score == 2
+        assert alignment.shape == (2, 10)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "name2"
+        assert np.array_equal(alignment.coordinates, np.array([[29, 39], [10, 0]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 10:
         identities = 0,
@@ -12298,41 +11084,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 10)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 10
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 3)
-        self.assertEqual(alignment.shape, (2, 100))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr1")
-        self.assertEqual(alignment.query.id, "name3")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[200, 300], [0, 100]]))
-        )
+        assert alignment.score == 3
+        assert alignment.shape == (2, 100)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr1"
+        assert alignment.query.id == "name3"
+        assert np.array_equal(alignment.coordinates, np.array([[200, 300], [0, 100]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (100 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (100 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 100:
         identities = 0,
@@ -12359,41 +11137,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 100)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 100
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 6)
-        self.assertEqual(alignment.shape, (2, 0))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "name4")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[50, 50], [0, 0]]))
-        )
+        assert alignment.score == 6
+        assert alignment.shape == (2, 0)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "name4"
+        assert np.array_equal(alignment.coordinates, np.array([[50, 50], [0, 0]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -12420,43 +11190,35 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 4)
-        self.assertEqual(alignment.shape, (2, 10))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "name5")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[100, 110], [0, 10]]))
-        )
+        assert alignment.score == 4
+        assert alignment.shape == (2, 10)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "name5"
+        assert np.array_equal(alignment.coordinates, np.array([[100, 110], [0, 10]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 10:
         identities = 0,
@@ -12483,41 +11245,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 10)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 10
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 5)
-        self.assertEqual(alignment.shape, (2, 10))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "name6")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[200, 210], [0, 10]]))
-        )
+        assert alignment.score == 5
+        assert alignment.shape == (2, 10)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "name6"
+        assert np.array_equal(alignment.coordinates, np.array([[200, 210], [0, 10]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (10 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 10:
         identities = 0,
@@ -12544,41 +11298,33 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 10)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 10
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 6)
-        self.assertEqual(alignment.shape, (2, 0))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr2")
-        self.assertEqual(alignment.query.id, "name7")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[220, 220], [0, 0]]))
-        )
+        assert alignment.score == 6
+        assert alignment.shape == (2, 0)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr2"
+        assert alignment.query.id == "name7"
+        assert np.array_equal(alignment.coordinates, np.array([[220, 220], [0, 0]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -12605,43 +11351,35 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 7)
-        self.assertEqual(alignment.shape, (2, 0))
-        self.assertEqual(len(alignment), 2)
-        self.assertIs(alignment.sequences[0], alignment.target)
-        self.assertIs(alignment.sequences[1], alignment.query)
-        self.assertEqual(alignment.target.id, "chr3")
-        self.assertEqual(alignment.query.id, "name8")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[0, 0], [0, 0]]))
-        )
+        assert alignment.score == 7
+        assert alignment.shape == (2, 0)
+        assert len(alignment) == 2
+        assert alignment.sequences[0] is alignment.target
+        assert alignment.sequences[1] is alignment.query
+        assert alignment.target.id == "chr3"
+        assert alignment.query.id == "name8"
+        assert np.array_equal(alignment.coordinates, np.array([[0, 0], [0, 0]]))
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -12668,23 +11406,22 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
 
     def test_reading(self):
         """Test reading bigbedtest.bed."""
@@ -12702,5 +11439,4 @@ AlignmentCounts object with
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

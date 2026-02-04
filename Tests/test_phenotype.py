@@ -7,21 +7,13 @@
 # package.
 """Tests for the Bio.phenotype module."""
 
-try:
-    import numpy as np
-
-    del np
-except ImportError:
-    from Bio import MissingExternalDependencyError
-
-    raise MissingExternalDependencyError(
-        "Install NumPy if you want to use Bio.phenotype."
-    ) from None
-
 import json
 import unittest
+import pytest
 import warnings
 from io import StringIO
+
+pytest.importorskip("numpy")
 
 from Bio import BiopythonExperimentalWarning
 
@@ -46,12 +38,18 @@ class TestPhenoMicro(unittest.TestCase):
 
     def test_phenotype_IO_errors(self):
         """Test bad arguments to phenotype IO methods."""
-        self.assertRaises(ValueError, phenotype.read, CSV_PLATES, "pm-csv")
-        self.assertRaises(ValueError, phenotype.read, CSV_PLATES, "pm-json")
-        self.assertRaises(ValueError, phenotype.read, CSV_PLATES, "pm-noformat")
-        self.assertRaises(ValueError, phenotype.read, CSV_PLATES, "PM-CSV")
-        self.assertRaises(TypeError, phenotype.read, CSV_PLATES, 1)
-        self.assertRaises(KeyError, phenotype.read, JSON_BAD, "pm-json")
+        with pytest.raises(ValueError):
+            phenotype.read(CSV_PLATES, "pm-csv")
+        with pytest.raises(ValueError):
+            phenotype.read(CSV_PLATES, "pm-json")
+        with pytest.raises(ValueError):
+            phenotype.read(CSV_PLATES, "pm-noformat")
+        with pytest.raises(ValueError):
+            phenotype.read(CSV_PLATES, "PM-CSV")
+        with pytest.raises(TypeError):
+            phenotype.read(CSV_PLATES, 1)
+        with pytest.raises(KeyError):
+            phenotype.read(JSON_BAD, "pm-json")
 
     def test_phenotype_IO(self):
         """Test basic functionalities of phenotype IO methods."""
@@ -61,7 +59,7 @@ class TestPhenoMicro(unittest.TestCase):
         handle = StringIO()
 
         c = phenotype.write([p1, p2], handle, "pm-json")
-        self.assertEqual(c, 2)
+        assert c == 2
 
         handle.flush()
         handle.seek(0)
@@ -73,23 +71,26 @@ class TestPhenoMicro(unittest.TestCase):
             # I want to see the output when called from the test harness,
             # run_tests.py (which can be funny about new lines on Windows)
             handle.seek(0)
-            self.fail(f"{e}\n\n{handle.read()!r}\n\n{records!r}")
+            raise AssertionError(f"{e}\n\n{handle.read()!r}\n\n{records!r}")
 
-        self.assertEqual(p1, records[0])
+        assert p1 == records[0]
 
         handle.close()
         handle = StringIO()
-        self.assertRaises(TypeError, phenotype.write, p1, handle, 1)
-        self.assertRaises(ValueError, phenotype.write, p1, handle, "PM-JSON")
-        self.assertRaises(ValueError, phenotype.write, p1, handle, "pm-csv")
+        with pytest.raises(TypeError):
+            phenotype.write(p1, handle, 1)
+        with pytest.raises(ValueError):
+            phenotype.write(p1, handle, "PM-JSON")
+        with pytest.raises(ValueError):
+            phenotype.write(p1, handle, "pm-csv")
         handle.close()
 
     def test_PlateRecord_errors(self):
         """Test bad arguments with PlateRecord objects."""
-        self.assertRaises(
-            ValueError, phenotype.phen_micro.PlateRecord, "test", [1, 2, 3]
-        )
-        self.assertRaises(TypeError, phenotype.phen_micro.PlateRecord, "test", 1)
+        with pytest.raises(ValueError):
+            phenotype.phen_micro.PlateRecord("test", [1, 2, 3])
+        with pytest.raises(TypeError):
+            phenotype.phen_micro.PlateRecord("test", 1)
 
     def test_PlateRecord(self):
         """Test basic functionalities of PlateRecord objects."""
@@ -110,47 +111,51 @@ class TestPhenoMicro(unittest.TestCase):
         del j["measurements"]
         p.qualifiers = j
 
-        self.assertEqual(p.id, "PM01")
-        self.assertEqual(len(p), 24)
-        self.assertEqual(p.qualifiers, j)
-        self.assertRaises(ValueError, p._is_well, "a")
-        self.assertEqual(p["A01"].id, "A01")
-        self.assertRaises(KeyError, p.__getitem__, "test")
-        self.assertEqual(len(p[1]), 12)
-        self.assertEqual(len(p[1:2:2]), 12)
-        self.assertEqual(p[1, 2], p["B03"])
-        self.assertEqual(len(p[:, 1]), 2)
-        self.assertEqual(len(p[:, 1:4:2]), 4)
-        self.assertRaises(TypeError, p.__getitem__, 1, 2, 3)
-        self.assertRaises(IndexError, p.__getitem__, 13)
-        self.assertRaises(ValueError, p.__setitem__, "A02", p["A01"])
-        self.assertRaises(ValueError, p.__setitem__, "A02", "a")
+        assert p.id == "PM01"
+        assert len(p) == 24
+        assert p.qualifiers == j
+        with pytest.raises(ValueError):
+            p._is_well("a")
+        assert p["A01"].id == "A01"
+        with pytest.raises(KeyError):
+            p.__getitem__("test")
+        assert len(p[1]) == 12
+        assert len(p[1:2:2]) == 12
+        assert p[1, 2] == p["B03"]
+        assert len(p[:, 1]) == 2
+        assert len(p[:, 1:4:2]) == 4
+        with pytest.raises(TypeError):
+            p.__getitem__(1, 2, 3)
+        with pytest.raises(IndexError):
+            p.__getitem__(13)
+        with pytest.raises(ValueError):
+            p.__setitem__("A02", p["A01"])
+        with pytest.raises(ValueError):
+            p.__setitem__("A02", "a")
         p["A02"] = p["A02"]
         for w in p:
             pass
-        self.assertIn("A01", p)
-        self.assertNotIn("test", p)
-        self.assertRaises(ValueError, next, p.get_row("test"))
-        self.assertEqual(next(p.get_row("A")), p["A01"])
-        self.assertRaises(ValueError, next, p.get_column("test"))
-        self.assertEqual(next(p.get_column("12")), p["A12"])
-        self.assertEqual(next(p.get_column("1")), p["A01"])
-        self.assertRaises(ValueError, p.subtract_control, "A121")
-        self.assertRaises(ValueError, p.subtract_control, wells=["A121"])
+        assert "A01" in p
+        assert "test" not in p
+        with pytest.raises(ValueError):
+            next(p.get_row("test"))
+        assert next(p.get_row("A")) == p["A01"]
+        with pytest.raises(ValueError):
+            next(p.get_column("test"))
+        assert next(p.get_column("12")) == p["A12"]
+        assert next(p.get_column("1")) == p["A01"]
+        with pytest.raises(ValueError):
+            p.subtract_control("A121")
+        with pytest.raises(ValueError):
+            p.subtract_control(wells=["A121"])
         p2 = p.subtract_control()
-        self.assertEqual(p2.id, p.id)
-        self.assertEqual(p2["A02"], p["A02"] - p["A01"])
-        self.assertEqual(
-            repr(p),
+        assert p2.id == p.id
+        assert p2["A02"] == p["A02"] - p["A01"]
+        assert (repr(p) == "PlateRecord('WellRecord['A01'], WellRecord['A02'], "
+            "WellRecord['A03'], ..., WellRecord['B12']')")
+        assert (str(p) == "Plate ID: PM01\nWell: 24\nRows: 2\nColumns: 12\n"
             "PlateRecord('WellRecord['A01'], WellRecord['A02'], "
-            "WellRecord['A03'], ..., WellRecord['B12']')",
-        )
-        self.assertEqual(
-            str(p),
-            "Plate ID: PM01\nWell: 24\nRows: 2\nColumns: 12\n"
-            "PlateRecord('WellRecord['A01'], WellRecord['A02'], "
-            "WellRecord['A03'], ..., WellRecord['B12']')",
-        )
+            "WellRecord['A03'], ..., WellRecord['B12']')")
 
         with open(SMALL_JSON_PLATE_2) as handle:
             j = json.load(handle)
@@ -169,18 +174,22 @@ class TestPhenoMicro(unittest.TestCase):
         del j["measurements"]
         p1.qualifiers = j
 
-        self.assertRaises(TypeError, p.__add__, "a")
-        self.assertRaises(TypeError, p.__sub__, "a")
+        with pytest.raises(TypeError):
+            p.__add__("a")
+        with pytest.raises(TypeError):
+            p.__sub__("a")
 
         p3 = p + p1
-        self.assertEqual(p3["A02"], p["A02"] + p1["A02"])
+        assert p3["A02"] == p["A02"] + p1["A02"]
 
         p3 = p - p1
-        self.assertEqual(p3["A02"], p["A02"] - p1["A02"])
+        assert p3["A02"] == p["A02"] - p1["A02"]
 
         del p["A02"]
-        self.assertRaises(ValueError, p.__add__, p1)
-        self.assertRaises(ValueError, p.__sub__, p1)
+        with pytest.raises(ValueError):
+            p.__add__(p1)
+        with pytest.raises(ValueError):
+            p.__sub__(p1)
 
     def test_bad_fit_args(self):
         """Test error handling of the fit method."""
@@ -193,11 +202,16 @@ class TestPhenoMicro(unittest.TestCase):
             signals={times[i]: p["measurements"]["A10"][i] for i in range(len(times))},
         )
 
-        self.assertRaises(ValueError, w.fit, "wibble")
-        self.assertRaises(ValueError, w.fit, ["wibble"])
-        self.assertRaises(ValueError, w.fit, ("logistic", "wibble"))
-        self.assertRaises(ValueError, w.fit, ("wibble", "logistic"))
-        self.assertRaises(ValueError, w.fit, "logistic")  # should be a list/tuple!
+        with pytest.raises(ValueError):
+            w.fit("wibble")
+        with pytest.raises(ValueError):
+            w.fit(["wibble"])
+        with pytest.raises(ValueError):
+            w.fit(("logistic", "wibble"))
+        with pytest.raises(ValueError):
+            w.fit(("wibble", "logistic"))
+        with pytest.raises(ValueError):
+            w.fit("logistic")  # should be a list/tuple!
 
     def test_WellRecord(self):
         """Test basic functionalities of WellRecord objects."""
@@ -217,95 +231,92 @@ class TestPhenoMicro(unittest.TestCase):
 
         # self.assertIsInstance(w.plate,
         #                       phenotype.phen_micro.PlateRecord)
-        self.assertIsInstance(w.plate, phenotype.phen_micro.PlateRecord)
-        self.assertEqual(w.id, "A10")
-        self.assertEqual(len(w), len(times))
-        self.assertEqual(len(w), 384)
-        self.assertEqual(max(w), (95.75, 217.0))
-        self.assertEqual(min(w), (0.0, 37.0))
-        self.assertEqual(max(w, key=lambda x: x[1]), (16.75, 313.0))  # noqa: E731
-        self.assertEqual(min(w, key=lambda x: x[1]), (0.25, 29.0))  # noqa: E731
-        self.assertEqual(len(w[:]), 96)
-        self.assertEqual(w[1], 29.0)
-        self.assertEqual(w[12], 272.0)
-        self.assertEqual(w[1:5], [29.0, 35.0, 39.0, 43.0])
-        self.assertRaises(ValueError, w.__getitem__, "a")
-        self.assertAlmostEqual(w[1:2:0.25][0], 29.0)
-        self.assertAlmostEqual(w[1.3567], 33.7196)
-        self.assertEqual(w.get_raw()[0], (0.0, 37.0))
-        self.assertEqual(w.get_raw()[-1], (95.75, 217.0))
-        self.assertEqual(w.get_times()[0], 0.0)
-        self.assertEqual(w.get_times()[-1], 95.75)
-        self.assertEqual(w.get_signals()[0], 37.0)
-        self.assertEqual(w.get_signals()[-1], 217.0)
-        self.assertEqual(
-            repr(w),
-            "WellRecord('(0.0, 37.0), (0.25, 29.0), (0.5, 32.0),"
-            " (0.75, 30.0), (1.0, 29.0), ..., (95.75, 217.0)')",
-        )
-        self.assertEqual(
-            str(w),
-            "Well ID: A10\nTime points: 384\nMinum signal 0.25 at time 29.00\n"
+        assert isinstance(w.plate, phenotype.phen_micro.PlateRecord)
+        assert w.id == "A10"
+        assert len(w) == len(times)
+        assert len(w) == 384
+        assert max(w) == (95.75, 217.0)
+        assert min(w) == (0.0, 37.0)
+        assert max(w, key=lambda x: x[1]) == (16.75, 313.0)  # noqa: E731
+        assert min(w, key=lambda x: x[1]) == (0.25, 29.0)  # noqa: E731
+        assert len(w[:]) == 96
+        assert w[1] == 29.0
+        assert w[12] == 272.0
+        assert w[1:5] == [29.0, 35.0, 39.0, 43.0]
+        with pytest.raises(ValueError):
+            w.__getitem__("a")
+        assert w[1:2:0.25][0] == pytest.approx(29.0, abs=5e-8)
+        assert w[1.3567] == pytest.approx(33.7196, abs=5e-8)
+        assert w.get_raw()[0] == (0.0, 37.0)
+        assert w.get_raw()[-1] == (95.75, 217.0)
+        assert w.get_times()[0] == 0.0
+        assert w.get_times()[-1] == 95.75
+        assert w.get_signals()[0] == 37.0
+        assert w.get_signals()[-1] == 217.0
+        assert (repr(w) == "WellRecord('(0.0, 37.0), (0.25, 29.0), (0.5, 32.0),"
+            " (0.75, 30.0), (1.0, 29.0), ..., (95.75, 217.0)')")
+        assert (str(w) == "Well ID: A10\nTime points: 384\nMinum signal 0.25 at time 29.00\n"
             "Maximum signal 16.75 at time 313.00\n"
             "WellRecord('(0.0, 37.0), (0.25, 29.0), (0.5, 32.0), (0.75, 30.0), "
-            "(1.0, 29.0), ..., (95.75, 217.0)')",
-        )
+            "(1.0, 29.0), ..., (95.75, 217.0)')")
 
         w.fit(None)
-        self.assertIsNone(w.area)
-        self.assertIsNone(w.model)
-        self.assertIsNone(w.lag)
-        self.assertIsNone(w.plateau)
-        self.assertIsNone(w.slope)
-        self.assertIsNone(w.v)
-        self.assertIsNone(w.y0)
-        self.assertEqual(w.max, 313.0)
-        self.assertEqual(w.min, 29.0)
-        self.assertEqual(w.average_height, 217.82552083333334)
+        assert w.area is None
+        assert w.model is None
+        assert w.lag is None
+        assert w.plateau is None
+        assert w.slope is None
+        assert w.v is None
+        assert w.y0 is None
+        assert w.max == 313.0
+        assert w.min == 29.0
+        assert w.average_height == 217.82552083333334
 
-        self.assertRaises(TypeError, w.__add__, "a")
+        with pytest.raises(TypeError):
+            w.__add__("a")
 
         w2 = w + w1
-        self.assertEqual(w2.id, "A10")
-        self.assertEqual(len(w2), len(times))
-        self.assertEqual(len(w2), 384)
-        self.assertEqual(max(w2), (95.75, 327.0))
-        self.assertEqual(min(w2), (0.0, 63.0))
-        self.assertEqual(max(w2, key=lambda x: x[1]), (18.25, 357.0))  # noqa: E731
-        self.assertEqual(min(w2, key=lambda x: x[1]), (0.25, 55.0))  # noqa: E731
-        self.assertEqual(w2[1], 71.0)
-        self.assertEqual(w2[12], 316.0)
-        self.assertEqual(w2[1:5], [71.0, 88.0, 94.0, 94.0])
-        self.assertAlmostEqual(w2[1:2:0.25][0], 71.0)
-        self.assertAlmostEqual(w2[1.3567], 77.7196)
-        self.assertEqual(w2.get_raw()[0], (0.0, 63.0))
-        self.assertEqual(w2.get_raw()[-1], (95.75, 327.0))
-        self.assertEqual(w2.get_times()[0], 0.0)
-        self.assertEqual(w2.get_times()[-1], 95.75)
-        self.assertEqual(w2.get_signals()[0], 63.0)
-        self.assertEqual(w2.get_signals()[-1], 327.0)
+        assert w2.id == "A10"
+        assert len(w2) == len(times)
+        assert len(w2) == 384
+        assert max(w2) == (95.75, 327.0)
+        assert min(w2) == (0.0, 63.0)
+        assert max(w2, key=lambda x: x[1]) == (18.25, 357.0)  # noqa: E731
+        assert min(w2, key=lambda x: x[1]) == (0.25, 55.0)  # noqa: E731
+        assert w2[1] == 71.0
+        assert w2[12] == 316.0
+        assert w2[1:5] == [71.0, 88.0, 94.0, 94.0]
+        assert w2[1:2:0.25][0] == pytest.approx(71.0, abs=5e-8)
+        assert w2[1.3567] == pytest.approx(77.7196, abs=5e-8)
+        assert w2.get_raw()[0] == (0.0, 63.0)
+        assert w2.get_raw()[-1] == (95.75, 327.0)
+        assert w2.get_times()[0] == 0.0
+        assert w2.get_times()[-1] == 95.75
+        assert w2.get_signals()[0] == 63.0
+        assert w2.get_signals()[-1] == 327.0
 
-        self.assertRaises(TypeError, w.__sub__, "a")
+        with pytest.raises(TypeError):
+            w.__sub__("a")
 
         w2 = w - w1
-        self.assertEqual(w2.id, "A10")
-        self.assertEqual(len(w2), len(times))
-        self.assertEqual(len(w2), 384)
-        self.assertEqual(max(w2), (95.75, 107.0))
-        self.assertEqual(min(w2), (0.0, 11.0))
-        self.assertEqual(max(w2, key=lambda x: x[1]), (15.75, 274.0))  # noqa: E731
-        self.assertEqual(min(w2, key=lambda x: x[1]), (3.25, -20.0))  # noqa: E731
-        self.assertEqual(w2[1], -13.0)
-        self.assertEqual(w2[12], 228.0)
-        self.assertEqual(w2[1:5], [-13.0, -18.0, -16.0, -8.0])
-        self.assertAlmostEqual(w2[1:2:0.25][0], -13.0)
-        self.assertAlmostEqual(w2[1.3567], -10.2804)
-        self.assertEqual(w2.get_raw()[0], (0.0, 11.0))
-        self.assertEqual(w2.get_raw()[-1], (95.75, 107.0))
-        self.assertEqual(w2.get_times()[0], 0.0)
-        self.assertEqual(w2.get_times()[-1], 95.75)
-        self.assertEqual(w2.get_signals()[0], 11.0)
-        self.assertEqual(w2.get_signals()[-1], 107.0)
+        assert w2.id == "A10"
+        assert len(w2) == len(times)
+        assert len(w2) == 384
+        assert max(w2) == (95.75, 107.0)
+        assert min(w2) == (0.0, 11.0)
+        assert max(w2, key=lambda x: x[1]) == (15.75, 274.0)  # noqa: E731
+        assert min(w2, key=lambda x: x[1]) == (3.25, -20.0)  # noqa: E731
+        assert w2[1] == -13.0
+        assert w2[12] == 228.0
+        assert w2[1:5] == [-13.0, -18.0, -16.0, -8.0]
+        assert w2[1:2:0.25][0] == pytest.approx(-13.0, abs=5e-8)
+        assert w2[1.3567] == pytest.approx(-10.2804, abs=5e-8)
+        assert w2.get_raw()[0] == (0.0, 11.0)
+        assert w2.get_raw()[-1] == (95.75, 107.0)
+        assert w2.get_times()[0] == 0.0
+        assert w2.get_times()[-1] == 95.75
+        assert w2.get_signals()[0] == 11.0
+        assert w2.get_signals()[-1] == 107.0
 
         w[1] = 1
 
@@ -315,19 +326,18 @@ class TestPhenoMicro(unittest.TestCase):
         handle = StringIO(
             '{"csv_data": {"Plate Type": "PM-999"}, "measurements": {"Hour": 9}}'
         )
-        with self.assertWarnsRegex(UserWarning, "PM-999"):
+        with pytest.warns(UserWarning, match="PM-999"):
             for w in phenotype.phen_micro.JsonIterator(handle):
-                self.assertEqual(w.id, "PM999")
+                assert w.id == "PM999"
 
     def test_CsvIterator(self):
         """Test basic functionalities of CsvIterator file parser."""
         # Parse file content big enough to trigger issue #3783
         handle = StringIO('"Data File",3\n"Plate Type",PM-33\n')
-        with self.assertWarnsRegex(UserWarning, "PM-33"):
+        with pytest.warns(UserWarning, match="PM-33"):
             for w in phenotype.phen_micro.CsvIterator(handle):
-                self.assertEqual(w.id, "PM33")
+                assert w.id == "PM33"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

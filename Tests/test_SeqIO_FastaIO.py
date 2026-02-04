@@ -6,6 +6,7 @@
 """Tests for Bio.SeqIO.FastaIO module."""
 
 import unittest
+import pytest
 from io import StringIO
 
 from Bio import SeqIO
@@ -59,23 +60,24 @@ class Wrapping(unittest.TestCase):
 
     def test_fails(self):
         """Test case which should fail."""
-        self.assertRaises(ValueError, SeqIO.read, "Fasta/aster.pro", "fasta-2line")
+        with pytest.raises(ValueError):
+            SeqIO.read("Fasta/aster.pro", "fasta-2line")
 
     def test_passes(self):
         """Test case which should pass."""
         expected = SeqIO.read("Fasta/aster.pro", "fasta")
 
         record = SeqIO.read("Fasta/aster_no_wrap.pro", "fasta")
-        self.assertEqual(expected.id, record.id)
-        self.assertEqual(expected.name, record.name)
-        self.assertEqual(expected.description, record.description)
-        self.assertEqual(expected.seq, record.seq)
+        assert expected.id == record.id
+        assert expected.name == record.name
+        assert expected.description == record.description
+        assert expected.seq == record.seq
 
         record = SeqIO.read("Fasta/aster_no_wrap.pro", "fasta-2line")
-        self.assertEqual(expected.id, record.id)
-        self.assertEqual(expected.name, record.name)
-        self.assertEqual(expected.description, record.description)
-        self.assertEqual(expected.seq, record.seq)
+        assert expected.id == record.id
+        assert expected.name == record.name
+        assert expected.description == record.description
+        assert expected.seq == record.seq
 
 
 class TitleFunctions(unittest.TestCase):
@@ -86,10 +88,10 @@ class TitleFunctions(unittest.TestCase):
         msg = f"Test failure parsing file {filename}"
         title, seq = read_title_and_seq(filename)  # crude parser
         record = SeqIO.read(filename, "fasta")
-        self.assertEqual(record.id, title.split()[0], msg=msg)
-        self.assertEqual(record.name, title.split()[0], msg=msg)
-        self.assertEqual(record.description, title, msg=msg)
-        self.assertEqual(record.seq, seq, msg=msg)
+        assert record.id == title.split()[0], msg
+        assert record.name == title.split()[0], msg
+        assert record.description == title, msg
+        assert record.seq == seq, msg
         # Uncomment this for testing the methods are calling the right files:
         # print("{%s done}" % filename)
 
@@ -98,10 +100,10 @@ class TitleFunctions(unittest.TestCase):
         handle = StringIO(">\nACGT")
         record = SeqIO.read(handle, "fasta")
         handle.close()
-        self.assertEqual(record.seq, "ACGT")
-        self.assertEqual("", record.id)
-        self.assertEqual("", record.name)
-        self.assertEqual("", record.description)
+        assert record.seq == "ACGT"
+        assert "" == record.id
+        assert "" == record.name
+        assert "" == record.description
 
     def test_single_nucleic_files(self):
         """Test Fasta files containing a single nucleotide sequence."""
@@ -152,42 +154,42 @@ class TestSimpleFastaParsers(unittest.TestCase):
         for inp, out in zip(self.ins_two_line, self.outs_two_line):
             handle1 = StringIO(inp)
             handle2 = StringIO(inp + "\n")
-            self.assertEqual(list(SimpleFastaParser(handle1)), out)
-            self.assertEqual(list(SimpleFastaParser(handle2)), out)
+            assert list(SimpleFastaParser(handle1)) == out
+            assert list(SimpleFastaParser(handle2)) == out
         for inp, out in zip(self.ins_multiline, self.outs_multiline):
             handle1 = StringIO(inp)
             handle2 = StringIO(inp + "\n")
-            self.assertEqual(list(SimpleFastaParser(handle1)), out)
-            self.assertEqual(list(SimpleFastaParser(handle2)), out)
+            assert list(SimpleFastaParser(handle1)) == out
+            assert list(SimpleFastaParser(handle2)) == out
 
     def test_regular_FastaTwoLineParser(self):
         """Test regular FastaTwoLineParser cases."""
         for inp, out in zip(self.ins_two_line, self.outs_two_line):
             handle1 = StringIO(inp)
             handle2 = StringIO(inp + "\n")
-            self.assertEqual(list(FastaTwoLineParser(handle1)), out)
-            self.assertEqual(list(FastaTwoLineParser(handle2)), out)
+            assert list(FastaTwoLineParser(handle1)) == out
+            assert list(FastaTwoLineParser(handle2)) == out
 
     def test_edgecases_SimpleFastaParser(self):
         """Test SimpleFastaParser edge-cases."""
         for inp, out in zip(self.ins_two_line_edges, self.outs_two_line_edges):
             handle = StringIO(inp)
-            self.assertEqual(list(SimpleFastaParser(handle)), out)
+            assert list(SimpleFastaParser(handle)) == out
         for inp, out in zip(self.ins_simple_edges, self.outs_simple_edges):
             handle = StringIO(inp)
-            self.assertEqual(list(SimpleFastaParser(handle)), out)
+            assert list(SimpleFastaParser(handle)) == out
 
     def test_edgecases_FastaTwoLineParser(self):
         """Test FastaTwoLineParser edge-cases."""
         for inp, out in zip(self.ins_two_line_edges, self.outs_two_line_edges):
             handle = StringIO(inp)
-            self.assertEqual(list(FastaTwoLineParser(handle)), out)
+            assert list(FastaTwoLineParser(handle)) == out
 
     def test_exceptions_FastaTwoLineParser(self):
         """Test FastaTwoLineParser exceptions."""
         for inp in self.ins_multiline + self.ins_simple_edges:
             handle = StringIO(inp)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 list(FastaTwoLineParser(handle))
 
 
@@ -202,10 +204,10 @@ class TestFastaWithComments(unittest.TestCase):
         expected = self.expected
 
         record = SeqIO.read("Fasta/aster_blast.pro", "fasta-blast")
-        self.assertEqual(expected.id, record.id)
-        self.assertEqual(expected.name, record.name)
-        self.assertEqual(expected.description, record.description)
-        self.assertEqual(expected.seq, record.seq)
+        assert expected.id == record.id
+        assert expected.name == record.name
+        assert expected.description == record.description
+        assert expected.seq == record.seq
 
     def test_fasta_pearson(self):
         """Test FastaPearsonIterator."""
@@ -213,21 +215,21 @@ class TestFastaWithComments(unittest.TestCase):
         expected = self.expected
 
         record = SeqIO.read("Fasta/aster_pearson.pro", "fasta-pearson")
-        self.assertEqual(expected.id, record.id)
-        self.assertEqual(expected.name, record.name)
-        self.assertEqual(expected.description, record.description)
-        self.assertEqual(expected.seq, record.seq)
+        assert expected.id == record.id
+        assert expected.name == record.name
+        assert expected.description == record.description
+        assert expected.seq == record.seq
 
     def test_valueerrors(self):
         """Test if ValueErrors are raised if comments are found unexpectedly."""
 
-        self.assertRaises(
-            ValueError, SeqIO.read, "Fasta/aster_pearson.pro", "fasta-blast"
-        )
-        self.assertRaises(ValueError, SeqIO.read, "Fasta/aster_pearson.pro", "fasta")
-        self.assertRaises(ValueError, SeqIO.read, "Fasta/aster_blast.pro", "fasta")
+        with pytest.raises(ValueError):
+            SeqIO.read("Fasta/aster_pearson.pro", "fasta-blast")
+        with pytest.raises(ValueError):
+            SeqIO.read("Fasta/aster_pearson.pro", "fasta")
+        with pytest.raises(ValueError):
+            SeqIO.read("Fasta/aster_blast.pro", "fasta")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

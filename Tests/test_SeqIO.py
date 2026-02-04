@@ -7,6 +7,7 @@
 import copy
 import gzip
 import unittest
+import pytest
 import warnings
 from io import BytesIO
 from io import StringIO
@@ -81,15 +82,12 @@ class SeqIOTestBaseClass(unittest.TestCase):
 
     def compare_record(self, old, new, *args, msg=None, **kwargs):
         """Compare old SeqRecord to new SeqRecord."""
-        self.assertEqual(old.id, new.id, msg=msg)
-        self.assertTrue(
-            old.description == new.description
+        assert old.id == new.id, msg
+        assert (old.description == new.description
             or (old.id + " " + old.description).strip() == new.description
             or new.description == "<unknown description>"
-            or new.description == "",
-            msg=f"'{old.description}' vs '{new.description}' ",
-        )
-        self.assertEqual(len(old.seq), len(new.seq))
+            or new.description == ""), f"'{old.description}' vs '{new.description}' "
+        assert len(old.seq) == len(new.seq)
         if len(old.seq) == 0:
             return
         try:
@@ -104,11 +102,11 @@ class SeqIOTestBaseClass(unittest.TestCase):
                 err_msg = f"'{old.seq[:100]}...' vs '{new.seq[:100]}...'"
             if msg is not None:
                 err_msg = f"{msg}: {err_msg}"
-            self.assertEqual(old.seq, new.seq, msg=err_msg)
+            assert old.seq == new.seq, err_msg
 
     def compare_records(self, old_list, new_list, *args, **kwargs):
         """Check if two lists of SeqRecords are equal."""
-        self.assertEqual(len(old_list), len(new_list))
+        assert len(old_list) == len(new_list)
         for old, new in zip(old_list, new_list):
             self.compare_record(old, new, *args, **kwargs)
 
@@ -129,7 +127,7 @@ class SeqIOConverterTestBaseClass(SeqIOTestBaseClass):
         handle.seek(0)
         # Now load it back and check it agrees,
         records2 = list(SeqIO.parse(handle, out_format))
-        self.assertEqual(len(records), len(records2), msg=msg)
+        assert len(records) == len(records2), msg
         for record1, record2 in zip(records, records2):
             self.compare_record(record1, record2, msg=msg)
         # Finally, use the convert function, and check that agrees:
@@ -137,7 +135,7 @@ class SeqIOConverterTestBaseClass(SeqIOTestBaseClass):
         with warnings.catch_warnings():
             SeqIO.convert(filename, in_format, handle2, out_format)
         # We could re-parse this, but it is simpler and stricter:
-        self.assertEqual(handle.getvalue(), handle2.getvalue(), msg=msg)
+        assert handle.getvalue() == handle2.getvalue(), msg
 
     def failure_check(self, filename, in_format, out_format):
         """Test if SeqIO.convert raises the correct ValueError on broken files."""
@@ -147,18 +145,18 @@ class SeqIOConverterTestBaseClass(SeqIOTestBaseClass):
             out_format,
         )
         # We want the SAME error message from parse/write as convert!
-        with self.assertRaises(ValueError, msg=msg) as cm:
+        with pytest.raises(ValueError) as cm:
             records = list(SeqIO.parse(filename, in_format))
             self.write_records(records, out_format)
-        err1 = str(cm.exception)
+        err1 = str(cm.value)
         # Now do the conversion...
-        with self.assertRaises(ValueError, msg=msg) as cm:
+        with pytest.raises(ValueError) as cm:
             handle = StringIO()
             SeqIO.convert(filename, in_format, handle, out_format)
-        err2 = str(cm.exception)
+        err2 = str(cm.value)
         # Verify that parse/write and convert give the same failure
         err_msg = f"{msg}: parse/write and convert gave different failures"
-        self.assertEqual(err1, err2, msg=err_msg)
+        assert err1 == err2, err_msg
 
 
 class ForwardOnlyHandle:
@@ -219,32 +217,26 @@ class TestZipped(unittest.TestCase):
     def test_gzip_fastq(self):
         """Testing FASTQ with gzip."""
         with gzip.open("Quality/example.fastq.gz", "rt") as handle:
-            self.assertEqual(3, len(list(SeqIO.parse(handle, "fastq"))))
+            assert 3 == len(list(SeqIO.parse(handle, "fastq")))
         with gzip.open("Quality/example.fastq.gz") as handle:
-            with self.assertRaisesRegex(
-                ValueError, "Fastq files must be opened in text mode"
-            ):
+            with pytest.raises(ValueError, match="Fastq files must be opened in text mode"):
                 list(SeqIO.parse(handle, "fastq"))
 
     def test_gzip_fasta(self):
         """Testing FASTA with gzip."""
         with gzip.open("Fasta/flowers.pro.gz", "rt") as handle:
-            self.assertEqual(3, len(list(SeqIO.parse(handle, "fasta"))))
+            assert 3 == len(list(SeqIO.parse(handle, "fasta")))
         with gzip.open("Fasta/flowers.pro.gz") as handle:
-            with self.assertRaisesRegex(
-                ValueError, "Fasta files must be opened in text mode"
-            ):
+            with pytest.raises(ValueError, match="Fasta files must be opened in text mode"):
                 list(SeqIO.parse(handle, "fasta"))
 
     def test_gzip_genbank(self):
         """Testing GenBank with gzip."""
         # BGZG files are still GZIP files
         with gzip.open("GenBank/cor6_6.gb.bgz", "rt") as handle:
-            self.assertEqual(6, len(list(SeqIO.parse(handle, "gb"))))
+            assert 6 == len(list(SeqIO.parse(handle, "gb")))
         with gzip.open("GenBank/cor6_6.gb.bgz") as handle:
-            with self.assertRaisesRegex(
-                ValueError, "GenBank files must be opened in text mode."
-            ):
+            with pytest.raises(ValueError, match="GenBank files must be opened in text mode."):
                 list(SeqIO.parse(handle, "gb"))
 
 
@@ -254,14 +246,14 @@ class TestSeqIO(SeqIOTestBaseClass):
 
     def compare_record(self, record_one, record_two, msg=None):
         """Attempt strict SeqRecord comparison."""
-        self.assertIsInstance(record_one, SeqRecord, msg=msg)
-        self.assertIsInstance(record_two, SeqRecord, msg=msg)
-        self.assertIsNotNone(record_one.seq, msg=msg)
-        self.assertIsNotNone(record_two.seq, msg=msg)
-        self.assertEqual(record_one.id, record_two.id, msg=msg)
-        self.assertEqual(record_one.name, record_two.name, msg=msg)
-        self.assertEqual(record_one.description, record_two.description, msg=msg)
-        self.assertEqual(len(record_one), len(record_two), msg=msg)
+        assert isinstance(record_one, SeqRecord), msg
+        assert isinstance(record_two, SeqRecord), msg
+        assert record_one.seq is not None, msg
+        assert record_two.seq is not None, msg
+        assert record_one.id == record_two.id, msg
+        assert record_one.name == record_two.name, msg
+        assert record_one.description == record_two.description, msg
+        assert len(record_one) == len(record_two), msg
         seq_one = record_one.seq
         try:
             bytes(seq_one)
@@ -272,16 +264,12 @@ class TestSeqIO(SeqIOTestBaseClass):
             bytes(seq_two)
         except UndefinedSequenceError:
             seq_two = None
-        self.assertEqual(seq_one, seq_two, msg=msg)
+        assert seq_one == seq_two, msg
         # TODO - check features and annotation (see code for BioSQL tests)
         for key in set(record_one.letter_annotations).intersection(
             record_two.letter_annotations
         ):
-            self.assertEqual(
-                record_one.letter_annotations[key],
-                record_two.letter_annotations[key],
-                msg=msg,
-            )
+            assert record_one.letter_annotations[key] == record_two.letter_annotations[key], msg
 
     def check_simple_write_read(
         self, records, t_format, t_count, messages, molecule_types
@@ -341,7 +329,7 @@ class TestSeqIO(SeqIOTestBaseClass):
                         )
 
                     else:
-                        self.fail(f"test type is not recognized: {test_type}")
+                        raise AssertionError(f"test type is not recognized: {test_type}")
 
                     if unequal_length and fmt in AlignIO._FormatToWriter:
                         msg = "Sequences must all be the same length"
@@ -363,18 +351,15 @@ class TestSeqIO(SeqIOTestBaseClass):
                                 messages[fmt] = str(e)
                         else:
                             message = f"{t_format} -> {fmt}"
-                            with self.assertRaises(Exception, msg=message) as cm:
+                            with pytest.raises(Exception) as cm:
                                 with warnings.catch_warnings():
                                     # e.g. data loss
                                     warnings.simplefilter("ignore", BiopythonWarning)
                                     SeqIO.write(
                                         sequences=records1, handle=handle, format=fmt
                                     )
-                            self.assertTrue(
-                                isinstance(cm.exception, (ValueError, TypeError)),
-                                msg=message,
-                            )
-                            self.assertEqual(str(cm.exception), msg, msg=message)
+                            assert isinstance(cm.value, (ValueError, TypeError)), message
+                            assert str(cm.value) == msg, message
 
                         # Carry on to the next format:
                         continue
@@ -384,7 +369,7 @@ class TestSeqIO(SeqIOTestBaseClass):
                         # e.g. data loss
                         warnings.simplefilter("ignore", BiopythonWarning)
                         c = SeqIO.write(sequences=records1, handle=handle, format=fmt)
-                    self.assertEqual(c, len(records1))
+                    assert c == len(records1)
 
                     handle.flush()
                     handle.seek(0)
@@ -397,46 +382,36 @@ class TestSeqIO(SeqIOTestBaseClass):
                         # run_tests.py (which can be funny about new lines on Windows)
                         handle.seek(0)
                         message = f"{e!s}\n\n{handle.read()!r}\n\n{records1!r}"
-                        self.fail(message)
+                        raise AssertionError(message)
 
-                    self.assertEqual(len(records2), t_count)
+                    assert len(records2) == t_count
                     for r1, r2 in zip(records1, records2):
                         # Check the bare minimum (ID and sequence) as
                         # many formats can't store more than that.
-                        self.assertEqual(len(r1), len(r2))
+                        assert len(r1) == len(r2)
                         # Check the sequence
                         try:
                             bytes(r1.seq)
                         except UndefinedSequenceError:
-                            self.assertRaises(UndefinedSequenceError, bytes, r2.seq)
+                            with pytest.raises(UndefinedSequenceError):
+                                bytes(r2.seq)
                         else:
                             if fmt in ["gb", "genbank", "embl", "imgt"]:
                                 # The GenBank/EMBL parsers will convert to upper case.
-                                self.assertEqual(r1.seq.upper(), r2.seq)
+                                assert r1.seq.upper() == r2.seq
                             elif fmt == "qual":
-                                self.assertRaises(UndefinedSequenceError, bytes, r2.seq)
+                                with pytest.raises(UndefinedSequenceError):
+                                    bytes(r2.seq)
                             else:
-                                self.assertEqual(r1.seq, r2.seq)
+                                assert r1.seq == r2.seq
                         # Beware of different quirks and limitations in the
                         # valid character sets and the identifier lengths!
                         if fmt in ["phylip", "phylip-sequential"]:
-                            self.assertEqual(
-                                PhylipIO.sanitize_name(r1.id, 10),
-                                r2.id,
-                                f"'{r1.id}' vs '{r2.id}'",
-                            )
+                            assert PhylipIO.sanitize_name(r1.id, 10) == r2.id, f"'{r1.id}' vs '{r2.id}'"
                         elif fmt == "phylip-relaxed":
-                            self.assertEqual(
-                                PhylipIO.sanitize_name(r1.id),
-                                r2.id,
-                                f"'{r1.id}' vs '{r2.id}'",
-                            )
+                            assert PhylipIO.sanitize_name(r1.id) == r2.id, f"'{r1.id}' vs '{r2.id}'"
                         elif fmt == "clustal":
-                            self.assertEqual(
-                                r1.id.replace(" ", "_")[:30],
-                                r2.id,
-                                f"'{r1.id}' vs '{r2.id}'",
-                            )
+                            assert r1.id.replace(" ", "_")[:30] == r2.id, f"'{r1.id}' vs '{r2.id}'"
                         elif fmt == "stockholm":
                             r1_id = r1.id.replace(" ", "_")
                             if "start" in r1.annotations and "end" in r1.annotations:
@@ -447,19 +422,15 @@ class TestSeqIO(SeqIOTestBaseClass):
                                 if not r1_id.endswith(suffix):
                                     r1_id += suffix
 
-                            self.assertEqual(r1_id, r2.id, f"'{r1.id}' vs '{r2.id}'")
+                            assert r1_id == r2.id, f"'{r1.id}' vs '{r2.id}'"
                         elif fmt == "maf":
-                            self.assertEqual(
-                                r1.id.replace(" ", "_"),
-                                r2.id,
-                                f"'{r1.id}' vs '{r2.id}'",
-                            )
+                            assert r1.id.replace(" ", "_") == r2.id, f"'{r1.id}' vs '{r2.id}'"
                         elif fmt in ["fasta", "fasta-2line"]:
-                            self.assertEqual(r1.id.split()[0], r2.id)
+                            assert r1.id.split()[0] == r2.id
                         elif fmt == "nib":
-                            self.assertEqual(r2.id, "<unknown id>")
+                            assert r2.id == "<unknown id>"
                         else:
-                            self.assertEqual(r1.id, r2.id, f"'{r1.id}' vs '{r2.id}'")
+                            assert r1.id == r2.id, f"'{r1.id}' vs '{r2.id}'"
 
                     if len(records1) > 1:
                         # Try writing just one record (passing a SeqRecord, not a list)
@@ -471,14 +442,10 @@ class TestSeqIO(SeqIOTestBaseClass):
                             warnings.simplefilter("ignore", BiopythonWarning)
                             SeqIO.write(records1[0], handle, fmt)
                             if mode == "t":
-                                self.assertEqual(
-                                    handle.getvalue(), records1[0].format(fmt)
-                                )
+                                assert handle.getvalue() == records1[0].format(fmt)
 
         if debug:
-            self.fail(
-                f"Update {t_format} test to use this dict:\nmessages = {messages!r}"
-            )
+            raise AssertionError(f"Update {t_format} test to use this dict:\nmessages = {messages!r}")
 
     def perform_test(
         self,
@@ -507,17 +474,13 @@ class TestSeqIO(SeqIOTestBaseClass):
             # Try as an iterator using handle
             with open(t_filename, mode) as h:
                 records = list(SeqIO.parse(handle=h, format=t_format))
-            self.assertEqual(
-                len(records),
-                t_count,
-                "Found %i records but expected %i" % (len(records), t_count),
-            )
+            assert len(records) == t_count, "Found %i records but expected %i" % (len(records), t_count)
 
             # Try using the iterator with a for loop, and a filename not handle
             records2 = []
             for record in SeqIO.parse(t_filename, format=t_format):
                 records2.append(record)
-            self.assertEqual(len(records2), t_count)
+            assert len(records2) == t_count
 
             # Try using the iterator with the next() method
             records3 = []
@@ -528,11 +491,9 @@ class TestSeqIO(SeqIOTestBaseClass):
                         record = next(seq_iterator)
                     except StopIteration:
                         break
-                    self.assertIsNotNone(
-                        record, "Should raise StopIteration, not return None"
-                    )
+                    assert record is not None, "Should raise StopIteration, not return None"
                     records3.append(record)
-            self.assertEqual(len(records3), t_count)
+            assert len(records3) == t_count
 
             # Try a mixture of next() and list (a torture test!)
             with open(t_filename, mode) as h:
@@ -546,7 +507,7 @@ class TestSeqIO(SeqIOTestBaseClass):
                     records4.extend(list(seq_iterator))
                 else:
                     records4 = []
-            self.assertEqual(len(records4), t_count)
+            assert len(records4) == t_count
 
             # Try a mixture of next() and for loop (a torture test!)
             # with a forward-only-handle
@@ -567,89 +528,79 @@ class TestSeqIO(SeqIOTestBaseClass):
                         records5.append(record)
                 else:
                     records5 = []
-            self.assertEqual(len(records5), t_count)
+            assert len(records5) == t_count
 
             for i in range(t_count):
                 record = records[i]
 
                 # Check returned expected object type
-                self.assertIsInstance(record, SeqRecord)
+                assert isinstance(record, SeqRecord)
                 if t_format in possible_unknown_seq_formats:
                     if not isinstance(record.seq, Seq):
                         self.failureException("Expected a Seq object")
                 else:
-                    self.assertIsInstance(record.seq, Seq)
-                self.assertIsInstance(record.id, str)
-                self.assertIsInstance(record.name, str)
-                self.assertIsInstance(record.description, str)
-                self.assertTrue(record.id)
+                    assert isinstance(record.seq, Seq)
+                assert isinstance(record.id, str)
+                assert isinstance(record.name, str)
+                assert isinstance(record.description, str)
+                assert record.id
 
                 if "accessions" in record.annotations:
                     accs = record.annotations["accessions"]
                     # Check for blanks, or entries with leading/trailing spaces
                     for acc in accs:
-                        self.assertTrue(acc, f"Bad accession in annotations: {acc!r}")
-                        self.assertEqual(
-                            acc, acc.strip(), f"Bad accession in annotations: {acc!r}"
-                        )
-                    self.assertEqual(
-                        len(set(accs)),
-                        len(accs),
-                        f"Repeated accession in annotations: {accs!r}",
-                    )
+                        assert acc, f"Bad accession in annotations: {acc!r}"
+                        assert acc == acc.strip(), f"Bad accession in annotations: {acc!r}"
+                    assert len(set(accs)) == len(accs), f"Repeated accession in annotations: {accs!r}"
                 for ref in record.dbxrefs:
-                    self.assertTrue(ref, f"Bad cross reference in dbxrefs: {ref!r}")
-                    self.assertEqual(
-                        ref, ref.strip(), f"Bad cross reference in dbxrefs: {ref!r}"
-                    )
-                self.assertEqual(
-                    len(set(record.dbxrefs)),
-                    len(record.dbxrefs),
-                    f"Repeated cross reference in dbxrefs: {record.dbxrefs!r}",
-                )
+                    assert ref, f"Bad cross reference in dbxrefs: {ref!r}"
+                    assert ref == ref.strip(), f"Bad cross reference in dbxrefs: {ref!r}"
+                assert len(set(record.dbxrefs)) == len(record.dbxrefs), f"Repeated cross reference in dbxrefs: {record.dbxrefs!r}"
 
                 # Check the lists obtained by the different methods agree
-                self.assertEqual(record, records2[i])
-                self.assertEqual(record, records3[i])
-                self.assertEqual(record, records4[i])
-                self.assertEqual(record, records5[i])
+                assert record == records2[i]
+                assert record == records3[i]
+                assert record == records4[i]
+                assert record == records5[i]
 
                 if i == t_count - 1:
                     i = -1
                 if i < 3:
-                    self.assertEqual(record.id, expected_ids[i])
-                    self.assertEqual(record.name, expected_names[i])
+                    assert record.id == expected_ids[i]
+                    assert record.name == expected_names[i]
                     seq = record.seq
                     length = len(seq)
                     if expected_sequences[i] is None:
-                        self.assertRaises(UndefinedSequenceError, bytes, seq)
+                        with pytest.raises(UndefinedSequenceError):
+                            bytes(seq)
                     else:
                         if length > 50:
                             seq = str(seq[:40]) + "..." + str(seq[-7:])
-                        self.assertEqual(seq, expected_sequences[i])
-                    self.assertEqual(length, expected_lengths[i])
+                        assert seq == expected_sequences[i]
+                    assert length == expected_lengths[i]
 
             # Check Bio.SeqIO.read(...)
             if t_count == 1:
                 record = SeqIO.read(t_filename, format=t_format)
-                self.assertIsInstance(record, SeqRecord)
+                assert isinstance(record, SeqRecord)
             else:
-                self.assertRaises(ValueError, SeqIO.read, t_filename, t_format)
+                with pytest.raises(ValueError):
+                    SeqIO.read(t_filename, t_format)
 
             if t_alignment:
                 alignment = MultipleSeqAlignment(
                     SeqIO.parse(handle=t_filename, format=t_format)
                 )
-                self.assertEqual(len(alignment), t_count)
+                assert len(alignment) == t_count
                 alignment_len = alignment.get_alignment_length()
 
                 # Check the record order agrees, and double check the
                 # sequence lengths all agree too.
                 for i in range(t_count):
-                    self.assertEqual(records[i], alignment[i])
-                    self.assertEqual(len(records[i].seq), alignment_len)
+                    assert records[i] == alignment[i]
+                    assert len(records[i].seq) == alignment_len
 
-                self.assertEqual(str(alignment_summary(alignment)), expected_alignment)
+                assert str(alignment_summary(alignment)) == expected_alignment
 
         # Some alignment file formats have magic characters which mean
         # use the letter in this position in the first sequence.
@@ -2634,17 +2585,17 @@ class TestSeqIO(SeqIOTestBaseClass):
         uniref_file_name = (
             "SwissProt/UniRef90_P99999.xml"  # non-uniprot file (related uniref format)
         )
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             records = []
             for record in SeqIO.parse(uniref_file_name, format="uniprot-xml"):
                 records.append(record)
         self.assertRegex(
-            str(context.exception),
+            str(context.value),
             "http://uniprot.org/uniprot",
             "Correct namespace in error",
         )
         self.assertRegex(
-            str(context.exception),
+            str(context.value),
             "http://uniprot.org/uniref",
             "Unexpected namespace in error",
         )
@@ -3277,7 +3228,7 @@ class TestSeqIO(SeqIOTestBaseClass):
         read_record = SeqIO.read(handle, "genbank")
         read_db_source = read_record.annotations.get("db_source")
 
-        self.assertEqual(db_source, read_db_source)
+        assert db_source == read_db_source
 
     def test_genbank23(self):
         """Test that peptide genbank files can be written with long names."""
@@ -3295,9 +3246,9 @@ class TestSeqIO(SeqIOTestBaseClass):
 
         handle.seek(0)
         read_record = SeqIO.read(handle, "genbank")
-        self.assertEqual(str(read_record.seq), str(record.seq))
-        self.assertEqual(read_record.id, record.id)
-        self.assertEqual(read_record.description, record.description)
+        assert str(read_record.seq) == str(record.seq)
+        assert read_record.id == record.id
+        assert read_record.description == record.description
 
     def test_embl1(self):
         sequences = [None]
@@ -5855,57 +5806,42 @@ class TestSeqIO(SeqIOTestBaseClass):
                     "cif-atom",
                     "cif-seqres",
                 ):
-                    with self.assertRaisesRegex(ValueError, "Empty file."):
+                    with pytest.raises(ValueError, match="Empty file."):
                         list(SeqIO.parse(handle, t_format))
                 else:
                     records = list(SeqIO.parse(handle, t_format))
-                    self.assertEqual(len(records), 0)
+                    assert len(records) == 0
             elif mode == "b":
                 handle = BytesIO()
-                with self.assertRaisesRegex(ValueError, "Empty file."):
+                with pytest.raises(ValueError, match="Empty file."):
                     list(SeqIO.parse(handle, t_format))
 
     def test_fasta_to_seqxml_without_mol_type(self):
         """Convert FASTA to SeqXML without molecule type."""
         handle = BytesIO()
-        self.assertRaises(
-            ValueError, SeqIO.convert, "Fasta/rosemary.pro", "fasta", handle, "seqxml"
-        )
+        with pytest.raises(ValueError):
+            SeqIO.convert("Fasta/rosemary.pro", "fasta", handle, "seqxml")
 
     def test_fasta_to_seqxml_with_mol_type(self):
         """Convert FASTA to SeqXML with molecule type."""
         handle = BytesIO()
-        self.assertEqual(
-            1, SeqIO.convert("Fasta/rosemary.pro", "fasta", handle, "seqxml", "protein")
-        )
-        self.assertIn(
-            b'<property name="molecule_type" value="protein">', handle.getvalue()
-        )
+        assert 1 == SeqIO.convert("Fasta/rosemary.pro", "fasta", handle, "seqxml", "protein")
+        assert b'<property name="molecule_type" value="protein">' in handle.getvalue()
 
     def test_clustal_to_nexus_without_mol_type(self):
         """Convert Clustal to NEXUS without molecule type."""
         handle = StringIO()
-        self.assertRaises(
-            ValueError,
-            SeqIO.convert,
-            "Clustalw/protein.aln",
-            "clustal",
-            handle,
-            "nexus",
-        )
+        with pytest.raises(ValueError):
+            SeqIO.convert("Clustalw/protein.aln", "clustal", handle, "nexus")
 
     def test_clustal_to_nexus_with_mol_type(self):
         """Convert Clustal to NEXUS with molecule type."""
         handle = StringIO()
-        self.assertEqual(
-            20,
-            SeqIO.convert(
+        assert 20 == SeqIO.convert(
                 "Clustalw/protein.aln", "clustal", handle, "nexus", "protein"
-            ),
-        )
-        self.assertIn(" datatype=protein ", handle.getvalue())
+            )
+        assert " datatype=protein " in handle.getvalue()
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

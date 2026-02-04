@@ -9,6 +9,7 @@ and confirms they are consistent using our different parsers.
 """
 
 import unittest
+import pytest
 
 try:
     import numpy as np
@@ -34,7 +35,7 @@ class SeqRecordCreation(unittest.TestCase):
     def test_annotations(self):
         """Pass in annotations to SeqRecords."""
         rec = SeqRecord(Seq("ACGT"), id="Test", name="Test", description="Test")
-        self.assertEqual(rec.annotations, {})
+        assert rec.annotations == {}
         rec = SeqRecord(
             Seq("ACGT"),
             id="Test",
@@ -42,12 +43,12 @@ class SeqRecordCreation(unittest.TestCase):
             description="Test",
             annotations={"test": ["a test"]},
         )
-        self.assertEqual(rec.annotations["test"], ["a test"])
+        assert rec.annotations["test"] == ["a test"]
 
     def test_letter_annotations(self):
         """Pass in letter annotations to SeqRecords."""
         rec = SeqRecord(Seq("ACGT"), id="Test", name="Test", description="Test")
-        self.assertEqual(rec.annotations, {})
+        assert rec.annotations == {}
         rec = SeqRecord(
             Seq("ACGT"),
             id="Test",
@@ -55,18 +56,18 @@ class SeqRecordCreation(unittest.TestCase):
             description="Test",
             letter_annotations={"test": [1, 2, 3, 4]},
         )
-        self.assertEqual(rec.letter_annotations["test"], [1, 2, 3, 4])
+        assert rec.letter_annotations["test"] == [1, 2, 3, 4]
         # Now try modifying it to a bad value...
         try:
             rec.letter_annotations["bad"] = "abc"
-            self.fail("Adding a bad letter_annotation should fail!")
+            raise AssertionError("Adding a bad letter_annotation should fail!")
         except (TypeError, ValueError) as e:
             pass
         # Now try setting it afterwards to a bad value...
         rec = SeqRecord(Seq("ACGT"), id="Test", name="Test", description="Test")
         try:
             rec.letter_annotations = {"test": [1, 2, 3]}
-            self.fail("Changing to bad letter_annotations should fail!")
+            raise AssertionError("Changing to bad letter_annotations should fail!")
         except (TypeError, ValueError) as e:
             pass
         # Now try setting it at creation time to a bad value...
@@ -78,7 +79,7 @@ class SeqRecordCreation(unittest.TestCase):
                 description="Test",
                 letter_annotations={"test": [1, 2, 3]},
             )
-            self.fail("Wrong length letter_annotations should fail!")
+            raise AssertionError("Wrong length letter_annotations should fail!")
         except (TypeError, ValueError) as e:
             pass
 
@@ -93,44 +94,42 @@ class SeqRecordCreation(unittest.TestCase):
         )
         try:
             rec.seq = Seq("ACGTACGT")
-            self.fail(
-                "Changing .seq length with letter_annotations present should fail!"
-            )
+            raise AssertionError("Changing .seq length with letter_annotations present should fail!")
         except ValueError as e:
-            self.assertEqual(str(e), "You must empty the letter annotations first!")
+            assert str(e) == "You must empty the letter annotations first!"
         # Check we can replace IF the length is the same
-        self.assertEqual(rec.seq, "ACGT")
-        self.assertEqual(rec.letter_annotations, {"example": [1, 2, 3, 4]})
+        assert rec.seq == "ACGT"
+        assert rec.letter_annotations == {"example": [1, 2, 3, 4]}
         rec.seq = Seq("NNNN")
-        self.assertEqual(rec.seq, "NNNN")
-        self.assertEqual(rec.letter_annotations, {"example": [1, 2, 3, 4]})
+        assert rec.seq == "NNNN"
+        assert rec.letter_annotations == {"example": [1, 2, 3, 4]}
 
     def test_valid_id(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), id={})
 
     def test_valid_name(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), name={})
 
     def test_valid_seq(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord("ACGT")
 
     def test_valid_description(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), description={})
 
     def test_valid_dbxrefs(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), dbxrefs={})
 
     def test_valid_annotations(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), annotations=[])
 
     def test_valid_features(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             SeqRecord(Seq("ACGT"), features={})
 
     def test_default_properties(self):
@@ -146,7 +145,7 @@ class SeqRecordCreation(unittest.TestCase):
             "features": [],
         }
         bsr = SeqRecord(seqobj)
-        self.assertEqual(bsr.__dict__, default__dict__)
+        assert bsr.__dict__ == default__dict__
 
 
 class SeqRecordMethods(unittest.TestCase):
@@ -181,14 +180,14 @@ class SeqRecordMethods(unittest.TestCase):
 
     def test_iter(self):
         for amino in self.record:
-            self.assertEqual("A", amino)
+            assert "A" == amino
             break
 
     def test_contains(self):
-        self.assertIn(Seq("ABC"), self.record)
+        assert Seq("ABC") in self.record
 
     def test_bytes(self):
-        self.assertEqual(b"ABCDEFGHIJKLMNOPQRSTUVWZYX", bytes(self.record))
+        assert b"ABCDEFGHIJKLMNOPQRSTUVWZYX" == bytes(self.record)
 
     def test_str(self):
         expected = """
@@ -200,27 +199,25 @@ Number of features: 4
 /k=v
 Per letter annotation for: fake
 Seq('ABCDEFGHIJKLMNOPQRSTUVWZYX')"""
-        self.assertEqual(expected.lstrip(), str(self.record))
+        assert expected.lstrip() == str(self.record)
 
     def test_repr(self):
         expected = (
             "SeqRecord(seq=Seq('ABCDEFGHIJKLMNOPQRSTUVWZYX'), "
             "id='TestID', name='TestName', description='TestDescr', dbxrefs=['TestXRef'])"
         )
-        self.assertEqual(expected, repr(self.record))
+        assert expected == repr(self.record)
 
     def test_format(self):
         expected = ">TestID TestDescr\nABCDEFGHIJKLMNOPQRSTUVWZYX\n"
-        self.assertEqual(expected, self.record.format("fasta"))
+        assert expected == self.record.format("fasta")
 
     def test_format_str(self):
         expected = ">TestID TestDescr\nABCDEFGHIJKLMNOPQRSTUVWZYX\n"
-        self.assertEqual(expected, f"{self.record:fasta}")
+        assert expected == f"{self.record:fasta}"
 
     def test_format_str_binary(self):
-        with self.assertRaisesRegex(
-            ValueError, "Binary format sff cannot be used with SeqRecord format method"
-        ):
+        with pytest.raises(ValueError, match="Binary format sff cannot be used with SeqRecord format method"):
             f"{self.record:sff}"
 
     def test_format_spaces(self):
@@ -232,15 +229,17 @@ Seq('ABCDEFGHIJKLMNOPQRSTUVWZYX')"""
         )
         rec.description = "TestDescr     with5spaces"
         expected = ">TestID TestDescr     with5spaces\nABCDEFGHIJKLMNOPQRSTUVWZYX\n"
-        self.assertEqual(expected, rec.format("fasta"))
+        assert expected == rec.format("fasta")
 
     def test_count(self):
-        self.assertEqual(self.record.count("HIJK"), 1)
-        self.assertRaises(TypeError, SeqRecord(Seq("AC777GT")).count, 7)
-        self.assertRaises(TypeError, SeqRecord(Seq("AC777GT")).count, None)
+        assert self.record.count("HIJK") == 1
+        with pytest.raises(TypeError):
+            SeqRecord(Seq("AC777GT")).count(7)
+        with pytest.raises(TypeError):
+            SeqRecord(Seq("AC777GT")).count(None)
 
     def test_upper(self):
-        self.assertEqual("ABCDEFGHIJKLMNOPQRSTUVWZYX", self.record.lower().upper().seq)
+        assert "ABCDEFGHIJKLMNOPQRSTUVWZYX" == self.record.lower().upper().seq
         seqobj = Seq("A")
         default__dict__ = {
             "_seq": seqobj,
@@ -254,28 +253,28 @@ Seq('ABCDEFGHIJKLMNOPQRSTUVWZYX')"""
         }
         bsr = SeqRecord(seqobj)
         bsru = bsr.upper()
-        self.assertEqual(bsru.__dict__, default__dict__)
+        assert bsru.__dict__ == default__dict__
 
     def test_lower(self):
-        self.assertEqual("abcdefghijklmnopqrstuvwzyx", self.record.lower().seq)
+        assert "abcdefghijklmnopqrstuvwzyx" == self.record.lower().seq
 
     def test_isupper(self):
-        self.assertTrue(self.record.isupper())
-        self.assertFalse(self.record.lower().isupper())
+        assert self.record.isupper()
+        assert not self.record.lower().isupper()
 
     def test_islower(self):
-        self.assertFalse(self.record.islower())
-        self.assertTrue(self.record.lower().islower())
+        assert not self.record.islower()
+        assert self.record.lower().islower()
 
     def test_slicing(self):
-        self.assertEqual("B", self.record[1])
-        self.assertEqual("BC", self.record[1:3].seq)
-        with self.assertRaises(ValueError):
+        assert "B" == self.record[1]
+        assert "BC" == self.record[1:3].seq
+        with pytest.raises(ValueError):
             c = self.record["a"].seq
         if np is not None:
             start, stop = np.array([1, 3])  # numpy integers
-            self.assertEqual("B", self.record[start])
-            self.assertEqual("BC", self.record[start:stop].seq)
+            assert "B" == self.record[start]
+            assert "BC" == self.record[start:stop].seq
 
     def test_slice_variants(self):
         """Simple slices using different start/end values."""
@@ -286,138 +285,136 @@ Seq('ABCDEFGHIJKLMNOPQRSTUVWZYX')"""
                 rec = self.record[start:end]
                 seq = self.record.seq[start:end]
                 seq_str = str(self.record.seq)[start:end]
-                self.assertEqual(seq_str, str(seq))
-                self.assertEqual(seq_str, str(rec.seq))
-                self.assertEqual("X" * len(seq_str), rec.letter_annotations["fake"])
+                assert seq_str == str(seq)
+                assert seq_str == str(rec.seq)
+                assert "X" * len(seq_str) == rec.letter_annotations["fake"]
 
     def test_slice_simple(self):
         """Simple slice."""
         rec = self.record
-        self.assertEqual(len(rec), 26)
+        assert len(rec) == 26
         left = rec[:10]
-        self.assertEqual(left.seq, rec.seq[:10])
+        assert left.seq == rec.seq[:10]
         right = rec[-10:]
-        self.assertEqual(right.seq, rec.seq[-10:])
+        assert right.seq == rec.seq[-10:]
         mid = rec[12:22]
-        self.assertEqual(mid.seq, rec.seq[12:22])
+        assert mid.seq == rec.seq[12:22]
         for sub in [left, right, mid]:
-            self.assertEqual(len(sub), 10)
-            self.assertEqual(sub.id, "TestID")
-            self.assertEqual(sub.name, "TestName")
-            self.assertEqual(sub.description, "TestDescr")
-            self.assertEqual(sub.letter_annotations, {"fake": "X" * 10})
-            self.assertEqual(sub.dbxrefs, [])  # May change this...
-            self.assertEqual(sub.annotations, {})  # May change this...
-            self.assertEqual(len(sub.features), 1)
+            assert len(sub) == 10
+            assert sub.id == "TestID"
+            assert sub.name == "TestName"
+            assert sub.description == "TestDescr"
+            assert sub.letter_annotations == {"fake": "X" * 10}
+            assert sub.dbxrefs == []  # May change this...
+            assert sub.annotations == {}  # May change this...
+            assert len(sub.features) == 1
             # By construction, each feature matches the full sliced region:
-            self.assertEqual(sub.features[0].extract(sub.seq), sub.seq)
-            self.assertEqual(sub.features[0].extract(sub.seq), sub.seq)
+            assert sub.features[0].extract(sub.seq) == sub.seq
+            assert sub.features[0].extract(sub.seq) == sub.seq
 
     def test_slice_zero(self):
         """Zero slice."""
         rec = self.record
-        self.assertEqual(len(rec), 26)
-        self.assertEqual(len(rec[2:-2]), 22)
-        self.assertEqual(len(rec[5:2]), 0)
-        self.assertEqual(len(rec[5:2][2:-2]), 0)
+        assert len(rec) == 26
+        assert len(rec[2:-2]) == 22
+        assert len(rec[5:2]) == 0
+        assert len(rec[5:2][2:-2]) == 0
 
     def test_add_simple(self):
         """Simple addition."""
         rec = self.record + self.record
-        self.assertEqual(len(rec), 52)
-        self.assertEqual(rec.id, "TestID")
-        self.assertEqual(rec.name, "TestName")
-        self.assertEqual(rec.description, "TestDescr")
-        self.assertEqual(rec.dbxrefs, ["TestXRef"])
-        self.assertEqual(rec.annotations, {"k": "v"})
-        self.assertEqual(rec.letter_annotations, {"fake": "X" * 52})
-        self.assertEqual(len(rec.features), 2 * len(self.record.features))
+        assert len(rec) == 52
+        assert rec.id == "TestID"
+        assert rec.name == "TestName"
+        assert rec.description == "TestDescr"
+        assert rec.dbxrefs == ["TestXRef"]
+        assert rec.annotations == {"k": "v"}
+        assert rec.letter_annotations == {"fake": "X" * 52}
+        assert len(rec.features) == 2 * len(self.record.features)
 
     def test_add_seq(self):
         """Simple addition of Seq or string."""
         for other in [Seq("BIO"), "BIO"]:
             rec = self.record + other  # will use SeqRecord's __add__ method
-            self.assertEqual(len(rec), 26 + 3)
-            self.assertEqual(rec.seq, str(self.record.seq) + "BIO")
-            self.assertEqual(rec.id, "TestID")
-            self.assertEqual(rec.name, "TestName")
-            self.assertEqual(rec.description, "TestDescr")
-            self.assertEqual(rec.dbxrefs, ["TestXRef"])
-            self.assertEqual(rec.annotations, {"k": "v"})
-            self.assertEqual(rec.letter_annotations, {})
-            self.assertEqual(len(rec.features), len(self.record.features))
-            self.assertEqual(rec.features[0].type, "source")
-            self.assertEqual(rec.features[0].location.start, 0)
-            self.assertEqual(rec.features[0].location.end, 26)  # not +3
+            assert len(rec) == 26 + 3
+            assert rec.seq == str(self.record.seq) + "BIO"
+            assert rec.id == "TestID"
+            assert rec.name == "TestName"
+            assert rec.description == "TestDescr"
+            assert rec.dbxrefs == ["TestXRef"]
+            assert rec.annotations == {"k": "v"}
+            assert rec.letter_annotations == {}
+            assert len(rec.features) == len(self.record.features)
+            assert rec.features[0].type == "source"
+            assert rec.features[0].location.start == 0
+            assert rec.features[0].location.end == 26  # not +3
 
     def test_add_seqrecord(self):
         """Simple left addition of SeqRecord from genbank file."""
         other = SeqIO.read("GenBank/dbsource_wrap.gb", "gb")
         other.dbxrefs = ["dummy"]
         rec = self.record + other
-        self.assertEqual(len(rec), len(self.record) + len(other))
-        self.assertEqual(rec.seq, self.record.seq + other.seq)
-        self.assertEqual(rec.id, "<unknown id>")
-        self.assertEqual(rec.name, "<unknown name>")
-        self.assertEqual(rec.description, "<unknown description>")
-        self.assertEqual(rec.dbxrefs, ["TestXRef", "dummy"])
-        self.assertEqual(len(rec.annotations), 0)
-        self.assertEqual(len(rec.letter_annotations), 0)
-        self.assertEqual(
-            len(rec.features), len(self.record.features) + len(other.features)
-        )
-        self.assertEqual(rec.features[0].type, "source")
-        self.assertEqual(rec.features[0].location.start, 0)
-        self.assertEqual(rec.features[0].location.end, len(self.record))  # not +3
+        assert len(rec) == len(self.record) + len(other)
+        assert rec.seq == self.record.seq + other.seq
+        assert rec.id == "<unknown id>"
+        assert rec.name == "<unknown name>"
+        assert rec.description == "<unknown description>"
+        assert rec.dbxrefs == ["TestXRef", "dummy"]
+        assert len(rec.annotations) == 0
+        assert len(rec.letter_annotations) == 0
+        assert len(rec.features) == len(self.record.features) + len(other.features)
+        assert rec.features[0].type == "source"
+        assert rec.features[0].location.start == 0
+        assert rec.features[0].location.end == len(self.record)  # not +3
         i = len(self.record.features)
-        self.assertEqual(rec.features[i].type, "source")
-        self.assertEqual(rec.features[i].location.start, len(self.record))
-        self.assertEqual(rec.features[i].location.end, len(rec))
+        assert rec.features[i].type == "source"
+        assert rec.features[i].location.start == len(self.record)
+        assert rec.features[i].location.end == len(rec)
 
     def test_add_seq_left(self):
         """Simple left addition of Seq or string."""
         for other in [Seq("BIO"), "BIO"]:
             rec = other + self.record  # will use SeqRecord's __radd__ method
-            self.assertEqual(len(rec), 26 + 3)
-            self.assertEqual(rec.seq, "BIO" + self.record.seq)
-            self.assertEqual(rec.id, "TestID")
-            self.assertEqual(rec.name, "TestName")
-            self.assertEqual(rec.description, "TestDescr")
-            self.assertEqual(rec.dbxrefs, ["TestXRef"])
-            self.assertEqual(rec.annotations, {"k": "v"})
-            self.assertEqual(rec.letter_annotations, {})
-            self.assertEqual(len(rec.features), len(self.record.features))
-            self.assertEqual(rec.features[0].type, "source")
-            self.assertEqual(rec.features[0].location.start, 3)
-            self.assertEqual(rec.features[0].location.end, 26 + 3)
+            assert len(rec) == 26 + 3
+            assert rec.seq == "BIO" + self.record.seq
+            assert rec.id == "TestID"
+            assert rec.name == "TestName"
+            assert rec.description == "TestDescr"
+            assert rec.dbxrefs == ["TestXRef"]
+            assert rec.annotations == {"k": "v"}
+            assert rec.letter_annotations == {}
+            assert len(rec.features) == len(self.record.features)
+            assert rec.features[0].type == "source"
+            assert rec.features[0].location.start == 3
+            assert rec.features[0].location.end == 26 + 3
 
     def test_slice_add_simple(self):
         """Simple slice and add."""
         for cut in range(27):
             rec = self.record[:cut] + self.record[cut:]
-            self.assertEqual(rec.seq, self.record.seq)
-            self.assertEqual(len(rec), 26)
-            self.assertEqual(rec.id, "TestID")
-            self.assertEqual(rec.name, "TestName")
-            self.assertEqual(rec.description, "TestDescr")
-            self.assertEqual(rec.dbxrefs, [])  # May change this...
-            self.assertEqual(rec.annotations, {})  # May change this...
-            self.assertEqual(rec.letter_annotations, {"fake": "X" * 26})
-            self.assertLessEqual(len(rec.features), len(self.record.features))
+            assert rec.seq == self.record.seq
+            assert len(rec) == 26
+            assert rec.id == "TestID"
+            assert rec.name == "TestName"
+            assert rec.description == "TestDescr"
+            assert rec.dbxrefs == []  # May change this...
+            assert rec.annotations == {}  # May change this...
+            assert rec.letter_annotations == {"fake": "X" * 26}
+            assert len(rec.features) <= len(self.record.features)
 
     def test_slice_add_shift(self):
         """Simple slice and add to shift."""
         for cut in range(27):
             rec = self.record[cut:] + self.record[:cut]
-            self.assertEqual(rec.seq, self.record.seq[cut:] + self.record.seq[:cut])
-            self.assertEqual(len(rec), 26)
-            self.assertEqual(rec.id, "TestID")
-            self.assertEqual(rec.name, "TestName")
-            self.assertEqual(rec.description, "TestDescr")
-            self.assertEqual(rec.dbxrefs, [])  # May change this...
-            self.assertEqual(rec.annotations, {})  # May change this...
-            self.assertEqual(rec.letter_annotations, {"fake": "X" * 26})
-            self.assertLessEqual(len(rec.features), len(self.record.features))
+            assert rec.seq == self.record.seq[cut:] + self.record.seq[:cut]
+            assert len(rec) == 26
+            assert rec.id == "TestID"
+            assert rec.name == "TestName"
+            assert rec.description == "TestDescr"
+            assert rec.dbxrefs == []  # May change this...
+            assert rec.annotations == {}  # May change this...
+            assert rec.letter_annotations == {"fake": "X" * 26}
+            assert len(rec.features) <= len(self.record.features)
 
 
 class SeqRecordMethodsMore(unittest.TestCase):
@@ -446,53 +443,36 @@ class SeqRecordMethodsMore(unittest.TestCase):
             letter_annotations=True,
         )
 
-        self.assertEqual("CAGT", rc.seq)
-        self.assertEqual("TestID", rc.id)
-        self.assertEqual("TestID", s.reverse_complement(id="TestID").id)
+        assert "CAGT" == rc.seq
+        assert "TestID" == rc.id
+        assert "TestID" == s.reverse_complement(id="TestID").id
 
-        self.assertEqual("TestName", rc.name)
-        self.assertEqual("TestName", s.reverse_complement(name="TestName").name)
+        assert "TestName" == rc.name
+        assert "TestName" == s.reverse_complement(name="TestName").name
 
-        self.assertEqual("TestDescription", rc.description)
-        self.assertEqual(
-            "TestDescription",
-            s.reverse_complement(description="TestDescription").description,
-        )
+        assert "TestDescription" == rc.description
+        assert "TestDescription" == s.reverse_complement(description="TestDescription").description
 
-        self.assertEqual(["TestDbxrefs"], rc.dbxrefs)
-        self.assertEqual(
-            ["TestDbxrefs"], s.reverse_complement(dbxrefs=["TestDbxrefs"]).dbxrefs
-        )
+        assert ["TestDbxrefs"] == rc.dbxrefs
+        assert ["TestDbxrefs"] == s.reverse_complement(dbxrefs=["TestDbxrefs"]).dbxrefs
 
-        self.assertEqual(
-            "[SeqFeature(SimpleLocation(ExactPosition(1), ExactPosition(4)), type='Site')]",
-            repr(rc.features),
-        )
+        assert "[SeqFeature(SimpleLocation(ExactPosition(1), ExactPosition(4)), type='Site')]" == repr(rc.features)
         rc2 = s.reverse_complement(
             features=[SeqFeature(SimpleLocation(1, 4), type="Site")]
         )
-        self.assertEqual(
-            "[SeqFeature(SimpleLocation(ExactPosition(1), ExactPosition(4)), type='Site')]",
-            repr(rc2.features),
-        )
+        assert "[SeqFeature(SimpleLocation(ExactPosition(1), ExactPosition(4)), type='Site')]" == repr(rc2.features)
 
-        self.assertEqual({"organism": "bombyx"}, rc.annotations)
-        self.assertEqual(
-            {"organism": "bombyx"},
-            s.reverse_complement(annotations={"organism": "bombyx"}).annotations,
-        )
+        assert {"organism": "bombyx"} == rc.annotations
+        assert {"organism": "bombyx"} == s.reverse_complement(annotations={"organism": "bombyx"}).annotations
 
-        self.assertEqual({"test": "dcba"}, rc.letter_annotations)
-        self.assertEqual(
-            {"test": "abcd"},
-            s.reverse_complement(
+        assert {"test": "dcba"} == rc.letter_annotations
+        assert {"test": "abcd"} == s.reverse_complement(
                 letter_annotations={"test": "abcd"}
-            ).letter_annotations,
-        )
+            ).letter_annotations
 
     def test_reverse_complement_mutable_seq(self):
         s = SeqRecord(MutableSeq("ACTG"))
-        self.assertEqual("CAGT", s.reverse_complement().seq)
+        assert "CAGT" == s.reverse_complement().seq
 
     def test_translate(self):
         s = SeqRecord(
@@ -507,14 +487,14 @@ class SeqRecordMethodsMore(unittest.TestCase):
         )
 
         t = s.translate()
-        self.assertEqual(t.seq, "MV*")
-        self.assertEqual(t.id, "<unknown id>")
-        self.assertEqual(t.name, "<unknown name>")
-        self.assertEqual(t.description, "<unknown description>")
-        self.assertFalse(t.dbxrefs)
-        self.assertFalse(t.features)
-        self.assertEqual(t.annotations, {"molecule_type": "protein"})
-        self.assertFalse(t.letter_annotations)
+        assert t.seq == "MV*"
+        assert t.id == "<unknown id>"
+        assert t.name == "<unknown name>"
+        assert t.description == "<unknown description>"
+        assert not t.dbxrefs
+        assert not t.features
+        assert t.annotations == {"molecule_type": "protein"}
+        assert not t.letter_annotations
 
         t = s.translate(
             cds=True,
@@ -524,74 +504,80 @@ class SeqRecordMethodsMore(unittest.TestCase):
             dbxrefs=True,
             annotations=True,
         )
-        self.assertEqual(t.seq, "MV")
-        self.assertEqual(t.id, "TestID")
-        self.assertEqual(t.name, "TestName")
-        self.assertEqual(t.description, "TestDescription")
-        self.assertEqual(t.dbxrefs, ["TestDbxrefs"])
-        self.assertFalse(t.features)
-        self.assertEqual(
-            t.annotations, {"organism": "bombyx", "molecule_type": "protein"}
-        )
-        self.assertFalse(t.letter_annotations)
+        assert t.seq == "MV"
+        assert t.id == "TestID"
+        assert t.name == "TestName"
+        assert t.description == "TestDescription"
+        assert t.dbxrefs == ["TestDbxrefs"]
+        assert not t.features
+        assert t.annotations == {"organism": "bombyx", "molecule_type": "protein"}
+        assert not t.letter_annotations
 
     def test_no_side_effects(self):
         a = SeqRecord(Seq("AAA"))
-        self.assertIsNone(a._per_letter_annotations)
+        assert a._per_letter_annotations is None
         a.reverse_complement()
-        self.assertIsNone(a._per_letter_annotations)
+        assert a._per_letter_annotations is None
 
         a = SeqRecord(Seq("AAA"))
-        self.assertIsNone(a._per_letter_annotations)
+        assert a._per_letter_annotations is None
         a.translate()
-        self.assertIsNone(a._per_letter_annotations)
+        assert a._per_letter_annotations is None
 
     def test_lt_exception(self):
         def lt():
             return SeqRecord(Seq("A")) < SeqRecord(Seq("A"))
 
-        self.assertRaises(NotImplementedError, lt)
+        with pytest.raises(NotImplementedError):
+            lt()
 
     def test_le_exception(self):
         def le():
             return SeqRecord(Seq("A")) <= SeqRecord(Seq("A"))  # type: ignore
 
-        self.assertRaises(NotImplementedError, le)
+        with pytest.raises(NotImplementedError):
+            le()
 
     def test_eq_exception(self):
         def equality():
             return SeqRecord(Seq("A")) == SeqRecord(Seq("A"))  # type: ignore
 
-        self.assertRaises(NotImplementedError, equality)
+        with pytest.raises(NotImplementedError):
+            equality()
 
     def test_ne_exception(self):
         def notequality():
             return SeqRecord(Seq("A")) != SeqRecord(Seq("A"))  # type: ignore
 
-        self.assertRaises(NotImplementedError, notequality)
+        with pytest.raises(NotImplementedError):
+            notequality()
 
     def test_gt_exception(self):
         def gt():
             return SeqRecord(Seq("A")) > SeqRecord(Seq("A"))  # type: ignore
 
-        self.assertRaises(NotImplementedError, gt)
+        with pytest.raises(NotImplementedError):
+            gt()
 
     def test_ge_exception(self):
         def ge():
             return SeqRecord(Seq("A")) >= SeqRecord(Seq("A"))  # type: ignore
 
-        self.assertRaises(NotImplementedError, ge)
+        with pytest.raises(NotImplementedError):
+            ge()
 
     def test_hash_exception(self):
         def hash1():
             hash(SeqRecord(Seq("A")))
 
-        self.assertRaises(TypeError, hash1)
+        with pytest.raises(TypeError):
+            hash1()
 
         def hash2():
             SeqRecord(Seq("A")).__hash__()
 
-        self.assertRaises(TypeError, hash2)
+        with pytest.raises(TypeError):
+            hash2()
 
 
 class TestTranslation(unittest.TestCase):
@@ -609,14 +595,14 @@ class TestTranslation(unittest.TestCase):
 
     def test_defaults(self):
         t = self.s.translate()
-        self.assertEqual(t.seq, "MV*")
-        self.assertEqual(t.id, "<unknown id>")
-        self.assertEqual(t.name, "<unknown name>")
-        self.assertEqual(t.description, "<unknown description>")
-        self.assertFalse(t.dbxrefs)
-        self.assertFalse(t.features)
-        self.assertEqual(t.annotations, {"molecule_type": "protein"})
-        self.assertFalse(t.letter_annotations)
+        assert t.seq == "MV*"
+        assert t.id == "<unknown id>"
+        assert t.name == "<unknown name>"
+        assert t.description == "<unknown description>"
+        assert not t.dbxrefs
+        assert not t.features
+        assert t.annotations == {"molecule_type": "protein"}
+        assert not t.letter_annotations
 
     def test_preserve(self):
         t = self.s.translate(
@@ -627,20 +613,20 @@ class TestTranslation(unittest.TestCase):
             dbxrefs=True,
             annotations=True,
         )
-        self.assertEqual(t.seq, "MV")
-        self.assertEqual(t.id, "TestID")
-        self.assertEqual(t.name, "TestName")
-        self.assertEqual(t.description, "TestDescription")
-        self.assertEqual(t.dbxrefs, ["TestDbxrefs"])
-        self.assertFalse(t.features)
-        self.assertEqual(
-            t.annotations, {"organism": "bombyx", "molecule_type": "protein"}
-        )
-        self.assertFalse(t.letter_annotations)
+        assert t.seq == "MV"
+        assert t.id == "TestID"
+        assert t.name == "TestName"
+        assert t.description == "TestDescription"
+        assert t.dbxrefs == ["TestDbxrefs"]
+        assert not t.features
+        assert t.annotations == {"organism": "bombyx", "molecule_type": "protein"}
+        assert not t.letter_annotations
 
         # Should not preserve these
-        self.assertRaises(TypeError, self.s.translate, features=True)
-        self.assertRaises(TypeError, self.s.translate, letter_annotations=True)
+        with pytest.raises(TypeError):
+            self.s.translate(features=True)
+        with pytest.raises(TypeError):
+            self.s.translate(letter_annotations=True)
 
     def test_new_annot(self):
         t = self.s.translate(
@@ -655,16 +641,15 @@ class TestTranslation(unittest.TestCase):
             annotations={"a": "team"},
             letter_annotations={"aa": ["Met", "Val"]},
         )
-        self.assertEqual(t.seq, "MV")
-        self.assertEqual(t.id, "Foo")
-        self.assertEqual(t.name, "Bar")
-        self.assertEqual(t.description, "Baz")
-        self.assertEqual(t.dbxrefs, ["Nope"])
-        self.assertEqual(len(t.features), 1)
-        self.assertEqual(t.annotations, {"a": "team", "molecule_type": "protein"})
-        self.assertEqual(t.letter_annotations, {"aa": ["Met", "Val"]})
+        assert t.seq == "MV"
+        assert t.id == "Foo"
+        assert t.name == "Bar"
+        assert t.description == "Baz"
+        assert t.dbxrefs == ["Nope"]
+        assert len(t.features) == 1
+        assert t.annotations == {"a": "team", "molecule_type": "protein"}
+        assert t.letter_annotations == {"aa": ["Met", "Val"]}
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

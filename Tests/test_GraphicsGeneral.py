@@ -7,8 +7,8 @@
 import os
 import random
 import unittest
+import pytest
 
-from Bio import MissingExternalDependencyError
 
 try:
     # Skip the test if reportlab is not installed
@@ -16,9 +16,7 @@ try:
 
     del r
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
+    pytest.skip("Install reportlab if you want to use Bio.Graphics.", allow_module_level=True)
 
 # the stuff we're testing
 from Bio.Graphics.Comparative import ComparativeScatterPlot
@@ -67,5 +65,4 @@ class ComparativeTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

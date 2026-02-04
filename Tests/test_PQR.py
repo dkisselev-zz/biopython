@@ -12,6 +12,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
@@ -35,14 +36,14 @@ class ParseSimplePQR(unittest.TestCase):
         atom = next(struct.get_atoms())
 
         # Check that charge and radius are properly initallized
-        self.assertEqual(atom.get_charge(), -0.1)
-        self.assertEqual(atom.get_radius(), 1.0)
-        self.assertIsNone(atom.get_occupancy())
-        self.assertIsNone(atom.get_bfactor())
+        assert atom.get_charge() == -0.1
+        assert atom.get_radius() == 1.0
+        assert atom.get_occupancy() is None
+        assert atom.get_bfactor() is None
 
         # Coordinates
         for i in range(1, 3):
-            self.assertEqual(atom.get_coord()[i], i + 1)
+            assert atom.get_coord()[i] == i + 1
 
     def test_bad_xyz(self):
         """Test if bad coordinates exception is raised."""
@@ -51,9 +52,8 @@ class ParseSimplePQR(unittest.TestCase):
 
         # Get sole atom of this structure
         parser = PDBParser(is_pqr=True)  # default initialization
-        self.assertRaises(
-            PDBConstructionException, parser.get_structure, "example", StringIO(data)
-        )
+        with pytest.raises(PDBConstructionException):
+            parser.get_structure("example", StringIO(data))
 
     def test_bad_charge(self):
         """Test if missing or malformed charge case is handled correctly."""
@@ -68,7 +68,7 @@ class ParseSimplePQR(unittest.TestCase):
             structure = parser.get_structure("test", StringIO(malformed))
 
         atom = next(structure.get_atoms())
-        self.assertIsNone(atom.get_charge())
+        assert atom.get_charge() is None
 
         # Missing
         with warnings.catch_warnings(record=True) as w:
@@ -76,16 +76,12 @@ class ParseSimplePQR(unittest.TestCase):
             structure = parser.get_structure("test", StringIO(missing))
 
         atom = next(structure.get_atoms())
-        self.assertIsNone(atom.get_charge())
+        assert atom.get_charge() is None
 
         # Test PERMISSIVE mode behaviour
         parser = PDBParser(PERMISSIVE=False, is_pqr=True)  # default initialization
-        self.assertRaises(
-            PDBConstructionException,
-            parser.get_structure,
-            "example",
-            StringIO(malformed),
-        )
+        with pytest.raises(PDBConstructionException):
+            parser.get_structure("example", StringIO(malformed))
 
     def test_bad_radius(self):
         """Test if missing, malformed or negative radius case is handled correctly."""
@@ -101,7 +97,7 @@ class ParseSimplePQR(unittest.TestCase):
             structure = parser.get_structure("test", StringIO(malformed))
 
         atom = next(structure.get_atoms())
-        self.assertIsNone(atom.get_radius())
+        assert atom.get_radius() is None
 
         # Missing
         with warnings.catch_warnings(record=True) as w:
@@ -109,7 +105,7 @@ class ParseSimplePQR(unittest.TestCase):
             structure = parser.get_structure("test", StringIO(missing))
 
         atom = next(structure.get_atoms())
-        self.assertIsNone(atom.get_radius())
+        assert atom.get_radius() is None
 
         # Negative
         with warnings.catch_warnings(record=True) as w:
@@ -117,25 +113,16 @@ class ParseSimplePQR(unittest.TestCase):
             structure = parser.get_structure("test", StringIO(negative))
 
         atom = next(structure.get_atoms())
-        self.assertIsNone(atom.get_radius())
+        assert atom.get_radius() is None
 
         # Test PERMISSIVE mode behaviour
         parser = PDBParser(PERMISSIVE=False, is_pqr=True)  # default initialization
-        self.assertRaises(
-            PDBConstructionException,
-            parser.get_structure,
-            "example",
-            StringIO(malformed),
-        )
-        self.assertRaises(
-            PDBConstructionException,
-            parser.get_structure,
-            "example",
-            StringIO(negative),
-        )
-        self.assertRaises(
-            PDBConstructionException, parser.get_structure, "example", StringIO(missing)
-        )
+        with pytest.raises(PDBConstructionException):
+            parser.get_structure("example", StringIO(malformed))
+        with pytest.raises(PDBConstructionException):
+            parser.get_structure("example", StringIO(negative))
+        with pytest.raises(PDBConstructionException):
+            parser.get_structure("example", StringIO(missing))
 
 
 class WriteTest(unittest.TestCase):
@@ -168,23 +155,20 @@ class WriteTest(unittest.TestCase):
             output_struct = self.pqr_parser.get_structure("1a8o", filename)
 
             # Comparisons
-            self.assertEqual(
-                len(output_struct), len(self.example_structure)
-            )  # Structure Length
+            assert len(output_struct) == len(self.example_structure)  # Structure Length
 
             original_residues = len(list(self.example_structure.get_residues()))
             parsed_residues = len(list(output_struct.get_residues()))
-            self.assertEqual(parsed_residues, original_residues)  # Number of Residues
+            assert parsed_residues == original_residues  # Number of Residues
 
             # Atom-wise comparison
             original_atoms = self.example_structure.get_atoms()
             for atom in output_struct.get_atoms():
-                self.assertEqual(atom, next(original_atoms))
+                assert atom == next(original_atoms)
 
         finally:
             os.remove(filename)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

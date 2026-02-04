@@ -7,14 +7,15 @@
 """Tests for mmtf online module."""
 
 import unittest
+import pytest
 import warnings
 
-import requires_internet
 
 from Bio.PDB.mmtf import MMTFParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 class OnlineMMTF(unittest.TestCase):
@@ -27,9 +28,8 @@ class OnlineMMTF(unittest.TestCase):
             warnings.simplefilter("ignore", PDBConstructionWarning)
             struct = parser.get_structure_from_url("4ZHL")
         atoms = list(struct.get_atoms())
-        self.assertEqual(len(atoms), 2080)
+        assert len(atoms) == 2080
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

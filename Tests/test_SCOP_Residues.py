@@ -6,6 +6,7 @@
 """Unit test for Residues."""
 
 import unittest
+import pytest
 
 from Bio.SCOP.Residues import Residues
 
@@ -29,43 +30,43 @@ class ResiduesTests(unittest.TestCase):
     def testParse(self):
         for loc in self.res:
             r = Residues(loc[0])
-            self.assertEqual(r.fragments, loc[1])
+            assert r.fragments == loc[1]
 
     def testStr(self):
         for loc in self.res:
             r = Residues(loc[0])
-            self.assertEqual(str(r), loc[0])
+            assert str(r) == loc[0]
 
     def testAstralParse(self):
         """Test if we can parse residue subsets enclosed in brackets."""
         for loc in self.res:
             r = Residues("(" + loc[0] + ")")
-            self.assertEqual(r.fragments, loc[1])
+            assert r.fragments == loc[1]
 
     def testPdbId(self):
         pdbid = "1ddf"
         for loc in self.res:
             r = Residues("\t 1ddf \t" + loc[0] + "\t\n\n\n")
-            self.assertEqual(r.pdbid, pdbid)
-            self.assertEqual(str(r), pdbid + " " + loc[0])
+            assert r.pdbid == pdbid
+            assert str(r) == pdbid + " " + loc[0]
 
             r = Residues(pdbid + " " + loc[0])
-            self.assertEqual(r.pdbid, pdbid)
-            self.assertEqual(str(r), pdbid + " " + loc[0])
+            assert r.pdbid == pdbid
+            assert str(r) == pdbid + " " + loc[0]
 
             r = Residues("104l A:112-113")
-            self.assertEqual(r.pdbid, "104l")
-            self.assertEqual(r.fragments, (("A", "112", "113"),))
+            assert r.pdbid == "104l"
+            assert r.fragments == (("A", "112", "113"),)
 
     def testJustPdbId(self):
         r = Residues("1sds")
-        self.assertEqual(r.pdbid, "1sds")
-        self.assertFalse(r.fragments)
+        assert r.pdbid == "1sds"
+        assert not r.fragments
 
     def testParseError(self):
-        self.assertRaises(ValueError, Residues, "09324923423hh./;,.389")
+        with pytest.raises(ValueError):
+            Residues("09324923423hh./;,.389")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -15,8 +15,8 @@ Goals:
 """
 
 import unittest
+import pytest
 
-import requires_internet
 
 from Bio import Entrez  # Testing this
 from Bio import ExPASy  # Testing this
@@ -24,7 +24,8 @@ from Bio import SeqIO
 from Bio.SeqUtils.CheckSum import seguid
 from Bio.SwissProt import SwissProtParserError
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 # This lets us set the email address to be sent to NCBI Entrez:
 Entrez.email = "biopython@biopython.org"
@@ -46,9 +47,9 @@ class ExPASyTests(unittest.TestCase):
             ):
                 raise OSError from None
         handle.close()
-        self.assertEqual(record.id, identifier)
-        self.assertEqual(len(record), 394)
-        self.assertEqual(seguid(record.seq), "5Y08l+HJRDIlhLKzFEfkcKd1dkM")
+        assert record.id == identifier
+        assert len(record) == 394
+        assert seguid(record.seq) == "5Y08l+HJRDIlhLKzFEfkcKd1dkM"
 
 
 class EntrezTests(unittest.TestCase):
@@ -63,14 +64,11 @@ class EntrezTests(unittest.TestCase):
             gi_to_acc = {"6273291": "AF191665.1", "16130152": "NP_416719.1"}
             if entry in gi_to_acc:
                 entry = gi_to_acc[entry]
-            self.assertTrue(
-                (entry in record.name)
+            assert ((entry in record.name)
                 or (entry in record.id)
-                or ("gi" in record.annotations and record.annotations["gi"] == entry),
-                f"{entry} got {record.name}, {record.id}",
-            )
-            self.assertEqual(len(record), length)
-            self.assertEqual(seguid(record.seq), checksum)
+                or ("gi" in record.annotations and record.annotations["gi"] == entry)), f"{entry} got {record.name}, {record.id}"
+            assert len(record) == length
+            assert seguid(record.seq) == checksum
 
 
 for database, formats, entry, length, checksum in [
@@ -99,5 +97,4 @@ for database, formats, entry, length, checksum in [
 del database, formats, entry, length, checksum
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

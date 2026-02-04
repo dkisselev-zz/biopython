@@ -5,17 +5,9 @@
 """Tests for Cluster module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.Cluster."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 class TestCluster(unittest.TestCase):
     module = "Bio.Cluster"
 
@@ -84,32 +76,32 @@ class TestCluster(unittest.TestCase):
         try:
             treecluster(data1)
         except Exception:
-            self.fail("treecluster failed to accept matrix data1")
+            raise AssertionError("treecluster failed to accept matrix data1")
 
         try:
             treecluster(data2)
         except Exception:
-            self.fail("treecluster failed to accept matrix data2")
+            raise AssertionError("treecluster failed to accept matrix data2")
 
         try:
             treecluster(data3)
         except Exception:
-            self.fail("treecluster failed to accept matrix data3")
+            raise AssertionError("treecluster failed to accept matrix data3")
 
         try:
             treecluster(data4)
         except Exception:
-            self.fail("treecluster failed to accept matrix data4")
+            raise AssertionError("treecluster failed to accept matrix data4")
 
         try:
             treecluster(data5)
         except Exception:
-            self.fail("treecluster failed to accept matrix data5")
+            raise AssertionError("treecluster failed to accept matrix data5")
 
         try:
             treecluster(data6)
         except Exception:
-            self.fail("treecluster failed to accept matrix data6")
+            raise AssertionError("treecluster failed to accept matrix data6")
 
         # Ragged matrix
         data7 = [
@@ -156,16 +148,26 @@ class TestCluster(unittest.TestCase):
         # Empty array
         data16 = np.array([[]], "d")
 
-        self.assertRaises(ValueError, treecluster, data7)
-        self.assertRaises(ValueError, treecluster, data8)
-        self.assertRaises(ValueError, treecluster, data9)
-        self.assertRaises(ValueError, treecluster, data10)
-        self.assertRaises(TypeError, treecluster, data11)
-        self.assertRaises(ValueError, treecluster, data12)
-        self.assertRaises(ValueError, treecluster, data13)
-        self.assertRaises(ValueError, treecluster, data14)
-        self.assertRaises(ValueError, treecluster, data15)
-        self.assertRaises(ValueError, treecluster, data16)
+        with pytest.raises(ValueError):
+            treecluster(data7)
+        with pytest.raises(ValueError):
+            treecluster(data8)
+        with pytest.raises(ValueError):
+            treecluster(data9)
+        with pytest.raises(ValueError):
+            treecluster(data10)
+        with pytest.raises(TypeError):
+            treecluster(data11)
+        with pytest.raises(ValueError):
+            treecluster(data12)
+        with pytest.raises(ValueError):
+            treecluster(data13)
+        with pytest.raises(ValueError):
+            treecluster(data14)
+        with pytest.raises(ValueError):
+            treecluster(data15)
+        with pytest.raises(ValueError):
+            treecluster(data16)
 
     def test_mask_parse(self):
         if TestCluster.module == "Bio.Cluster":
@@ -255,32 +257,32 @@ class TestCluster(unittest.TestCase):
         try:
             treecluster(data, mask1)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask1")
+            raise AssertionError("treecluster failed to accept matrix mask1")
 
         try:
             treecluster(data, mask2)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask2")
+            raise AssertionError("treecluster failed to accept matrix mask2")
 
         try:
             treecluster(data, mask3)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask3")
+            raise AssertionError("treecluster failed to accept matrix mask3")
 
         try:
             treecluster(data, mask4)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask4")
+            raise AssertionError("treecluster failed to accept matrix mask4")
 
         try:
             treecluster(data, mask5)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask5")
+            raise AssertionError("treecluster failed to accept matrix mask5")
 
         try:
             treecluster(data, mask6)
         except Exception:
-            self.fail("treecluster failed to accept matrix mask6")
+            raise AssertionError("treecluster failed to accept matrix mask6")
 
         # Ragged mask
         # fmt: off
@@ -352,18 +354,30 @@ class TestCluster(unittest.TestCase):
         mask17 = {"a": [[1, 0], [1, 1]]}
         mask18 = [None]
 
-        self.assertRaises(ValueError, treecluster, data, mask7)
-        self.assertRaises(ValueError, treecluster, data, mask8)
-        self.assertRaises(ValueError, treecluster, data, mask9)
-        self.assertRaises(ValueError, treecluster, data, mask10)
-        self.assertRaises(ValueError, treecluster, data, mask11)
-        self.assertRaises(ValueError, treecluster, data, mask12)
-        self.assertRaises(ValueError, treecluster, data, mask13)
-        self.assertRaises(ValueError, treecluster, data, mask14)
-        self.assertRaises(ValueError, treecluster, data, mask15)
-        self.assertRaises(ValueError, treecluster, data, mask16)
-        self.assertRaises(TypeError, treecluster, data, mask17)
-        self.assertRaises(TypeError, treecluster, data, mask18)
+        with pytest.raises(ValueError):
+            treecluster(data, mask7)
+        with pytest.raises(ValueError):
+            treecluster(data, mask8)
+        with pytest.raises(ValueError):
+            treecluster(data, mask9)
+        with pytest.raises(ValueError):
+            treecluster(data, mask10)
+        with pytest.raises(ValueError):
+            treecluster(data, mask11)
+        with pytest.raises(ValueError):
+            treecluster(data, mask12)
+        with pytest.raises(ValueError):
+            treecluster(data, mask13)
+        with pytest.raises(ValueError):
+            treecluster(data, mask14)
+        with pytest.raises(ValueError):
+            treecluster(data, mask15)
+        with pytest.raises(ValueError):
+            treecluster(data, mask16)
+        with pytest.raises(TypeError):
+            treecluster(data, mask17)
+        with pytest.raises(TypeError):
+            treecluster(data, mask18)
 
     def test_kcluster_arguments(self):
         # Test if incorrect arguments are caught by the C code
@@ -399,7 +413,7 @@ class TestCluster(unittest.TestCase):
         clusterid = np.zeros(nrows, np.int32)
 
         message = "^data matrix is empty$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data[:0, :],
                 nclusters=nclusters,
@@ -411,7 +425,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -423,7 +437,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask has incorrect dimensions 4 x 3 \\(expected 4 x 5\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -436,7 +450,7 @@ class TestCluster(unittest.TestCase):
                 clusterid=clusterid,
             )
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -448,7 +462,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^weight has incorrect size 3 \\(expected 5\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -461,7 +475,7 @@ class TestCluster(unittest.TestCase):
                 clusterid=clusterid,
             )
         message = "^nclusters should be positive$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=-1,
@@ -474,7 +488,7 @@ class TestCluster(unittest.TestCase):
                 clusterid=clusterid,
             )
         message = "^more clusters than items to be clustered$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=1234,
@@ -487,7 +501,7 @@ class TestCluster(unittest.TestCase):
                 clusterid=clusterid,
             )
         message = "^incorrect size \\(3, expected 4\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -500,7 +514,7 @@ class TestCluster(unittest.TestCase):
                 clusterid=clusterid[:3],
             )
         message = "^more clusters requested than found in clusterid$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -514,7 +528,7 @@ class TestCluster(unittest.TestCase):
             )
         clusterid = np.array([0, -1, 2, 3], np.int32)
         message = "^negative cluster number found$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -528,7 +542,7 @@ class TestCluster(unittest.TestCase):
             )
         clusterid = np.array([0, 0, 2, 3], np.int32)
         message = "^cluster 1 is empty$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kcluster(
                 data,
                 nclusters=nclusters,
@@ -584,21 +598,21 @@ class TestCluster(unittest.TestCase):
             method="a",
             dist="e",
         )
-        self.assertEqual(len(clusterid), len(data))
+        assert len(clusterid) == len(data)
 
         correct = [0, 1, 1, 2]
         mapping = [clusterid[correct.index(i)] for i in range(nclusters)]
         for i in range(len(clusterid)):
-            self.assertEqual(clusterid[i], mapping[correct[i]])
+            assert clusterid[i] == mapping[correct[i]]
 
         cdata, cmask = clustercentroids(
             data, mask=mask, clusterid=clusterid, method="a", transpose=False
         )
 
-        self.assertEqual(cdata.shape, (nclusters, ncols))
-        self.assertEqual(cmask.shape, (nclusters, ncols))
+        assert cdata.shape == (nclusters, ncols)
+        assert cmask.shape == (nclusters, ncols)
         for value in cmask.flat:
-            self.assertEqual(value, 1)
+            assert value == 1
 
         correct = np.array(
             [
@@ -609,7 +623,7 @@ class TestCluster(unittest.TestCase):
         )
         for i in range(nclusters):
             for j in range(ncols):
-                self.assertAlmostEqual(cdata[mapping[i], j], correct[i, j])
+                assert cdata[mapping[i], j] == pytest.approx(correct[i, j], abs=5e-8)
 
         # First data set, using transpose=True
         weight = np.array([1, 1, 1, 1])
@@ -623,21 +637,21 @@ class TestCluster(unittest.TestCase):
             method="a",
             dist="e",
         )
-        self.assertEqual(len(clusterid), ncols)
+        assert len(clusterid) == ncols
 
         correct = [0, 1, 1, 2, 1]
         mapping = [clusterid[correct.index(i)] for i in range(nclusters)]
         for i in range(len(clusterid)):
-            self.assertEqual(clusterid[i], mapping[correct[i]])
+            assert clusterid[i] == mapping[correct[i]]
 
         cdata, cmask = clustercentroids(
             data, mask=mask, clusterid=clusterid, method="a", transpose=True
         )
 
-        self.assertEqual(cdata.shape, (nrows, nclusters))
-        self.assertEqual(cmask.shape, (nrows, nclusters))
+        assert cdata.shape == (nrows, nclusters)
+        assert cmask.shape == (nrows, nclusters)
         for value in cmask.flat:
-            self.assertEqual(value, 1)
+            assert value == 1
 
         correct = np.array(
             [
@@ -649,7 +663,7 @@ class TestCluster(unittest.TestCase):
         )
         for i in range(nrows):
             for j in range(nclusters):
-                self.assertAlmostEqual(cdata[i, mapping[j]], correct[i, j])
+                assert cdata[i, mapping[j]] == pytest.approx(correct[i, j], abs=5e-8)
 
         # Second data set
         weight = np.array([1, 1])
@@ -700,26 +714,26 @@ class TestCluster(unittest.TestCase):
             method="a",
             dist="e",
         )
-        self.assertEqual(len(clusterid), len(data))
+        assert len(clusterid) == len(data)
 
         correct = [0, 0, 0, 0, 0, 0, 1, 1, 2, 1, 1, 1, 1]
         mapping = [clusterid[correct.index(i)] for i in range(nclusters)]
         for i in range(len(clusterid)):
-            self.assertEqual(clusterid[i], mapping[correct[i]])
+            assert clusterid[i] == mapping[correct[i]]
 
         cdata, cmask = clustercentroids(
             data, mask=mask, clusterid=clusterid, method="a", transpose=False
         )
 
-        self.assertEqual(cdata.shape, (nclusters, ncols))
-        self.assertEqual(cmask.shape, (nclusters, ncols))
+        assert cdata.shape == (nclusters, ncols)
+        assert cmask.shape == (nclusters, ncols)
         for value in cmask.flat:
-            self.assertEqual(value, 1)
+            assert value == 1
 
         correct = np.array([[1.5000000, 1.55], [5.3333333, 5.55], [3.1000000, 3.30]])
         for i in range(nclusters):
             for j in range(ncols):
-                self.assertAlmostEqual(cdata[mapping[i], j], correct[i, j])
+                assert cdata[mapping[i], j] == pytest.approx(correct[i, j], abs=5e-8)
 
     def test_clusterdistance_arguments(self):
         # Test if incorrect arguments are caught by the C code
@@ -756,7 +770,7 @@ class TestCluster(unittest.TestCase):
         c3 = np.array([3], np.int32)
 
         message = "^data is None$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=None,
                 mask=mask,
@@ -768,7 +782,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=[None],
                 mask=mask,
@@ -780,7 +794,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=np.zeros(3),
                 mask=mask,
@@ -792,7 +806,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=np.zeros((3, 3), dtype=np.int16),
                 mask=mask,
@@ -804,7 +818,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^data matrix is empty$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             clusterdistance(
                 data=data[:0],
                 mask=mask,
@@ -816,7 +830,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^data is not contiguous$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data[:, ::2],
                 mask=mask,
@@ -828,7 +842,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^mask has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=[None],
@@ -840,7 +854,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^mask has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             clusterdistance(
                 data=data,
                 mask=np.zeros(3),
@@ -852,7 +866,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^mask has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=np.ones((2, 2), dtype=np.int16),
@@ -864,7 +878,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^mask is not contiguous$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask[:, ::2],
@@ -876,7 +890,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -888,7 +902,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -900,7 +914,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^array has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -912,7 +926,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -924,7 +938,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -936,7 +950,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^argument has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -948,7 +962,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -960,7 +974,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -972,7 +986,7 @@ class TestCluster(unittest.TestCase):
                 transpose=False,
             )
         message = "^argument has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             clusterdistance(
                 data=data,
                 mask=mask,
@@ -1027,7 +1041,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 6.650, places=3)
+        assert distance == pytest.approx(6.650, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1038,7 +1052,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 23.796, places=3)
+        assert distance == pytest.approx(23.796, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1049,7 +1063,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 8.606, places=3)
+        assert distance == pytest.approx(8.606, abs=0.0005)
 
         # First data set, using transpose=True
         weight = np.array([1, 1, 1, 1])
@@ -1069,7 +1083,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=True,
         )
-        self.assertAlmostEqual(distance, 4.7675, places=3)
+        assert distance == pytest.approx(4.7675, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1080,7 +1094,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=True,
         )
-        self.assertAlmostEqual(distance, 3.780625, places=3)
+        assert distance == pytest.approx(3.780625, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1091,7 +1105,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=True,
         )
-        self.assertAlmostEqual(distance, 8.176875, places=3)
+        assert distance == pytest.approx(8.176875, abs=0.0005)
 
         # Second data set
         weight = np.array([1, 1])
@@ -1146,7 +1160,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 5.833, places=3)
+        assert distance == pytest.approx(5.833, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1157,7 +1171,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 3.298, places=3)
+        assert distance == pytest.approx(3.298, abs=0.0005)
         distance = clusterdistance(
             data,
             mask=mask,
@@ -1168,7 +1182,7 @@ class TestCluster(unittest.TestCase):
             method="a",
             transpose=False,
         )
-        self.assertAlmostEqual(distance, 0.360, places=3)
+        assert distance == pytest.approx(0.360, abs=0.0005)
 
     def test_treecluster_arguments(self):
         # Test if incorrect arguments are caught by the C code
@@ -1200,7 +1214,7 @@ class TestCluster(unittest.TestCase):
         # fmt: on
 
         message = "^argument 1 must be _cluster.Tree, not None$"
-        with self.assertRaisesRegex(TypeError, message):
+        with pytest.raises(TypeError, match=message):
             treecluster(
                 None,
                 data=data,
@@ -1213,7 +1227,7 @@ class TestCluster(unittest.TestCase):
             )
         tree = Tree()
         message = "^neither data nor distancematrix was given$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             treecluster(
                 tree,
                 data=None,
@@ -1225,7 +1239,7 @@ class TestCluster(unittest.TestCase):
                 distancematrix=None,
             )
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             treecluster(
                 tree,
                 data=[],
@@ -1237,7 +1251,7 @@ class TestCluster(unittest.TestCase):
                 distancematrix=None,
             )
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             treecluster(
                 tree,
                 data=np.zeros((3, 3), np.int32),
@@ -1249,7 +1263,7 @@ class TestCluster(unittest.TestCase):
                 distancematrix=None,
             )
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             treecluster(
                 tree,
                 data=np.zeros(3),
@@ -1274,22 +1288,22 @@ class TestCluster(unittest.TestCase):
         indices = np.zeros(4, np.int32)
         tree = Tree(nodes)
         message = "^requested number of clusters should be positive$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             tree.cut(indices, -5)
         message = "^more clusters requested than items available$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             tree.cut(indices, +5)
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             tree.sort(indices, "nothing")
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             tree.sort(indices, np.zeros((5, 5)))
         message = "^order array has incorrect size 2 \\(expected 4\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             tree.sort(indices, np.zeros(2))
         message = "^order array has incorrect size 6 \\(expected 4\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             tree.sort(indices, np.zeros(6))
 
     def test_tree(self):
@@ -1301,44 +1315,45 @@ class TestCluster(unittest.TestCase):
             from Pycluster import Tree
 
         node = Node(2, 3)
-        self.assertEqual(node.left, 2)
-        self.assertEqual(node.right, 3)
-        self.assertAlmostEqual(node.distance, 0.0, places=3)
+        assert node.left == 2
+        assert node.right == 3
+        assert node.distance == pytest.approx(0.0, abs=0.0005)
         node.left = 6
         node.right = 2
         node.distance = 0.73
-        self.assertEqual(node.left, 6)
-        self.assertEqual(node.right, 2)
-        self.assertAlmostEqual(node.distance, 0.73, places=3)
+        assert node.left == 6
+        assert node.right == 2
+        assert node.distance == pytest.approx(0.73, abs=0.0005)
         nodes = [Node(1, 2, 0.2), Node(0, 3, 0.5), Node(-2, 4, 0.6), Node(-1, -3, 0.9)]
         try:
             tree = Tree(nodes)
         except Exception:
-            self.fail("failed to construct tree from nodes")
+            raise AssertionError("failed to construct tree from nodes")
         nodes = [Node(1, 2, 0.2), Node(0, 2, 0.5)]
-        self.assertRaises(ValueError, Tree, nodes)
+        with pytest.raises(ValueError):
+            Tree(nodes)
         nodes = [Node(1, 2, 0.2), Node(0, -1, 0.5)]
         tree = Tree(nodes)
-        self.assertEqual(tree[0].left, 1)
-        self.assertEqual(tree[0].right, 2)
-        self.assertAlmostEqual(tree[0].distance, 0.2)
-        self.assertEqual(tree[1].left, 0)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 0.5)
+        assert tree[0].left == 1
+        assert tree[0].right == 2
+        assert tree[0].distance == pytest.approx(0.2, abs=5e-8)
+        assert tree[1].left == 0
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(0.5, abs=5e-8)
         tree = Tree([Node(1, 2, 0.1), Node(0, -1, 0.5), Node(-2, 3, 0.9)])
         nodes = tree[:]
         nodes[0] = Node(0, 1, 0.2)
         nodes[1].left = 2
         tree = Tree(nodes)
-        self.assertEqual(tree[0].left, 0)
-        self.assertEqual(tree[0].right, 1)
-        self.assertAlmostEqual(tree[0].distance, 0.2)
-        self.assertEqual(tree[1].left, 2)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 0.5)
-        self.assertEqual(tree[2].left, -2)
-        self.assertEqual(tree[2].right, 3)
-        self.assertAlmostEqual(tree[2].distance, 0.9)
+        assert tree[0].left == 0
+        assert tree[0].right == 1
+        assert tree[0].distance == pytest.approx(0.2, abs=5e-8)
+        assert tree[1].left == 2
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(0.5, abs=5e-8)
+        assert tree[2].left == -2
+        assert tree[2].right == 3
+        assert tree[2].distance == pytest.approx(0.9, abs=5e-8)
 
     def test_treecluster(self):
         if TestCluster.module == "Bio.Cluster":
@@ -1377,52 +1392,52 @@ class TestCluster(unittest.TestCase):
             method="a",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data1) - 1)
-        self.assertEqual(tree[0].left, 2)
-        self.assertEqual(tree[0].right, 1)
-        self.assertAlmostEqual(tree[0].distance, 2.600, places=3)
-        self.assertEqual(tree[1].left, -1)
-        self.assertEqual(tree[1].right, 0)
-        self.assertAlmostEqual(tree[1].distance, 7.300, places=3)
-        self.assertEqual(tree[2].left, 3)
-        self.assertEqual(tree[2].right, -2)
-        self.assertAlmostEqual(tree[2].distance, 13.540, places=3)
+        assert len(tree) == len(data1) - 1
+        assert tree[0].left == 2
+        assert tree[0].right == 1
+        assert tree[0].distance == pytest.approx(2.600, abs=0.0005)
+        assert tree[1].left == -1
+        assert tree[1].right == 0
+        assert tree[1].distance == pytest.approx(7.300, abs=0.0005)
+        assert tree[2].left == 3
+        assert tree[2].right == -2
+        assert tree[2].distance == pytest.approx(13.540, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 1)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 1
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 2)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 2
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 2
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.sort([0, 1, 2, 3])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.sort([0, 3, 2, 1])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 0
+        assert indices[2] == 2
+        assert indices[3] == 1
 
         # Pairwise single-linkage clustering
         tree = treecluster(
@@ -1433,52 +1448,52 @@ class TestCluster(unittest.TestCase):
             method="s",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data1) - 1)
-        self.assertEqual(tree[0].left, 1)
-        self.assertEqual(tree[0].right, 2)
-        self.assertAlmostEqual(tree[0].distance, 2.600, places=3)
-        self.assertEqual(tree[1].left, 0)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 5.800, places=3)
-        self.assertEqual(tree[2].left, -2)
-        self.assertEqual(tree[2].right, 3)
-        self.assertAlmostEqual(tree[2].distance, 6.380, places=3)
+        assert len(tree) == len(data1) - 1
+        assert tree[0].left == 1
+        assert tree[0].right == 2
+        assert tree[0].distance == pytest.approx(2.600, abs=0.0005)
+        assert tree[1].left == 0
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(5.800, abs=0.0005)
+        assert tree[2].left == -2
+        assert tree[2].right == 3
+        assert tree[2].distance == pytest.approx(6.380, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 2)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 2
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.sort([0, 1, 2, 3])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.sort([0, 3, 2, 1])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 0
+        assert indices[2] == 2
+        assert indices[3] == 1
 
         # Pairwise centroid-linkage clustering
         tree = treecluster(
@@ -1489,52 +1504,52 @@ class TestCluster(unittest.TestCase):
             method="c",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data1) - 1)
-        self.assertEqual(tree[0].left, 1)
-        self.assertEqual(tree[0].right, 2)
-        self.assertAlmostEqual(tree[0].distance, 2.600, places=3)
-        self.assertEqual(tree[1].left, 0)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 6.650, places=3)
-        self.assertEqual(tree[2].left, -2)
-        self.assertEqual(tree[2].right, 3)
-        self.assertAlmostEqual(tree[2].distance, 11.629, places=3)
+        assert len(tree) == len(data1) - 1
+        assert tree[0].left == 1
+        assert tree[0].right == 2
+        assert tree[0].distance == pytest.approx(2.600, abs=0.0005)
+        assert tree[1].left == 0
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(6.650, abs=0.0005)
+        assert tree[2].left == -2
+        assert tree[2].right == 3
+        assert tree[2].distance == pytest.approx(11.629, abs=0.0005)
         indices = tree.sort([0, 1, 2, 3])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 2)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 2
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.sort([0, 3, 2, 1])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 0
+        assert indices[2] == 2
+        assert indices[3] == 1
 
         # Pairwise maximum-linkage clustering
         tree = treecluster(
@@ -1545,52 +1560,52 @@ class TestCluster(unittest.TestCase):
             method="m",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data1) - 1)
-        self.assertEqual(tree[0].left, 2)
-        self.assertEqual(tree[0].right, 1)
-        self.assertAlmostEqual(tree[0].distance, 2.600, places=3)
-        self.assertEqual(tree[1].left, -1)
-        self.assertEqual(tree[1].right, 0)
-        self.assertAlmostEqual(tree[1].distance, 8.800, places=3)
-        self.assertEqual(tree[2].left, 3)
-        self.assertEqual(tree[2].right, -2)
-        self.assertAlmostEqual(tree[2].distance, 23.100, places=3)
+        assert len(tree) == len(data1) - 1
+        assert tree[0].left == 2
+        assert tree[0].right == 1
+        assert tree[0].distance == pytest.approx(2.600, abs=0.0005)
+        assert tree[1].left == -1
+        assert tree[1].right == 0
+        assert tree[1].distance == pytest.approx(8.800, abs=0.0005)
+        assert tree[2].left == 3
+        assert tree[2].right == -2
+        assert tree[2].distance == pytest.approx(23.100, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 1)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 1
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 2)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 2
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 2
+        assert indices[2] == 1
+        assert indices[3] == 0
         indices = tree.sort([0, 1, 2, 3])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
+        assert len(indices) == len(data1)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
         indices = tree.sort([0, 3, 2, 1])
-        self.assertEqual(len(indices), len(data1))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
+        assert len(indices) == len(data1)
+        assert indices[0] == 3
+        assert indices[1] == 0
+        assert indices[2] == 2
+        assert indices[3] == 1
 
         # First data set, using transpose=True
         weight1 = [1, 1, 1, 1]
@@ -1619,241 +1634,241 @@ class TestCluster(unittest.TestCase):
         tree = treecluster(
             data=data1, mask=mask1, weight=weight1, transpose=True, method="a", dist="e"
         )
-        self.assertEqual(len(tree), ncols - 1)
-        self.assertEqual(tree[0].left, 4)
-        self.assertEqual(tree[0].right, 2)
-        self.assertAlmostEqual(tree[0].distance, 1.230, places=3)
-        self.assertEqual(tree[1].left, -1)
-        self.assertEqual(tree[1].right, 1)
-        self.assertAlmostEqual(tree[1].distance, 4.1375, places=3)
-        self.assertEqual(tree[2].left, 3)
-        self.assertEqual(tree[2].right, 0)
-        self.assertAlmostEqual(tree[2].distance, 8.790, places=3)
-        self.assertEqual(tree[3].left, -2)
-        self.assertEqual(tree[3].right, -3)
-        self.assertAlmostEqual(tree[3].distance, 18.2867, places=3)
+        assert len(tree) == ncols - 1
+        assert tree[0].left == 4
+        assert tree[0].right == 2
+        assert tree[0].distance == pytest.approx(1.230, abs=0.0005)
+        assert tree[1].left == -1
+        assert tree[1].right == 1
+        assert tree[1].distance == pytest.approx(4.1375, abs=0.0005)
+        assert tree[2].left == 3
+        assert tree[2].right == 0
+        assert tree[2].distance == pytest.approx(8.790, abs=0.0005)
+        assert tree[3].left == -2
+        assert tree[3].right == -3
+        assert tree[3].distance == pytest.approx(18.2867, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
+        assert indices[4] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 1)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 1
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
+        assert indices[4] == 0
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 2)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 2
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
+        assert indices[4] == 0
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 3
+        assert indices[1] == 1
+        assert indices[2] == 0
+        assert indices[3] == 2
+        assert indices[4] == 0
         indices = tree.sort([0, 1, 2, 3, 4])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 4)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 1
+        assert indices[3] == 2
+        assert indices[4] == 4
         indices = tree.sort([0, 4, 3, 2, 1])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 4)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 4
+        assert indices[3] == 2
+        assert indices[4] == 1
 
         # Pairwise single-linkage clustering
         tree = treecluster(
             data=data1, mask=mask1, weight=weight1, transpose=True, method="s", dist="e"
         )
-        self.assertEqual(len(tree), ncols - 1)
-        self.assertEqual(tree[0].left, 2)
-        self.assertEqual(tree[0].right, 4)
-        self.assertAlmostEqual(tree[0].distance, 1.230, places=3)
-        self.assertEqual(tree[1].left, 1)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 3.1075, places=3)
-        self.assertEqual(tree[2].left, 3)
-        self.assertEqual(tree[2].right, -2)
-        self.assertAlmostEqual(tree[2].distance, 6.180, places=3)
-        self.assertEqual(tree[3].left, 0)
-        self.assertEqual(tree[3].right, -3)
-        self.assertAlmostEqual(tree[3].distance, 8.790, places=3)
+        assert len(tree) == ncols - 1
+        assert tree[0].left == 2
+        assert tree[0].right == 4
+        assert tree[0].distance == pytest.approx(1.230, abs=0.0005)
+        assert tree[1].left == 1
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(3.1075, abs=0.0005)
+        assert tree[2].left == 3
+        assert tree[2].right == -2
+        assert tree[2].distance == pytest.approx(6.180, abs=0.0005)
+        assert tree[3].left == 0
+        assert tree[3].right == -3
+        assert tree[3].distance == pytest.approx(8.790, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
+        assert indices[4] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 1
+        assert indices[4] == 1
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 2)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 2
+        assert indices[2] == 2
+        assert indices[3] == 1
+        assert indices[4] == 2
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 3)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 3)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 2
+        assert indices[2] == 3
+        assert indices[3] == 1
+        assert indices[4] == 3
         indices = tree.sort([0, 1, 2, 3, 4])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 4)
-        self.assertEqual(indices[4], 3)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 4
+        assert indices[4] == 3
         indices = tree.sort([0, 4, 3, 2, 1])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 4)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 4
+        assert indices[3] == 2
+        assert indices[4] == 1
 
         # Pairwise centroid-linkage clustering
         tree = treecluster(
             data=data1, mask=mask1, weight=weight1, transpose=True, method="c", dist="e"
         )
-        self.assertEqual(len(tree), ncols - 1)
-        self.assertEqual(tree[0].left, 2)
-        self.assertEqual(tree[0].right, 4)
-        self.assertAlmostEqual(tree[0].distance, 1.23, places=3)
-        self.assertEqual(tree[1].left, 1)
-        self.assertEqual(tree[1].right, -1)
-        self.assertAlmostEqual(tree[1].distance, 3.83, places=3)
-        self.assertEqual(tree[2].left, 0)
-        self.assertEqual(tree[2].right, 3)
-        self.assertAlmostEqual(tree[2].distance, 8.79, places=3)
-        self.assertEqual(tree[3].left, -3)
-        self.assertEqual(tree[3].right, -2)
-        self.assertAlmostEqual(tree[3].distance, 15.0331, places=3)
+        assert len(tree) == ncols - 1
+        assert tree[0].left == 2
+        assert tree[0].right == 4
+        assert tree[0].distance == pytest.approx(1.23, abs=0.0005)
+        assert tree[1].left == 1
+        assert tree[1].right == -1
+        assert tree[1].distance == pytest.approx(3.83, abs=0.0005)
+        assert tree[2].left == 0
+        assert tree[2].right == 3
+        assert tree[2].distance == pytest.approx(8.79, abs=0.0005)
+        assert tree[3].left == -3
+        assert tree[3].right == -2
+        assert tree[3].distance == pytest.approx(15.0331, abs=0.0005)
         indices = tree.sort([0, 1, 2, 3, 4])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 4)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 1
+        assert indices[3] == 2
+        assert indices[4] == 4
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
+        assert indices[4] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 0
+        assert indices[4] == 1
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 2)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 2
+        assert indices[2] == 2
+        assert indices[3] == 1
+        assert indices[4] == 2
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 3)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 3)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 2
+        assert indices[2] == 3
+        assert indices[3] == 1
+        assert indices[4] == 3
         indices = tree.sort([0, 4, 3, 2, 1])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 4)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 4
+        assert indices[3] == 2
+        assert indices[4] == 1
 
         # Pairwise maximum-linkage clustering
         tree = treecluster(
             data=data1, mask=mask1, weight=weight1, transpose=True, method="m", dist="e"
         )
-        self.assertEqual(len(tree), ncols - 1)
-        self.assertEqual(tree[0].left, 4)
-        self.assertEqual(tree[0].right, 2)
-        self.assertAlmostEqual(tree[0].distance, 1.230, places=3)
-        self.assertEqual(tree[1].left, -1)
-        self.assertEqual(tree[1].right, 1)
-        self.assertAlmostEqual(tree[1].distance, 5.1675, places=3)
-        self.assertEqual(tree[2].left, 3)
-        self.assertEqual(tree[2].right, 0)
-        self.assertAlmostEqual(tree[2].distance, 8.790, places=3)
-        self.assertEqual(tree[3].left, -2)
-        self.assertEqual(tree[3].right, -3)
-        self.assertAlmostEqual(tree[3].distance, 32.2425, places=3)
+        assert len(tree) == ncols - 1
+        assert tree[0].left == 4
+        assert tree[0].right == 2
+        assert tree[0].distance == pytest.approx(1.230, abs=0.0005)
+        assert tree[1].left == -1
+        assert tree[1].right == 1
+        assert tree[1].distance == pytest.approx(5.1675, abs=0.0005)
+        assert tree[2].left == 3
+        assert tree[2].right == 0
+        assert tree[2].distance == pytest.approx(8.790, abs=0.0005)
+        assert tree[3].left == -2
+        assert tree[3].right == -3
+        assert tree[3].distance == pytest.approx(32.2425, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
+        assert indices[4] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 1)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 1
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
+        assert indices[4] == 0
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 2)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 2
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 1
+        assert indices[4] == 0
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 0)
+        assert len(indices) == ncols
+        assert indices[0] == 3
+        assert indices[1] == 1
+        assert indices[2] == 0
+        assert indices[3] == 2
+        assert indices[4] == 0
         indices = tree.sort([0, 1, 2, 3, 4])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 4)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 1
+        assert indices[3] == 2
+        assert indices[4] == 4
         indices = tree.sort([0, 4, 3, 2, 1])
-        self.assertEqual(len(indices), ncols)
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 4)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 1)
+        assert len(indices) == ncols
+        assert indices[0] == 0
+        assert indices[1] == 3
+        assert indices[2] == 4
+        assert indices[3] == 2
+        assert indices[4] == 1
 
         # Second data set
         weight2 = [1, 1]
@@ -1903,133 +1918,133 @@ class TestCluster(unittest.TestCase):
             method="a",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data2) - 1)
-        self.assertEqual(tree[0].left, 5)
-        self.assertEqual(tree[0].right, 4)
-        self.assertAlmostEqual(tree[0].distance, 0.003, places=3)
-        self.assertEqual(tree[1].left, 9)
-        self.assertEqual(tree[1].right, 12)
-        self.assertAlmostEqual(tree[1].distance, 0.029, places=3)
-        self.assertEqual(tree[2].left, 2)
-        self.assertEqual(tree[2].right, 1)
-        self.assertAlmostEqual(tree[2].distance, 0.061, places=3)
-        self.assertEqual(tree[3].left, 11)
-        self.assertEqual(tree[3].right, -2)
-        self.assertAlmostEqual(tree[3].distance, 0.070, places=3)
-        self.assertEqual(tree[4].left, -4)
-        self.assertEqual(tree[4].right, 10)
-        self.assertAlmostEqual(tree[4].distance, 0.128, places=3)
-        self.assertEqual(tree[5].left, 7)
-        self.assertEqual(tree[5].right, -5)
-        self.assertAlmostEqual(tree[5].distance, 0.224, places=3)
-        self.assertEqual(tree[6].left, -3)
-        self.assertEqual(tree[6].right, 0)
-        self.assertAlmostEqual(tree[6].distance, 0.254, places=3)
-        self.assertEqual(tree[7].left, -1)
-        self.assertEqual(tree[7].right, 3)
-        self.assertAlmostEqual(tree[7].distance, 0.391, places=3)
-        self.assertEqual(tree[8].left, -8)
-        self.assertEqual(tree[8].right, -7)
-        self.assertAlmostEqual(tree[8].distance, 0.532, places=3)
-        self.assertEqual(tree[9].left, 8)
-        self.assertEqual(tree[9].right, -9)
-        self.assertAlmostEqual(tree[9].distance, 3.234, places=3)
-        self.assertEqual(tree[10].left, -6)
-        self.assertEqual(tree[10].right, 6)
-        self.assertAlmostEqual(tree[10].distance, 4.636, places=3)
-        self.assertEqual(tree[11].left, -11)
-        self.assertEqual(tree[11].right, -10)
-        self.assertAlmostEqual(tree[11].distance, 12.741, places=3)
+        assert len(tree) == len(data2) - 1
+        assert tree[0].left == 5
+        assert tree[0].right == 4
+        assert tree[0].distance == pytest.approx(0.003, abs=0.0005)
+        assert tree[1].left == 9
+        assert tree[1].right == 12
+        assert tree[1].distance == pytest.approx(0.029, abs=0.0005)
+        assert tree[2].left == 2
+        assert tree[2].right == 1
+        assert tree[2].distance == pytest.approx(0.061, abs=0.0005)
+        assert tree[3].left == 11
+        assert tree[3].right == -2
+        assert tree[3].distance == pytest.approx(0.070, abs=0.0005)
+        assert tree[4].left == -4
+        assert tree[4].right == 10
+        assert tree[4].distance == pytest.approx(0.128, abs=0.0005)
+        assert tree[5].left == 7
+        assert tree[5].right == -5
+        assert tree[5].distance == pytest.approx(0.224, abs=0.0005)
+        assert tree[6].left == -3
+        assert tree[6].right == 0
+        assert tree[6].distance == pytest.approx(0.254, abs=0.0005)
+        assert tree[7].left == -1
+        assert tree[7].right == 3
+        assert tree[7].distance == pytest.approx(0.391, abs=0.0005)
+        assert tree[8].left == -8
+        assert tree[8].right == -7
+        assert tree[8].distance == pytest.approx(0.532, abs=0.0005)
+        assert tree[9].left == 8
+        assert tree[9].right == -9
+        assert tree[9].distance == pytest.approx(3.234, abs=0.0005)
+        assert tree[10].left == -6
+        assert tree[10].right == 6
+        assert tree[10].distance == pytest.approx(4.636, abs=0.0005)
+        assert tree[11].left == -11
+        assert tree[11].right == -10
+        assert tree[11].distance == pytest.approx(12.741, abs=0.0005)
         indices = tree.cut(nclusters=1)
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 0)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 0)
-        self.assertEqual(indices[4], 0)
-        self.assertEqual(indices[5], 0)
-        self.assertEqual(indices[6], 0)
-        self.assertEqual(indices[7], 0)
-        self.assertEqual(indices[8], 0)
-        self.assertEqual(indices[9], 0)
-        self.assertEqual(indices[10], 0)
-        self.assertEqual(indices[11], 0)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 0
+        assert indices[1] == 0
+        assert indices[2] == 0
+        assert indices[3] == 0
+        assert indices[4] == 0
+        assert indices[5] == 0
+        assert indices[6] == 0
+        assert indices[7] == 0
+        assert indices[8] == 0
+        assert indices[9] == 0
+        assert indices[10] == 0
+        assert indices[11] == 0
+        assert indices[12] == 0
         indices = tree.cut(nclusters=2)
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 1)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 1)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 1)
-        self.assertEqual(indices[5], 1)
-        self.assertEqual(indices[6], 0)
-        self.assertEqual(indices[7], 0)
-        self.assertEqual(indices[8], 1)
-        self.assertEqual(indices[9], 0)
-        self.assertEqual(indices[10], 0)
-        self.assertEqual(indices[11], 0)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 1
+        assert indices[1] == 1
+        assert indices[2] == 1
+        assert indices[3] == 1
+        assert indices[4] == 1
+        assert indices[5] == 1
+        assert indices[6] == 0
+        assert indices[7] == 0
+        assert indices[8] == 1
+        assert indices[9] == 0
+        assert indices[10] == 0
+        assert indices[11] == 0
+        assert indices[12] == 0
         indices = tree.cut(nclusters=3)
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 2)
-        self.assertEqual(indices[1], 2)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 2)
-        self.assertEqual(indices[4], 2)
-        self.assertEqual(indices[5], 2)
-        self.assertEqual(indices[6], 1)
-        self.assertEqual(indices[7], 0)
-        self.assertEqual(indices[8], 2)
-        self.assertEqual(indices[9], 0)
-        self.assertEqual(indices[10], 0)
-        self.assertEqual(indices[11], 0)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 2
+        assert indices[1] == 2
+        assert indices[2] == 2
+        assert indices[3] == 2
+        assert indices[4] == 2
+        assert indices[5] == 2
+        assert indices[6] == 1
+        assert indices[7] == 0
+        assert indices[8] == 2
+        assert indices[9] == 0
+        assert indices[10] == 0
+        assert indices[11] == 0
+        assert indices[12] == 0
         indices = tree.cut(nclusters=4)
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 3)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 3)
-        self.assertEqual(indices[3], 3)
-        self.assertEqual(indices[4], 3)
-        self.assertEqual(indices[5], 3)
-        self.assertEqual(indices[6], 1)
-        self.assertEqual(indices[7], 0)
-        self.assertEqual(indices[8], 2)
-        self.assertEqual(indices[9], 0)
-        self.assertEqual(indices[10], 0)
-        self.assertEqual(indices[11], 0)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 3
+        assert indices[1] == 3
+        assert indices[2] == 3
+        assert indices[3] == 3
+        assert indices[4] == 3
+        assert indices[5] == 3
+        assert indices[6] == 1
+        assert indices[7] == 0
+        assert indices[8] == 2
+        assert indices[9] == 0
+        assert indices[10] == 0
+        assert indices[11] == 0
+        assert indices[12] == 0
         indices = tree.cut(nclusters=5)
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 4)
-        self.assertEqual(indices[1], 4)
-        self.assertEqual(indices[2], 4)
-        self.assertEqual(indices[3], 3)
-        self.assertEqual(indices[4], 3)
-        self.assertEqual(indices[5], 3)
-        self.assertEqual(indices[6], 1)
-        self.assertEqual(indices[7], 0)
-        self.assertEqual(indices[8], 2)
-        self.assertEqual(indices[9], 0)
-        self.assertEqual(indices[10], 0)
-        self.assertEqual(indices[11], 0)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 4
+        assert indices[1] == 4
+        assert indices[2] == 4
+        assert indices[3] == 3
+        assert indices[4] == 3
+        assert indices[5] == 3
+        assert indices[6] == 1
+        assert indices[7] == 0
+        assert indices[8] == 2
+        assert indices[9] == 0
+        assert indices[10] == 0
+        assert indices[11] == 0
+        assert indices[12] == 0
         indices = tree.sort()
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 7)
-        self.assertEqual(indices[1], 11)
-        self.assertEqual(indices[2], 9)
-        self.assertEqual(indices[3], 12)
-        self.assertEqual(indices[4], 10)
-        self.assertEqual(indices[5], 6)
-        self.assertEqual(indices[6], 8)
-        self.assertEqual(indices[7], 5)
-        self.assertEqual(indices[8], 4)
-        self.assertEqual(indices[9], 3)
-        self.assertEqual(indices[10], 2)
-        self.assertEqual(indices[11], 1)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 7
+        assert indices[1] == 11
+        assert indices[2] == 9
+        assert indices[3] == 12
+        assert indices[4] == 10
+        assert indices[5] == 6
+        assert indices[6] == 8
+        assert indices[7] == 5
+        assert indices[8] == 4
+        assert indices[9] == 3
+        assert indices[10] == 2
+        assert indices[11] == 1
+        assert indices[12] == 0
 
         # Pairwise single-linkage clustering
         tree = treecluster(
@@ -2040,58 +2055,58 @@ class TestCluster(unittest.TestCase):
             method="s",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data2) - 1)
-        self.assertEqual(tree[0].left, 4)
-        self.assertEqual(tree[0].right, 5)
-        self.assertAlmostEqual(tree[0].distance, 0.003, places=3)
-        self.assertEqual(tree[1].left, 9)
-        self.assertEqual(tree[1].right, 12)
-        self.assertAlmostEqual(tree[1].distance, 0.029, places=3)
-        self.assertEqual(tree[2].left, 11)
-        self.assertEqual(tree[2].right, -2)
-        self.assertAlmostEqual(tree[2].distance, 0.033, places=3)
-        self.assertEqual(tree[3].left, 1)
-        self.assertEqual(tree[3].right, 2)
-        self.assertAlmostEqual(tree[3].distance, 0.061, places=3)
-        self.assertEqual(tree[4].left, 10)
-        self.assertEqual(tree[4].right, -3)
-        self.assertAlmostEqual(tree[4].distance, 0.077, places=3)
-        self.assertEqual(tree[5].left, 7)
-        self.assertEqual(tree[5].right, -5)
-        self.assertAlmostEqual(tree[5].distance, 0.092, places=3)
-        self.assertEqual(tree[6].left, 0)
-        self.assertEqual(tree[6].right, -4)
-        self.assertAlmostEqual(tree[6].distance, 0.242, places=3)
-        self.assertEqual(tree[7].left, -7)
-        self.assertEqual(tree[7].right, -1)
-        self.assertAlmostEqual(tree[7].distance, 0.246, places=3)
-        self.assertEqual(tree[8].left, 3)
-        self.assertEqual(tree[8].right, -8)
-        self.assertAlmostEqual(tree[8].distance, 0.287, places=3)
-        self.assertEqual(tree[9].left, -9)
-        self.assertEqual(tree[9].right, 8)
-        self.assertAlmostEqual(tree[9].distance, 1.936, places=3)
-        self.assertEqual(tree[10].left, -10)
-        self.assertEqual(tree[10].right, -6)
-        self.assertAlmostEqual(tree[10].distance, 3.432, places=3)
-        self.assertEqual(tree[11].left, 6)
-        self.assertEqual(tree[11].right, -11)
-        self.assertAlmostEqual(tree[11].distance, 3.535, places=3)
+        assert len(tree) == len(data2) - 1
+        assert tree[0].left == 4
+        assert tree[0].right == 5
+        assert tree[0].distance == pytest.approx(0.003, abs=0.0005)
+        assert tree[1].left == 9
+        assert tree[1].right == 12
+        assert tree[1].distance == pytest.approx(0.029, abs=0.0005)
+        assert tree[2].left == 11
+        assert tree[2].right == -2
+        assert tree[2].distance == pytest.approx(0.033, abs=0.0005)
+        assert tree[3].left == 1
+        assert tree[3].right == 2
+        assert tree[3].distance == pytest.approx(0.061, abs=0.0005)
+        assert tree[4].left == 10
+        assert tree[4].right == -3
+        assert tree[4].distance == pytest.approx(0.077, abs=0.0005)
+        assert tree[5].left == 7
+        assert tree[5].right == -5
+        assert tree[5].distance == pytest.approx(0.092, abs=0.0005)
+        assert tree[6].left == 0
+        assert tree[6].right == -4
+        assert tree[6].distance == pytest.approx(0.242, abs=0.0005)
+        assert tree[7].left == -7
+        assert tree[7].right == -1
+        assert tree[7].distance == pytest.approx(0.246, abs=0.0005)
+        assert tree[8].left == 3
+        assert tree[8].right == -8
+        assert tree[8].distance == pytest.approx(0.287, abs=0.0005)
+        assert tree[9].left == -9
+        assert tree[9].right == 8
+        assert tree[9].distance == pytest.approx(1.936, abs=0.0005)
+        assert tree[10].left == -10
+        assert tree[10].right == -6
+        assert tree[10].distance == pytest.approx(3.432, abs=0.0005)
+        assert tree[11].left == 6
+        assert tree[11].right == -11
+        assert tree[11].distance == pytest.approx(3.535, abs=0.0005)
         indices = tree.sort()
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 6)
-        self.assertEqual(indices[1], 3)
-        self.assertEqual(indices[2], 0)
-        self.assertEqual(indices[3], 1)
-        self.assertEqual(indices[4], 2)
-        self.assertEqual(indices[5], 4)
-        self.assertEqual(indices[6], 5)
-        self.assertEqual(indices[7], 8)
-        self.assertEqual(indices[8], 7)
-        self.assertEqual(indices[9], 10)
-        self.assertEqual(indices[10], 11)
-        self.assertEqual(indices[11], 9)
-        self.assertEqual(indices[12], 12)
+        assert len(indices) == len(data2)
+        assert indices[0] == 6
+        assert indices[1] == 3
+        assert indices[2] == 0
+        assert indices[3] == 1
+        assert indices[4] == 2
+        assert indices[5] == 4
+        assert indices[6] == 5
+        assert indices[7] == 8
+        assert indices[8] == 7
+        assert indices[9] == 10
+        assert indices[10] == 11
+        assert indices[11] == 9
+        assert indices[12] == 12
 
         # Pairwise centroid-linkage clustering
         tree = treecluster(
@@ -2102,58 +2117,58 @@ class TestCluster(unittest.TestCase):
             method="c",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data2) - 1)
-        self.assertEqual(tree[0].left, 4)
-        self.assertEqual(tree[0].right, 5)
-        self.assertAlmostEqual(tree[0].distance, 0.003, places=3)
-        self.assertEqual(tree[1].left, 12)
-        self.assertEqual(tree[1].right, 9)
-        self.assertAlmostEqual(tree[1].distance, 0.029, places=3)
-        self.assertEqual(tree[2].left, 1)
-        self.assertEqual(tree[2].right, 2)
-        self.assertAlmostEqual(tree[2].distance, 0.061, places=3)
-        self.assertEqual(tree[3].left, -2)
-        self.assertEqual(tree[3].right, 11)
-        self.assertAlmostEqual(tree[3].distance, 0.063, places=3)
-        self.assertEqual(tree[4].left, 10)
-        self.assertEqual(tree[4].right, -4)
-        self.assertAlmostEqual(tree[4].distance, 0.109, places=3)
-        self.assertEqual(tree[5].left, -5)
-        self.assertEqual(tree[5].right, 7)
-        self.assertAlmostEqual(tree[5].distance, 0.189, places=3)
-        self.assertEqual(tree[6].left, 0)
-        self.assertEqual(tree[6].right, -3)
-        self.assertAlmostEqual(tree[6].distance, 0.239, places=3)
-        self.assertEqual(tree[7].left, 3)
-        self.assertEqual(tree[7].right, -1)
-        self.assertAlmostEqual(tree[7].distance, 0.390, places=3)
-        self.assertEqual(tree[8].left, -7)
-        self.assertEqual(tree[8].right, -8)
-        self.assertAlmostEqual(tree[8].distance, 0.382, places=3)
-        self.assertEqual(tree[9].left, -9)
-        self.assertEqual(tree[9].right, 8)
-        self.assertAlmostEqual(tree[9].distance, 3.063, places=3)
-        self.assertEqual(tree[10].left, 6)
-        self.assertEqual(tree[10].right, -6)
-        self.assertAlmostEqual(tree[10].distance, 4.578, places=3)
-        self.assertEqual(tree[11].left, -10)
-        self.assertEqual(tree[11].right, -11)
-        self.assertAlmostEqual(tree[11].distance, 11.536, places=3)
+        assert len(tree) == len(data2) - 1
+        assert tree[0].left == 4
+        assert tree[0].right == 5
+        assert tree[0].distance == pytest.approx(0.003, abs=0.0005)
+        assert tree[1].left == 12
+        assert tree[1].right == 9
+        assert tree[1].distance == pytest.approx(0.029, abs=0.0005)
+        assert tree[2].left == 1
+        assert tree[2].right == 2
+        assert tree[2].distance == pytest.approx(0.061, abs=0.0005)
+        assert tree[3].left == -2
+        assert tree[3].right == 11
+        assert tree[3].distance == pytest.approx(0.063, abs=0.0005)
+        assert tree[4].left == 10
+        assert tree[4].right == -4
+        assert tree[4].distance == pytest.approx(0.109, abs=0.0005)
+        assert tree[5].left == -5
+        assert tree[5].right == 7
+        assert tree[5].distance == pytest.approx(0.189, abs=0.0005)
+        assert tree[6].left == 0
+        assert tree[6].right == -3
+        assert tree[6].distance == pytest.approx(0.239, abs=0.0005)
+        assert tree[7].left == 3
+        assert tree[7].right == -1
+        assert tree[7].distance == pytest.approx(0.390, abs=0.0005)
+        assert tree[8].left == -7
+        assert tree[8].right == -8
+        assert tree[8].distance == pytest.approx(0.382, abs=0.0005)
+        assert tree[9].left == -9
+        assert tree[9].right == 8
+        assert tree[9].distance == pytest.approx(3.063, abs=0.0005)
+        assert tree[10].left == 6
+        assert tree[10].right == -6
+        assert tree[10].distance == pytest.approx(4.578, abs=0.0005)
+        assert tree[11].left == -10
+        assert tree[11].right == -11
+        assert tree[11].distance == pytest.approx(11.536, abs=0.0005)
         indices = tree.sort()
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 0)
-        self.assertEqual(indices[1], 1)
-        self.assertEqual(indices[2], 2)
-        self.assertEqual(indices[3], 3)
-        self.assertEqual(indices[4], 4)
-        self.assertEqual(indices[5], 5)
-        self.assertEqual(indices[6], 8)
-        self.assertEqual(indices[7], 6)
-        self.assertEqual(indices[8], 10)
-        self.assertEqual(indices[9], 12)
-        self.assertEqual(indices[10], 9)
-        self.assertEqual(indices[11], 11)
-        self.assertEqual(indices[12], 7)
+        assert len(indices) == len(data2)
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
+        assert indices[4] == 4
+        assert indices[5] == 5
+        assert indices[6] == 8
+        assert indices[7] == 6
+        assert indices[8] == 10
+        assert indices[9] == 12
+        assert indices[10] == 9
+        assert indices[11] == 11
+        assert indices[12] == 7
 
         # Pairwise maximum-linkage clustering
         tree = treecluster(
@@ -2164,58 +2179,58 @@ class TestCluster(unittest.TestCase):
             method="m",
             dist="e",
         )
-        self.assertEqual(len(tree), len(data2) - 1)
-        self.assertEqual(tree[0].left, 5)
-        self.assertEqual(tree[0].right, 4)
-        self.assertAlmostEqual(tree[0].distance, 0.003, places=3)
-        self.assertEqual(tree[1].left, 9)
-        self.assertEqual(tree[1].right, 12)
-        self.assertAlmostEqual(tree[1].distance, 0.029, places=3)
-        self.assertEqual(tree[2].left, 2)
-        self.assertEqual(tree[2].right, 1)
-        self.assertAlmostEqual(tree[2].distance, 0.061, places=3)
-        self.assertEqual(tree[3].left, 11)
-        self.assertEqual(tree[3].right, 10)
-        self.assertAlmostEqual(tree[3].distance, 0.077, places=3)
-        self.assertEqual(tree[4].left, -2)
-        self.assertEqual(tree[4].right, -4)
-        self.assertAlmostEqual(tree[4].distance, 0.216, places=3)
-        self.assertEqual(tree[5].left, -3)
-        self.assertEqual(tree[5].right, 0)
-        self.assertAlmostEqual(tree[5].distance, 0.266, places=3)
-        self.assertEqual(tree[6].left, -5)
-        self.assertEqual(tree[6].right, 7)
-        self.assertAlmostEqual(tree[6].distance, 0.302, places=3)
-        self.assertEqual(tree[7].left, -1)
-        self.assertEqual(tree[7].right, 3)
-        self.assertAlmostEqual(tree[7].distance, 0.425, places=3)
-        self.assertEqual(tree[8].left, -8)
-        self.assertEqual(tree[8].right, -6)
-        self.assertAlmostEqual(tree[8].distance, 0.968, places=3)
-        self.assertEqual(tree[9].left, 8)
-        self.assertEqual(tree[9].right, 6)
-        self.assertAlmostEqual(tree[9].distance, 3.975, places=3)
-        self.assertEqual(tree[10].left, -10)
-        self.assertEqual(tree[10].right, -7)
-        self.assertAlmostEqual(tree[10].distance, 5.755, places=3)
-        self.assertEqual(tree[11].left, -11)
-        self.assertEqual(tree[11].right, -9)
-        self.assertAlmostEqual(tree[11].distance, 22.734, places=3)
+        assert len(tree) == len(data2) - 1
+        assert tree[0].left == 5
+        assert tree[0].right == 4
+        assert tree[0].distance == pytest.approx(0.003, abs=0.0005)
+        assert tree[1].left == 9
+        assert tree[1].right == 12
+        assert tree[1].distance == pytest.approx(0.029, abs=0.0005)
+        assert tree[2].left == 2
+        assert tree[2].right == 1
+        assert tree[2].distance == pytest.approx(0.061, abs=0.0005)
+        assert tree[3].left == 11
+        assert tree[3].right == 10
+        assert tree[3].distance == pytest.approx(0.077, abs=0.0005)
+        assert tree[4].left == -2
+        assert tree[4].right == -4
+        assert tree[4].distance == pytest.approx(0.216, abs=0.0005)
+        assert tree[5].left == -3
+        assert tree[5].right == 0
+        assert tree[5].distance == pytest.approx(0.266, abs=0.0005)
+        assert tree[6].left == -5
+        assert tree[6].right == 7
+        assert tree[6].distance == pytest.approx(0.302, abs=0.0005)
+        assert tree[7].left == -1
+        assert tree[7].right == 3
+        assert tree[7].distance == pytest.approx(0.425, abs=0.0005)
+        assert tree[8].left == -8
+        assert tree[8].right == -6
+        assert tree[8].distance == pytest.approx(0.968, abs=0.0005)
+        assert tree[9].left == 8
+        assert tree[9].right == 6
+        assert tree[9].distance == pytest.approx(3.975, abs=0.0005)
+        assert tree[10].left == -10
+        assert tree[10].right == -7
+        assert tree[10].distance == pytest.approx(5.755, abs=0.0005)
+        assert tree[11].left == -11
+        assert tree[11].right == -9
+        assert tree[11].distance == pytest.approx(22.734, abs=0.0005)
         indices = tree.sort()
-        self.assertEqual(len(indices), len(data2))
-        self.assertEqual(indices[0], 8)
-        self.assertEqual(indices[1], 6)
-        self.assertEqual(indices[2], 9)
-        self.assertEqual(indices[3], 12)
-        self.assertEqual(indices[4], 11)
-        self.assertEqual(indices[5], 10)
-        self.assertEqual(indices[6], 7)
-        self.assertEqual(indices[7], 5)
-        self.assertEqual(indices[8], 4)
-        self.assertEqual(indices[9], 3)
-        self.assertEqual(indices[10], 2)
-        self.assertEqual(indices[11], 1)
-        self.assertEqual(indices[12], 0)
+        assert len(indices) == len(data2)
+        assert indices[0] == 8
+        assert indices[1] == 6
+        assert indices[2] == 9
+        assert indices[3] == 12
+        assert indices[4] == 11
+        assert indices[5] == 10
+        assert indices[6] == 7
+        assert indices[7] == 5
+        assert indices[8] == 4
+        assert indices[9] == 3
+        assert indices[10] == 2
+        assert indices[11] == 1
+        assert indices[12] == 0
 
     def test_somcluster_arguments(self):
         # Test if incorrect arguments are caught by the C code
@@ -2250,7 +2265,7 @@ class TestCluster(unittest.TestCase):
         celldata = np.zeros((nxgrid, nygrid, ndata), dtype="d")
 
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=None,
                 celldata=celldata,
@@ -2263,7 +2278,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=np.ones(nitems, np.int32),
                 celldata=celldata,
@@ -2276,7 +2291,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^argument has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=np.ones((nitems, 2), np.int16),
                 celldata=celldata,
@@ -2289,7 +2304,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^array has 3 columns \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=np.ones((nitems, 3), np.int32),
                 celldata=celldata,
@@ -2302,7 +2317,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^celldata array has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=None,
@@ -2315,7 +2330,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^celldata array has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=np.zeros((nxgrid, nygrid, ndata), dtype=np.int32),
@@ -2328,7 +2343,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data is None$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2341,7 +2356,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2354,7 +2369,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2367,7 +2382,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2380,7 +2395,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data matrix is empty$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2393,7 +2408,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^data is not contiguous$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2406,7 +2421,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask is None$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2419,7 +2434,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2432,7 +2447,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2445,7 +2460,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2458,7 +2473,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^mask is not contiguous$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2471,7 +2486,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2484,7 +2499,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^incorrect rank 3 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2497,7 +2512,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^array has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2510,7 +2525,7 @@ class TestCluster(unittest.TestCase):
                 dist="e",
             )
         message = "^dist should be a string$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2523,7 +2538,7 @@ class TestCluster(unittest.TestCase):
                 dist=5,
             )
         message = "^dist should be a single character$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2536,7 +2551,7 @@ class TestCluster(unittest.TestCase):
                 dist="Pearson",
             )
         message = "^unknown dist function specified \\(should be one of 'ebcauxsk'\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             somcluster(
                 clusterids=clusterids,
                 celldata=celldata,
@@ -2589,8 +2604,8 @@ class TestCluster(unittest.TestCase):
             niter=100,
             dist="e",
         )
-        self.assertEqual(len(clusterid), nrows)
-        self.assertEqual(len(clusterid[0]), 2)
+        assert len(clusterid) == nrows
+        assert len(clusterid[0]) == 2
 
         # First data set, using transpose=True
         weight = [1, 1, 1, 1]
@@ -2605,8 +2620,8 @@ class TestCluster(unittest.TestCase):
             niter=100,
             dist="e",
         )
-        self.assertEqual(len(clusterid), ncols)
-        self.assertEqual(len(clusterid[0]), 2)
+        assert len(clusterid) == ncols
+        assert len(clusterid[0]) == 2
 
         # Second data set
         weight = [1, 1]
@@ -2657,8 +2672,8 @@ class TestCluster(unittest.TestCase):
             niter=100,
             dist="e",
         )
-        self.assertEqual(len(clusterid), len(data))
-        self.assertEqual(len(clusterid[0]), 2)
+        assert len(clusterid) == len(data)
+        assert len(clusterid[0]) == 2
 
     def test_distancematrix_arguments(self):
         # Test if incorrect arguments are caught by the C code
@@ -2696,13 +2711,13 @@ class TestCluster(unittest.TestCase):
         )
         weight = np.array([2.0, 1.0, 0.5])
         message = "^data matrix is empty$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             distancematrix(data[:0, :], mask=mask, weight=weight)
         message = "^mask has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             distancematrix(data, mask=np.zeros(3), weight=weight)
         message = "^mask has incorrect dimensions \\(4 x 3, expected 9 x 3\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             distancematrix(
                 data,
                 mask=mask[:4, :],
@@ -2712,10 +2727,10 @@ class TestCluster(unittest.TestCase):
                 distancematrix=[],
             )
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             distancematrix(data, mask=mask, weight=np.zeros((2, 2)))
         message = "^weight has incorrect size 4 \\(expected 3\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             distancematrix(
                 data,
                 mask=mask,
@@ -2736,16 +2751,16 @@ class TestCluster(unittest.TestCase):
 
         clusterid = np.zeros(10, np.int32)
         message = "^failed to parse row 0.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             kmedoids([None])
         message = "^more clusters requested than items to be clustered$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kmedoids([], nclusters=2, npass=1000, clusterid=clusterid)
         message = "^distance matrix is not square.$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kmedoids(np.zeros((2, 3)), npass=1000)
         message = "^distance matrix has incorrect rank 3 \\(expected 1 or 2\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             kmedoids(np.zeros((2, 3, 4)), npass=1000)
 
     def test_distancematrix_kmedoids(self):
@@ -2787,138 +2802,138 @@ class TestCluster(unittest.TestCase):
         weight = np.array([2.0, 1.0, 0.5])
         matrix = distancematrix(data, mask=mask, weight=weight)
 
-        self.assertAlmostEqual(matrix[1][0], 1.243, places=3)
+        assert matrix[1][0] == pytest.approx(1.243, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[2][0], 25.073, places=3)
-        self.assertAlmostEqual(matrix[2][1], 44.960, places=3)
+        assert matrix[2][0] == pytest.approx(25.073, abs=0.0005)
+        assert matrix[2][1] == pytest.approx(44.960, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[3][0], 4.510, places=3)
-        self.assertAlmostEqual(matrix[3][1], 5.924, places=3)
-        self.assertAlmostEqual(matrix[3][2], 29.957, places=3)
+        assert matrix[3][0] == pytest.approx(4.510, abs=0.0005)
+        assert matrix[3][1] == pytest.approx(5.924, abs=0.0005)
+        assert matrix[3][2] == pytest.approx(29.957, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[4][0], 3.410, places=3)
-        self.assertAlmostEqual(matrix[4][1], 4.761, places=3)
-        self.assertAlmostEqual(matrix[4][2], 29.203, places=3)
-        self.assertAlmostEqual(matrix[4][3], 0.077, places=3)
+        assert matrix[4][0] == pytest.approx(3.410, abs=0.0005)
+        assert matrix[4][1] == pytest.approx(4.761, abs=0.0005)
+        assert matrix[4][2] == pytest.approx(29.203, abs=0.0005)
+        assert matrix[4][3] == pytest.approx(0.077, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[5][0], 0.040, places=3)
-        self.assertAlmostEqual(matrix[5][1], 2.890, places=3)
-        self.assertAlmostEqual(matrix[5][2], 34.810, places=3)
-        self.assertAlmostEqual(matrix[5][3], 0.640, places=3)
-        self.assertAlmostEqual(matrix[5][4], 0.490, places=3)
+        assert matrix[5][0] == pytest.approx(0.040, abs=0.0005)
+        assert matrix[5][1] == pytest.approx(2.890, abs=0.0005)
+        assert matrix[5][2] == pytest.approx(34.810, abs=0.0005)
+        assert matrix[5][3] == pytest.approx(0.640, abs=0.0005)
+        assert matrix[5][4] == pytest.approx(0.490, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[6][0], 1.301, places=3)
-        self.assertAlmostEqual(matrix[6][1], 0.447, places=3)
-        self.assertAlmostEqual(matrix[6][2], 42.990, places=3)
-        self.assertAlmostEqual(matrix[6][3], 3.934, places=3)
-        self.assertAlmostEqual(matrix[6][4], 3.046, places=3)
-        self.assertAlmostEqual(matrix[6][5], 3.610, places=3)
+        assert matrix[6][0] == pytest.approx(1.301, abs=0.0005)
+        assert matrix[6][1] == pytest.approx(0.447, abs=0.0005)
+        assert matrix[6][2] == pytest.approx(42.990, abs=0.0005)
+        assert matrix[6][3] == pytest.approx(3.934, abs=0.0005)
+        assert matrix[6][4] == pytest.approx(3.046, abs=0.0005)
+        assert matrix[6][5] == pytest.approx(3.610, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[7][0], 8.002, places=3)
-        self.assertAlmostEqual(matrix[7][1], 6.266, places=3)
-        self.assertAlmostEqual(matrix[7][2], 65.610, places=3)
-        self.assertAlmostEqual(matrix[7][3], 12.240, places=3)
-        self.assertAlmostEqual(matrix[7][4], 10.952, places=3)
-        self.assertAlmostEqual(matrix[7][5], 0.000, places=3)
-        self.assertAlmostEqual(matrix[7][6], 8.720, places=3)
+        assert matrix[7][0] == pytest.approx(8.002, abs=0.0005)
+        assert matrix[7][1] == pytest.approx(6.266, abs=0.0005)
+        assert matrix[7][2] == pytest.approx(65.610, abs=0.0005)
+        assert matrix[7][3] == pytest.approx(12.240, abs=0.0005)
+        assert matrix[7][4] == pytest.approx(10.952, abs=0.0005)
+        assert matrix[7][5] == pytest.approx(0.000, abs=0.0005)
+        assert matrix[7][6] == pytest.approx(8.720, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[8][0], 10.659, places=3)
-        self.assertAlmostEqual(matrix[8][1], 19.056, places=3)
-        self.assertAlmostEqual(matrix[8][2], 0.010, places=3)
-        self.assertAlmostEqual(matrix[8][3], 16.949, places=3)
-        self.assertAlmostEqual(matrix[8][4], 15.734, places=3)
-        self.assertAlmostEqual(matrix[8][5], 33.640, places=3)
-        self.assertAlmostEqual(matrix[8][6], 18.266, places=3)
-        self.assertAlmostEqual(matrix[8][7], 18.448, places=3)
+        assert matrix[8][0] == pytest.approx(10.659, abs=0.0005)
+        assert matrix[8][1] == pytest.approx(19.056, abs=0.0005)
+        assert matrix[8][2] == pytest.approx(0.010, abs=0.0005)
+        assert matrix[8][3] == pytest.approx(16.949, abs=0.0005)
+        assert matrix[8][4] == pytest.approx(15.734, abs=0.0005)
+        assert matrix[8][5] == pytest.approx(33.640, abs=0.0005)
+        assert matrix[8][6] == pytest.approx(18.266, abs=0.0005)
+        assert matrix[8][7] == pytest.approx(18.448, abs=0.0005)
 
         clusterid, error, nfound = kmedoids(matrix, npass=1000)
-        self.assertEqual(clusterid[0], 5)
-        self.assertEqual(clusterid[1], 5)
-        self.assertEqual(clusterid[2], 2)
-        self.assertEqual(clusterid[3], 5)
-        self.assertEqual(clusterid[4], 5)
-        self.assertEqual(clusterid[5], 5)
-        self.assertEqual(clusterid[6], 5)
-        self.assertEqual(clusterid[7], 5)
-        self.assertEqual(clusterid[8], 2)
-        self.assertAlmostEqual(error, 7.680, places=3)
+        assert clusterid[0] == 5
+        assert clusterid[1] == 5
+        assert clusterid[2] == 2
+        assert clusterid[3] == 5
+        assert clusterid[4] == 5
+        assert clusterid[5] == 5
+        assert clusterid[6] == 5
+        assert clusterid[7] == 5
+        assert clusterid[8] == 2
+        assert error == pytest.approx(7.680, abs=0.0005)
 
         # check if default weights can be used
         matrix = distancematrix(data, mask=mask)
-        self.assertEqual(len(matrix), 9)
+        assert len(matrix) == 9
         for i in range(3):
-            self.assertEqual(len(matrix[i]), i)
+            assert len(matrix[i]) == i
 
-        self.assertAlmostEqual(matrix[1][0], 1.687, places=3)
+        assert matrix[1][0] == pytest.approx(1.687, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[2][0], 21.365, places=3)
-        self.assertAlmostEqual(matrix[2][1], 38.560, places=3)
+        assert matrix[2][0] == pytest.approx(21.365, abs=0.0005)
+        assert matrix[2][1] == pytest.approx(38.560, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[3][0], 4.900, places=3)
-        self.assertAlmostEqual(matrix[3][1], 7.793, places=3)
-        self.assertAlmostEqual(matrix[3][2], 22.490, places=3)
+        assert matrix[3][0] == pytest.approx(4.900, abs=0.0005)
+        assert matrix[3][1] == pytest.approx(7.793, abs=0.0005)
+        assert matrix[3][2] == pytest.approx(22.490, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[4][0], 3.687, places=3)
-        self.assertAlmostEqual(matrix[4][1], 6.367, places=3)
-        self.assertAlmostEqual(matrix[4][2], 22.025, places=3)
-        self.assertAlmostEqual(matrix[4][3], 0.087, places=3)
+        assert matrix[4][0] == pytest.approx(3.687, abs=0.0005)
+        assert matrix[4][1] == pytest.approx(6.367, abs=0.0005)
+        assert matrix[4][2] == pytest.approx(22.025, abs=0.0005)
+        assert matrix[4][3] == pytest.approx(0.087, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[5][0], 0.040, places=3)
-        self.assertAlmostEqual(matrix[5][1], 2.890, places=3)
-        self.assertAlmostEqual(matrix[5][2], 34.810, places=3)
-        self.assertAlmostEqual(matrix[5][3], 0.640, places=3)
-        self.assertAlmostEqual(matrix[5][4], 0.490, places=3)
+        assert matrix[5][0] == pytest.approx(0.040, abs=0.0005)
+        assert matrix[5][1] == pytest.approx(2.890, abs=0.0005)
+        assert matrix[5][2] == pytest.approx(34.810, abs=0.0005)
+        assert matrix[5][3] == pytest.approx(0.640, abs=0.0005)
+        assert matrix[5][4] == pytest.approx(0.490, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[6][0], 1.557, places=3)
-        self.assertAlmostEqual(matrix[6][1], 0.990, places=3)
-        self.assertAlmostEqual(matrix[6][2], 34.065, places=3)
-        self.assertAlmostEqual(matrix[6][3], 3.937, places=3)
-        self.assertAlmostEqual(matrix[6][4], 3.017, places=3)
-        self.assertAlmostEqual(matrix[6][5], 3.610, places=3)
+        assert matrix[6][0] == pytest.approx(1.557, abs=0.0005)
+        assert matrix[6][1] == pytest.approx(0.990, abs=0.0005)
+        assert matrix[6][2] == pytest.approx(34.065, abs=0.0005)
+        assert matrix[6][3] == pytest.approx(3.937, abs=0.0005)
+        assert matrix[6][4] == pytest.approx(3.017, abs=0.0005)
+        assert matrix[6][5] == pytest.approx(3.610, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[7][0], 14.005, places=3)
-        self.assertAlmostEqual(matrix[7][1], 9.050, places=3)
-        self.assertAlmostEqual(matrix[7][2], 65.610, places=3)
-        self.assertAlmostEqual(matrix[7][3], 30.465, places=3)
-        self.assertAlmostEqual(matrix[7][4], 27.380, places=3)
-        self.assertAlmostEqual(matrix[7][5], 0.000, places=3)
-        self.assertAlmostEqual(matrix[7][6], 16.385, places=3)
+        assert matrix[7][0] == pytest.approx(14.005, abs=0.0005)
+        assert matrix[7][1] == pytest.approx(9.050, abs=0.0005)
+        assert matrix[7][2] == pytest.approx(65.610, abs=0.0005)
+        assert matrix[7][3] == pytest.approx(30.465, abs=0.0005)
+        assert matrix[7][4] == pytest.approx(27.380, abs=0.0005)
+        assert matrix[7][5] == pytest.approx(0.000, abs=0.0005)
+        assert matrix[7][6] == pytest.approx(16.385, abs=0.0005)
 
-        self.assertAlmostEqual(matrix[8][0], 14.167, places=3)
-        self.assertAlmostEqual(matrix[8][1], 25.553, places=3)
-        self.assertAlmostEqual(matrix[8][2], 0.010, places=3)
-        self.assertAlmostEqual(matrix[8][3], 17.187, places=3)
-        self.assertAlmostEqual(matrix[8][4], 16.380, places=3)
-        self.assertAlmostEqual(matrix[8][5], 33.640, places=3)
-        self.assertAlmostEqual(matrix[8][6], 22.497, places=3)
-        self.assertAlmostEqual(matrix[8][7], 36.745, places=3)
+        assert matrix[8][0] == pytest.approx(14.167, abs=0.0005)
+        assert matrix[8][1] == pytest.approx(25.553, abs=0.0005)
+        assert matrix[8][2] == pytest.approx(0.010, abs=0.0005)
+        assert matrix[8][3] == pytest.approx(17.187, abs=0.0005)
+        assert matrix[8][4] == pytest.approx(16.380, abs=0.0005)
+        assert matrix[8][5] == pytest.approx(33.640, abs=0.0005)
+        assert matrix[8][6] == pytest.approx(22.497, abs=0.0005)
+        assert matrix[8][7] == pytest.approx(36.745, abs=0.0005)
 
         # transpose=True
         weight = np.array([2.0, 1.0, 0.5, 0.1, 0.9, 3.0, 2.0, 1.5, 0.2])
         matrix = distancematrix(data, mask=mask, weight=weight, transpose=True)
-        self.assertEqual(len(matrix), 3)
+        assert len(matrix) == 3
         for i in range(3):
-            self.assertEqual(len(matrix[i]), i)
+            assert len(matrix[i]) == i
 
-        self.assertAlmostEqual(matrix[1][0], 3.080323, places=3)
-        self.assertAlmostEqual(matrix[2][0], 9.324416, places=3)
-        self.assertAlmostEqual(matrix[2][1], 11.569701, places=3)
+        assert matrix[1][0] == pytest.approx(3.080323, abs=0.0005)
+        assert matrix[2][0] == pytest.approx(9.324416, abs=0.0005)
+        assert matrix[2][1] == pytest.approx(11.569701, abs=0.0005)
 
         clusterid, error, nfound = kmedoids(matrix, npass=1000)
-        self.assertEqual(clusterid[0], 0)
-        self.assertEqual(clusterid[1], 0)
-        self.assertEqual(clusterid[2], 2)
-        self.assertAlmostEqual(error, 3.08032258, places=3)
+        assert clusterid[0] == 0
+        assert clusterid[1] == 0
+        assert clusterid[2] == 2
+        assert error == pytest.approx(3.08032258, abs=0.0005)
 
         # check if default weights can be used
         matrix = distancematrix(data, mask=mask, transpose=True)
-        self.assertEqual(len(matrix), 3)
+        assert len(matrix) == 3
         for i in range(3):
-            self.assertEqual(len(matrix[i]), i)
+            assert len(matrix[i]) == i
 
-        self.assertAlmostEqual(matrix[1][0], 10.47166667, places=3)
-        self.assertAlmostEqual(matrix[2][0], 8.61571429, places=3)
-        self.assertAlmostEqual(matrix[2][1], 21.24428571, places=3)
+        assert matrix[1][0] == pytest.approx(10.47166667, abs=0.0005)
+        assert matrix[2][0] == pytest.approx(8.61571429, abs=0.0005)
+        assert matrix[2][1] == pytest.approx(21.24428571, abs=0.0005)
 
     def test_pca_arguments(self):
         if TestCluster.module == "Bio.Cluster":
@@ -2933,13 +2948,13 @@ class TestCluster(unittest.TestCase):
         eigenvalues = np.zeros(2, dtype="d")
 
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca([None], columnmean, coordinates, pc, eigenvalues)
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(np.zeros(3), columnmean, coordinates, pc, eigenvalues)
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(
                 np.zeros((3, 3), dtype=np.int16),
                 columnmean,
@@ -2948,22 +2963,22 @@ class TestCluster(unittest.TestCase):
                 eigenvalues,
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, "nothing", coordinates, pc, eigenvalues)
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             pca(data, np.zeros((2, 2)), coordinates, pc, eigenvalues)
         message = "^array has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, np.ones(3, dtype=np.int16), coordinates, pc, eigenvalues)
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, [None], pc, eigenvalues)
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, np.zeros(3), pc, eigenvalues)
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(
                 data,
                 columnmean,
@@ -2972,13 +2987,13 @@ class TestCluster(unittest.TestCase):
                 eigenvalues,
             )
         message = "^data matrix has unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, coordinates, [None], eigenvalues)
         message = "^data matrix has incorrect rank 1 \\(expected 2\\)$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, coordinates, np.zeros(3), eigenvalues)
         message = "^data matrix has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(
                 data,
                 columnmean,
@@ -2987,13 +3002,13 @@ class TestCluster(unittest.TestCase):
                 eigenvalues,
             )
         message = "^unexpected format.$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, coordinates, pc, "nothing")
         message = "^incorrect rank 2 \\(expected 1\\)$"
-        with self.assertRaisesRegex(ValueError, message):
+        with pytest.raises(ValueError, match=message):
             pca(data, columnmean, coordinates, pc, np.zeros((2, 2)))
         message = "^array has incorrect data type$"
-        with self.assertRaisesRegex(RuntimeError, message):
+        with pytest.raises(RuntimeError, match=message):
             pca(data, columnmean, coordinates, pc, np.ones(3, dtype=np.int16))
 
     def test_pca(self):
@@ -3021,40 +3036,40 @@ class TestCluster(unittest.TestCase):
         )
 
         mean, coordinates, pc, eigenvalues = pca(data)
-        self.assertAlmostEqual(mean[0], 3.5461538461538464)
-        self.assertAlmostEqual(mean[1], 3.5307692307692311)
-        self.assertAlmostEqual(coordinates[0, 0], 2.0323189722653883)
-        self.assertAlmostEqual(coordinates[0, 1], 1.2252420399694917)
-        self.assertAlmostEqual(coordinates[1, 0], 3.0936985166252251)
-        self.assertAlmostEqual(coordinates[1, 1], -0.10647619705157851)
-        self.assertAlmostEqual(coordinates[2, 0], 3.1453186907749426)
-        self.assertAlmostEqual(coordinates[2, 1], -0.46331699855941139)
-        self.assertAlmostEqual(coordinates[3, 0], 2.5440202962223761)
-        self.assertAlmostEqual(coordinates[3, 1], 0.20633980959571077)
-        self.assertAlmostEqual(coordinates[4, 0], 2.4468278463376221)
-        self.assertAlmostEqual(coordinates[4, 1], -0.28412285736824866)
-        self.assertAlmostEqual(coordinates[5, 0], 2.4468278463376221)
-        self.assertAlmostEqual(coordinates[5, 1], -0.28412285736824866)
-        self.assertAlmostEqual(coordinates[6, 0], -3.2018619434743254)
-        self.assertAlmostEqual(coordinates[6, 1], 0.019692314198662915)
-        self.assertAlmostEqual(coordinates[7, 0], -3.2018619434743254)
-        self.assertAlmostEqual(coordinates[7, 1], 0.019692314198662915)
-        self.assertAlmostEqual(coordinates[8, 0], 0.46978641990344067)
-        self.assertAlmostEqual(coordinates[8, 1], -0.17778754731982949)
-        self.assertAlmostEqual(coordinates[9, 0], -2.5549912731867215)
-        self.assertAlmostEqual(coordinates[9, 1], 0.19733897451533403)
-        self.assertAlmostEqual(coordinates[10, 0], -2.5033710990370044)
-        self.assertAlmostEqual(coordinates[10, 1], -0.15950182699250004)
-        self.assertAlmostEqual(coordinates[11, 0], -2.4365601663089413)
-        self.assertAlmostEqual(coordinates[11, 1], -0.23390813900973562)
-        self.assertAlmostEqual(coordinates[12, 0], -2.2801521629852974)
-        self.assertAlmostEqual(coordinates[12, 1], 0.0409309711916888)
-        self.assertAlmostEqual(pc[0, 0], -0.66810932728062988)
-        self.assertAlmostEqual(pc[0, 1], -0.74406312017235743)
-        self.assertAlmostEqual(pc[1, 0], 0.74406312017235743)
-        self.assertAlmostEqual(pc[1, 1], -0.66810932728062988)
-        self.assertAlmostEqual(eigenvalues[0], 9.3110471246032844)
-        self.assertAlmostEqual(eigenvalues[1], 1.4437456297481428)
+        assert mean[0] == pytest.approx(3.5461538461538464, abs=5e-8)
+        assert mean[1] == pytest.approx(3.5307692307692311, abs=5e-8)
+        assert coordinates[0, 0] == pytest.approx(2.0323189722653883, abs=5e-8)
+        assert coordinates[0, 1] == pytest.approx(1.2252420399694917, abs=5e-8)
+        assert coordinates[1, 0] == pytest.approx(3.0936985166252251, abs=5e-8)
+        assert coordinates[1, 1] == pytest.approx(-0.10647619705157851, abs=5e-8)
+        assert coordinates[2, 0] == pytest.approx(3.1453186907749426, abs=5e-8)
+        assert coordinates[2, 1] == pytest.approx(-0.46331699855941139, abs=5e-8)
+        assert coordinates[3, 0] == pytest.approx(2.5440202962223761, abs=5e-8)
+        assert coordinates[3, 1] == pytest.approx(0.20633980959571077, abs=5e-8)
+        assert coordinates[4, 0] == pytest.approx(2.4468278463376221, abs=5e-8)
+        assert coordinates[4, 1] == pytest.approx(-0.28412285736824866, abs=5e-8)
+        assert coordinates[5, 0] == pytest.approx(2.4468278463376221, abs=5e-8)
+        assert coordinates[5, 1] == pytest.approx(-0.28412285736824866, abs=5e-8)
+        assert coordinates[6, 0] == pytest.approx(-3.2018619434743254, abs=5e-8)
+        assert coordinates[6, 1] == pytest.approx(0.019692314198662915, abs=5e-8)
+        assert coordinates[7, 0] == pytest.approx(-3.2018619434743254, abs=5e-8)
+        assert coordinates[7, 1] == pytest.approx(0.019692314198662915, abs=5e-8)
+        assert coordinates[8, 0] == pytest.approx(0.46978641990344067, abs=5e-8)
+        assert coordinates[8, 1] == pytest.approx(-0.17778754731982949, abs=5e-8)
+        assert coordinates[9, 0] == pytest.approx(-2.5549912731867215, abs=5e-8)
+        assert coordinates[9, 1] == pytest.approx(0.19733897451533403, abs=5e-8)
+        assert coordinates[10, 0] == pytest.approx(-2.5033710990370044, abs=5e-8)
+        assert coordinates[10, 1] == pytest.approx(-0.15950182699250004, abs=5e-8)
+        assert coordinates[11, 0] == pytest.approx(-2.4365601663089413, abs=5e-8)
+        assert coordinates[11, 1] == pytest.approx(-0.23390813900973562, abs=5e-8)
+        assert coordinates[12, 0] == pytest.approx(-2.2801521629852974, abs=5e-8)
+        assert coordinates[12, 1] == pytest.approx(0.0409309711916888, abs=5e-8)
+        assert pc[0, 0] == pytest.approx(-0.66810932728062988, abs=5e-8)
+        assert pc[0, 1] == pytest.approx(-0.74406312017235743, abs=5e-8)
+        assert pc[1, 0] == pytest.approx(0.74406312017235743, abs=5e-8)
+        assert pc[1, 1] == pytest.approx(-0.66810932728062988, abs=5e-8)
+        assert eigenvalues[0] == pytest.approx(9.3110471246032844, abs=5e-8)
+        assert eigenvalues[1] == pytest.approx(1.4437456297481428, abs=5e-8)
 
         data = np.array(
             [
@@ -3065,51 +3080,49 @@ class TestCluster(unittest.TestCase):
             ]
         )
         mean, coordinates, pc, eigenvalues = pca(data)
-        self.assertAlmostEqual(mean[0], 2.7500)
-        self.assertAlmostEqual(mean[1], 5.8500)
-        self.assertAlmostEqual(mean[2], 3.9500)
-        self.assertAlmostEqual(mean[3], 6.0500)
-        self.assertAlmostEqual(mean[4], 6.2750)
-        self.assertAlmostEqual(mean[5], 8.0750)
-        self.assertAlmostEqual(coordinates[0, 0], 2.6460846688406905)
-        self.assertAlmostEqual(coordinates[0, 1], -2.1421701432732418)
-        self.assertAlmostEqual(coordinates[0, 2], -0.56620932754145858)
-        self.assertAlmostEqual(coordinates[0, 3], 0.0)
-        self.assertAlmostEqual(coordinates[1, 0], 2.0644120899917544)
-        self.assertAlmostEqual(coordinates[1, 1], 0.55542108669180323)
-        self.assertAlmostEqual(coordinates[1, 2], 1.4818772348457117)
-        self.assertAlmostEqual(coordinates[1, 3], 0.0)
-        self.assertAlmostEqual(coordinates[2, 0], 1.0686641862092987)
-        self.assertAlmostEqual(coordinates[2, 1], 1.9994412069101073)
-        self.assertAlmostEqual(coordinates[2, 2], -1.000720598980291)
-        self.assertAlmostEqual(coordinates[2, 3], 0.0)
-        self.assertAlmostEqual(coordinates[3, 0], -5.77916094504174)
-        self.assertAlmostEqual(coordinates[3, 1], -0.41269215032867046)
-        self.assertAlmostEqual(coordinates[3, 2], 0.085052691676038017)
-        self.assertAlmostEqual(coordinates[3, 3], 0.0)
-        self.assertAlmostEqual(pc[0, 0], -0.26379660005997291)
-        self.assertAlmostEqual(pc[0, 1], 0.064814972617134495)
-        self.assertAlmostEqual(pc[0, 2], -0.91763310094893846)
-        self.assertAlmostEqual(pc[0, 3], 0.26145408875373249)
-        self.assertAlmostEqual(pc[1, 0], 0.05073770520434398)
-        self.assertAlmostEqual(pc[1, 1], 0.68616983388698793)
-        self.assertAlmostEqual(pc[1, 2], 0.13819106187213354)
-        self.assertAlmostEqual(pc[1, 3], 0.19782544121828985)
-        self.assertAlmostEqual(pc[2, 0], -0.63000893660095947)
-        self.assertAlmostEqual(pc[2, 1], 0.091155993862151397)
-        self.assertAlmostEqual(pc[2, 2], 0.045630391256086845)
-        self.assertAlmostEqual(pc[2, 3], -0.67456694780914772)
+        assert mean[0] == pytest.approx(2.7500, abs=5e-8)
+        assert mean[1] == pytest.approx(5.8500, abs=5e-8)
+        assert mean[2] == pytest.approx(3.9500, abs=5e-8)
+        assert mean[3] == pytest.approx(6.0500, abs=5e-8)
+        assert mean[4] == pytest.approx(6.2750, abs=5e-8)
+        assert mean[5] == pytest.approx(8.0750, abs=5e-8)
+        assert coordinates[0, 0] == pytest.approx(2.6460846688406905, abs=5e-8)
+        assert coordinates[0, 1] == pytest.approx(-2.1421701432732418, abs=5e-8)
+        assert coordinates[0, 2] == pytest.approx(-0.56620932754145858, abs=5e-8)
+        assert coordinates[0, 3] == pytest.approx(0.0, abs=5e-8)
+        assert coordinates[1, 0] == pytest.approx(2.0644120899917544, abs=5e-8)
+        assert coordinates[1, 1] == pytest.approx(0.55542108669180323, abs=5e-8)
+        assert coordinates[1, 2] == pytest.approx(1.4818772348457117, abs=5e-8)
+        assert coordinates[1, 3] == pytest.approx(0.0, abs=5e-8)
+        assert coordinates[2, 0] == pytest.approx(1.0686641862092987, abs=5e-8)
+        assert coordinates[2, 1] == pytest.approx(1.9994412069101073, abs=5e-8)
+        assert coordinates[2, 2] == pytest.approx(-1.000720598980291, abs=5e-8)
+        assert coordinates[2, 3] == pytest.approx(0.0, abs=5e-8)
+        assert coordinates[3, 0] == pytest.approx(-5.77916094504174, abs=5e-8)
+        assert coordinates[3, 1] == pytest.approx(-0.41269215032867046, abs=5e-8)
+        assert coordinates[3, 2] == pytest.approx(0.085052691676038017, abs=5e-8)
+        assert coordinates[3, 3] == pytest.approx(0.0, abs=5e-8)
+        assert pc[0, 0] == pytest.approx(-0.26379660005997291, abs=5e-8)
+        assert pc[0, 1] == pytest.approx(0.064814972617134495, abs=5e-8)
+        assert pc[0, 2] == pytest.approx(-0.91763310094893846, abs=5e-8)
+        assert pc[0, 3] == pytest.approx(0.26145408875373249, abs=5e-8)
+        assert pc[1, 0] == pytest.approx(0.05073770520434398, abs=5e-8)
+        assert pc[1, 1] == pytest.approx(0.68616983388698793, abs=5e-8)
+        assert pc[1, 2] == pytest.approx(0.13819106187213354, abs=5e-8)
+        assert pc[1, 3] == pytest.approx(0.19782544121828985, abs=5e-8)
+        assert pc[2, 0] == pytest.approx(-0.63000893660095947, abs=5e-8)
+        assert pc[2, 1] == pytest.approx(0.091155993862151397, abs=5e-8)
+        assert pc[2, 2] == pytest.approx(0.045630391256086845, abs=5e-8)
+        assert pc[2, 3] == pytest.approx(-0.67456694780914772, abs=5e-8)
         # As the last eigenvalue is zero, the corresponding eigenvector is
         # strongly affected by roundoff error, and is not being tested here.
         # For PCA, this doesn't matter since all data have a zero coefficient
         # along this eigenvector.
-        self.assertAlmostEqual(eigenvalues[0], 6.7678878332578778)
-        self.assertAlmostEqual(eigenvalues[1], 3.0108911400291856)
-        self.assertAlmostEqual(eigenvalues[2], 1.8775592718563467)
-        self.assertAlmostEqual(eigenvalues[3], 0.0)
+        assert eigenvalues[0] == pytest.approx(6.7678878332578778, abs=5e-8)
+        assert eigenvalues[1] == pytest.approx(3.0108911400291856, abs=5e-8)
+        assert eigenvalues[2] == pytest.approx(1.8775592718563467, abs=5e-8)
+        assert eigenvalues[3] == pytest.approx(0.0, abs=5e-8)
 
 
 if __name__ == "__main__":
-    TestCluster.module = "Bio.Cluster"
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

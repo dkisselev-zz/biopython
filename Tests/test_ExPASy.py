@@ -6,8 +6,8 @@
 """Testing Bio.ExPASy online code."""
 
 import unittest
+import pytest
 
-import requires_internet
 
 # We want to test these:
 from Bio import ExPASy
@@ -17,7 +17,8 @@ from Bio.ExPASy import Prodoc
 from Bio.ExPASy import Prosite
 from Bio.ExPASy import ScanProsite
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 class ExPASyOnlineTests(unittest.TestCase):
@@ -26,31 +27,25 @@ class ExPASyOnlineTests(unittest.TestCase):
     def test_prosite_raw(self):
         with ExPASy.get_prosite_raw("PS00001") as handle:
             record = Prosite.read(handle)
-        self.assertEqual(record.accession, "PS00001")
-        self.assertEqual(record.name, "ASN_GLYCOSYLATION")
+        assert record.accession == "PS00001"
+        assert record.name == "ASN_GLYCOSYLATION"
 
     def test_prodoc_raw(self):
         with ExPASy.get_prosite_raw("PDOC00001") as handle:
             record = Prodoc.read(handle)
-        self.assertEqual(record.accession, "PDOC00001")
+        assert record.accession == "PDOC00001"
 
     def test_prosite_html(self):
         with ExPASy.get_prosite_entry("PS00001") as handle:
             html = handle.read()
-        self.assertEqual(
-            handle.url,
-            "https://prosite.expasy.org/cgi-bin/prosite/get-prosite-entry?PS00001",
-        )
-        self.assertIn("<title>PROSITE - PS00001</title>", html)
+        assert handle.url == "https://prosite.expasy.org/cgi-bin/prosite/get-prosite-entry?PS00001"
+        assert "<title>PROSITE - PS00001</title>" in html
 
     def test_prodoc_html(self):
         with ExPASy.get_prodoc_entry("PDOC00001") as handle:
             html = handle.read()
-        self.assertEqual(
-            handle.url,
-            "https://prosite.expasy.org/cgi-bin/prosite/get-prodoc-entry?PDOC00001",
-        )
-        self.assertIn("{PS00001; ASN_GLYCOSYLATION}", html)
+        assert handle.url == "https://prosite.expasy.org/cgi-bin/prosite/get-prodoc-entry?PDOC00001"
+        assert "{PS00001; ASN_GLYCOSYLATION}" in html
 
     def test_scanprosite_swissprot(self):
         pattern = "P-x(2)-G-E-S-G(2)-[AS]"
@@ -78,12 +73,11 @@ class ExPASyOnlineTests(unittest.TestCase):
 
     def test_scanprosite_output_not_implemented(self):
         pattern = "P-x(2)-G-E-S-G(2)-[AS]"
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             ScanProsite.scan(
                 sig=pattern, mirror=ScanProsite.PROSITE_URL, output="txt", db="sp"
             )
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

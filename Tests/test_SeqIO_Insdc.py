@@ -5,6 +5,7 @@
 """Tests for SeqIO Insdc module."""
 
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
@@ -24,43 +25,40 @@ class TestEmbl(unittest.TestCase):
     def test_annotation1(self):
         """Check parsing of annotation from EMBL files (1)."""
         record = SeqIO.read("EMBL/TRBG361.embl", "embl")
-        self.assertEqual(len(record), 1859)
+        assert len(record) == 1859
         # Single keyword:
-        self.assertEqual(record.annotations["keywords"], ["beta-glucosidase"])
-        self.assertEqual(record.annotations["topology"], "linear")
+        assert record.annotations["keywords"] == ["beta-glucosidase"]
+        assert record.annotations["topology"] == "linear"
 
     def test_annotation2(self):
         """Check parsing of annotation from EMBL files (2)."""
         record = SeqIO.read("EMBL/DD231055_edited.embl", "embl")
-        self.assertEqual(len(record), 315)
+        assert len(record) == 315
         # Multiple keywords:
-        self.assertEqual(
-            record.annotations["keywords"],
-            [
+        assert record.annotations["keywords"] == [
                 "JP 2005522996-A/12",
                 "test-data",
                 "lot and lots of keywords for this example",
                 "multi-line keywords",
-            ],
-        )
-        self.assertEqual(record.annotations["topology"], "linear")
+            ]
+        assert record.annotations["topology"] == "linear"
 
     def test_annotation3(self):
         """Check parsing of annotation from EMBL files (3)."""
         record = SeqIO.read("EMBL/AE017046.embl", "embl")
-        self.assertEqual(len(record), 9609)
+        assert len(record) == 9609
         # TODO: Should this be an empty list, or simply absent?
-        self.assertEqual(record.annotations["keywords"], [""])
-        self.assertEqual(record.annotations["topology"], "circular")
+        assert record.annotations["keywords"] == [""]
+        assert record.annotations["topology"] == "circular"
 
     def test_annotation4(self):
         """Check parsing of annotation from EMBL files (4)."""
-        with self.assertWarns(BiopythonParserWarning):
+        with pytest.warns(BiopythonParserWarning):
             record = SeqIO.read("EMBL/location_wrap.embl", "embl")
-        self.assertEqual(len(record), 120)
-        self.assertNotIn("keywords", record.annotations)
+        assert len(record) == 120
+        assert "keywords" not in record.annotations
         # The ID line has the topology as unspecified:
-        self.assertNotIn("topology", record.annotations)
+        assert "topology" not in record.annotations
 
     def test_writing_empty_qualifiers(self):
         f = SeqFeature(
@@ -71,10 +69,10 @@ class TestEmbl(unittest.TestCase):
         record = SeqRecord(Seq("A" * 100), "dummy", features=[f])
         record.annotations["molecule_type"] = "DNA"
         gbk = record.format("gb")
-        self.assertIn(" /empty\n", gbk)
-        self.assertIn(" /zero=0\n", gbk)
-        self.assertIn(" /one=1\n", gbk)
-        self.assertIn(' /text="blah"\n', gbk)
+        assert " /empty\n" in gbk
+        assert " /zero=0\n" in gbk
+        assert " /one=1\n" in gbk
+        assert ' /text="blah"\n' in gbk
 
     def test_warn_on_writing_nonstandard_feature_key(self):
         f = SeqFeature(
@@ -84,7 +82,7 @@ class TestEmbl(unittest.TestCase):
         )
         record = SeqRecord(Seq("A" * 100), "dummy", features=[f])
         record.annotations["molecule_type"] = "DNA"
-        with self.assertWarns(BiopythonWarning):
+        with pytest.warns(BiopythonWarning):
             record.format("gb")
 
     def test_warn_on_writing_nonstandard_qualifier_key(self):
@@ -95,7 +93,7 @@ class TestEmbl(unittest.TestCase):
         )
         record = SeqRecord(Seq("A" * 100), "dummy", features=[f])
         record.annotations["molecule_type"] = "DNA"
-        with self.assertWarns(BiopythonWarning):
+        with pytest.warns(BiopythonWarning):
             record.format("gb")
 
 
@@ -109,7 +107,7 @@ class TestEmblRewrite(SeqRecordTestBaseClass):
         del old.annotations["references"]
 
         buffer = StringIO()
-        self.assertEqual(1, SeqIO.write(old, buffer, "embl"))
+        assert 1 == SeqIO.write(old, buffer, "embl")
         buffer.seek(0)
         new = SeqIO.read(buffer, "embl")
 
@@ -151,5 +149,4 @@ class ConvertTestsInsdc(SeqIOConverterTestBaseClass):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

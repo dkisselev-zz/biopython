@@ -10,6 +10,7 @@
 import copy
 import pathlib
 import unittest
+import pytest
 import warnings
 
 from Bio.PDB import PDBParser
@@ -55,7 +56,7 @@ class TestShrakeRupley(unittest.TestCase):
         result = [a.sasa for a in m.get_atoms()][:5]
         expected = [50.36, 31.40, 10.87, 12.86, 2.42]
         for a, b in zip(result, expected):
-            self.assertAlmostEqual(a, b, places=2)
+            assert a == pytest.approx(b, abs=0.005)
 
     def test_higher_resolution(self):
         """Run Shrake-Rupley with 960 points per sphere."""
@@ -67,7 +68,7 @@ class TestShrakeRupley(unittest.TestCase):
         result = [a.sasa for a in m.get_atoms()][:5]
         expected = [51.90, 31.45, 12.45, 12.72, 3.02]
         for a, b in zip(result, expected):
-            self.assertAlmostEqual(a, b, places=2)
+            assert a == pytest.approx(b, abs=0.005)
 
     def test_custom_radii(self):
         """Run Shrake-Rupley with custom radii."""
@@ -79,7 +80,7 @@ class TestShrakeRupley(unittest.TestCase):
         result = [a.sasa for a in m.get_atoms()][:5]
         expected = [0.0, 190.45, 41.18, 0.0, 36.03]
         for a, b in zip(result, expected):
-            self.assertAlmostEqual(a, b, places=2)
+            assert a == pytest.approx(b, abs=0.005)
 
     # Compute parameters
     def test_level_R(self):
@@ -91,7 +92,7 @@ class TestShrakeRupley(unittest.TestCase):
 
         for r in m.get_residues():
             atom_sum = sum(a.sasa for a in r)
-            self.assertAlmostEqual(atom_sum, r.sasa, places=2)
+            assert atom_sum == pytest.approx(r.sasa, abs=0.005)
 
     def test_level_C(self):
         """Run Shrake-Rupley with level C."""
@@ -102,42 +103,42 @@ class TestShrakeRupley(unittest.TestCase):
 
         for c in m.get_chains():
             atom_sum = sum(a.sasa for a in c.get_atoms())
-            self.assertAlmostEqual(atom_sum, c.sasa, places=2)
+            assert atom_sum == pytest.approx(c.sasa, abs=0.005)
 
     # Exceptions
     def test_fail_probe_radius(self):
         """Raise exception on bad probe_radius parameter."""
-        with self.assertRaisesRegex(ValueError, "must be a positive number"):
+        with pytest.raises(ValueError, match="must be a positive number"):
             sasa = ShrakeRupley(probe_radius=-1.40)
 
     def test_fail_n_points(self):
         """Raise exception on bad n_points parameter."""
-        with self.assertRaisesRegex(ValueError, "must be larger than 1"):
+        with pytest.raises(ValueError, match="must be larger than 1"):
             sasa = ShrakeRupley(n_points=0)
 
     def test_fail_compute_entity_type(self):
         """Raise exception on unsupported entity type."""
-        with self.assertRaisesRegex(ValueError, "Invalid entity type"):
+        with pytest.raises(ValueError, match="Invalid entity type"):
             sasa = ShrakeRupley()
             sasa.compute([1, 2, 3, 4, 5])
 
     def test_fail_compute_entity_level(self):
         """Raise exception on input Atom entity."""
         atom = list(self.model.get_atoms())[0]
-        with self.assertRaisesRegex(ValueError, "Invalid entity type"):
+        with pytest.raises(ValueError, match="Invalid entity type"):
             sasa = ShrakeRupley()
             sasa.compute(atom)
 
     def test_fail_compute_level_1(self):
         """Raise exception on invalid level parameter: X."""
-        with self.assertRaisesRegex(ValueError, "Invalid level"):
+        with pytest.raises(ValueError, match="Invalid level"):
             sasa = ShrakeRupley()
             sasa.compute(self.model, level="X")
 
     def test_fail_compute_level_2(self):
         """Raise exception on invalid level parameter: S > C."""
         chain = self.model["A"]
-        with self.assertRaisesRegex(ValueError, "be equal or smaller than"):
+        with pytest.raises(ValueError, match="be equal or smaller than"):
             sasa = ShrakeRupley()
             sasa.compute(chain, level="S")  # Chain is a child of Structure.
 
@@ -149,11 +150,10 @@ class TestShrakeRupley(unittest.TestCase):
         for a in list(r):
             r.detach_child(a.name)  # empty residue
 
-        self.assertEqual(len(r.child_list), 0)
-        with self.assertRaisesRegex(ValueError, "Entity has no child atoms"):
+        assert len(r.child_list) == 0
+        with pytest.raises(ValueError, match="Entity has no child atoms"):
             sasa.compute(r)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -6,17 +6,15 @@
 """Unit tests for Bio.Phylo functions with external dependencies."""
 
 import unittest
+import pytest
 
 # Check for any missing dependencies at the top level so we can skip
-from Bio import MissingExternalDependencyError
 from Bio import Phylo
 
 try:
     import networkx
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install networkx if you wish to use it with Bio.Phylo"
-    ) from None
+    pytest.skip("Install networkx if you wish to use it with Bio.Phylo", allow_module_level=True)
 
 # Example PhyloXML file
 EX_DOLLO = "PhyloXML/o_tol_332_d_dollo.xml"
@@ -30,9 +28,8 @@ class UtilTests(unittest.TestCase):
         """Tree to Graph conversion, if networkx is available."""
         tree = Phylo.read(EX_DOLLO, "phyloxml")
         G = Phylo.to_networkx(tree)
-        self.assertEqual(len(G.nodes()), 659)
+        assert len(G.nodes()) == 659
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

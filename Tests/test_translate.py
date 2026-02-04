@@ -6,6 +6,7 @@
 """Tests of the transcription and translation methods of Seq objects."""
 
 import unittest
+import pytest
 
 from Bio import Seq
 
@@ -15,78 +16,71 @@ class TestTranscriptionTranslation(unittest.TestCase):
         s = "ATA"
         dna = Seq.Seq(s)
         rna = dna.transcribe()
-        self.assertEqual(rna, "AUA")
+        assert rna == "AUA"
         s = "GAAAATTCATTTTCTTTGGACTTTCTCTGAAATCCGAGTCCTAGGAAAGATGCGTGAGATTCTTCATATT"
         dna = Seq.Seq(s)
         rna = dna.transcribe()
-        self.assertEqual(
-            rna,
-            "GAAAAUUCAUUUUCUUUGGACUUUCUCUGAAAUCCGAGUCCUAGGAAAGAUGCGUGAGAUUCUUCAUAUU",
-        )
+        assert rna == "GAAAAUUCAUUUUCUUUGGACUUUCUCUGAAAUCCGAGUCCUAGGAAAGAUGCGUGAGAUUCUUCAUAUU"
         s = "GAAAAUUCAUUUUCUUUGGACUUUCUCUGAAAUCCGAGUCCUAGGAAAGAUGCGUGAGAUUCUUCAUAUU"
         rna = Seq.Seq(s)
         dna = rna.back_transcribe()
-        self.assertEqual(
-            dna,
-            "GAAAATTCATTTTCTTTGGACTTTCTCTGAAATCCGAGTCCTAGGAAAGATGCGTGAGATTCTTCATATT",
-        )
+        assert dna == "GAAAATTCATTTTCTTTGGACTTTCTCTGAAATCCGAGTCCTAGGAAAGATGCGTGAGATTCTTCATATT"
 
     def test_translation(self):
         s = ""
         dna = Seq.Seq(s)
         protein = dna.translate(to_stop=True)
-        self.assertEqual(protein, "")
+        assert protein == ""
         s = "TAA"
         dna = Seq.Seq(s)
         protein = dna.translate(to_stop=True)
-        self.assertEqual(protein, "")
+        assert protein == ""
         s = "GAAAATTCATTTTCTTTGGACTTTCTCTGAAATCCGAGTCCTAGGAAAGATGCGTGAGATTCTTCA"
         dna = Seq.Seq(s)
         protein = dna.translate(to_stop=True)
-        self.assertEqual(protein, "ENSFSLDFL")
+        assert protein == "ENSFSLDFL"
         s = "GAA"
         dna = Seq.Seq(s)
         protein = dna.translate(15, to_stop=True)
-        self.assertEqual(protein, "E")
+        assert protein == "E"
         s = "ATA"
         dna = Seq.Seq(s)
         protein = dna.translate("Vertebrate Mitochondrial", to_stop=True)
-        self.assertEqual(protein, "M")
+        assert protein == "M"
         s = "GAAAATTCATTTTCTTTGGACTTTCTCTGAAATCCGAGTCCTAGGAAAGATGCGTGAGATTCTTCATAT"
         dna = Seq.Seq(s)
         protein = dna.translate("SGC8", to_stop=True)
-        self.assertEqual(protein, "ENSFSLDFLWNPSPSNDAWDSSY")
+        assert protein == "ENSFSLDFLWNPSPSNDAWDSSY"
 
     def test_dna_rna_translation(self):
         s = "TCAAAAAGGTGCATCTAGATG"
         dna = Seq.Seq(s)
         protein = dna.translate(to_stop=True)
-        self.assertEqual(protein, "SKRCI")
+        assert protein == "SKRCI"
         gapped_protein = dna.translate()
-        self.assertEqual(gapped_protein, "SKRCI*M")
+        assert gapped_protein == "SKRCI*M"
         # The table used here has "AGG" as a stop codon:
         p2 = dna.translate(table=2, to_stop=True)
-        self.assertEqual(p2, "SK")
+        assert p2 == "SK"
         p2 = dna.translate(table=2)
-        self.assertEqual(p2, "SK*CI*M")
+        assert p2 == "SK*CI*M"
         p2 = dna.translate(table=2, stop_symbol="+")
-        self.assertEqual(p2, "SK+CI+M")
+        assert p2 == "SK+CI+M"
         r = s.replace("T", "U")
         rna = Seq.Seq(r)
         protein = rna.translate(to_stop=True)
-        self.assertEqual(protein, "SKRCI")
+        assert protein == "SKRCI"
         gapped_protein = rna.translate()
-        self.assertEqual(gapped_protein, "SKRCI*M")
+        assert gapped_protein == "SKRCI*M"
 
     def test_ambiguous(self):
         s = "RATGATTARAATYTA"
         dna = Seq.Seq(s)
         protein = dna.translate("Vertebrate Mitochondrial")
-        self.assertEqual(protein, "BD*NL")
+        assert protein == "BD*NL"
         stop_protein = dna.translate("SGC1", to_stop=True)
-        self.assertEqual(stop_protein, "BD")
+        assert stop_protein == "BD"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

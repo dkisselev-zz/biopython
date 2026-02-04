@@ -5,6 +5,7 @@
 # as part of this package.
 """Tests for Bio.Align.emboss module."""
 import unittest
+import pytest
 from io import StringIO
 from tempfile import NamedTemporaryFile
 
@@ -13,66 +14,38 @@ from Bio.Align import substitution_matrices
 
 substitution_matrix = substitution_matrices.load("BLOSUM62")
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install numpy if you want to use Bio.Align.emboss."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 class TestEmboss(unittest.TestCase):
     def test_pair_example(self):
         # Alignment file obtained from EMBOSS:
         # http://emboss.sourceforge.net/docs/themes/alnformats/align.pair
         path = "Emboss/water.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Wed Jan 16 17:23:19 2002")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Wed Jan 16 17:23:19 2002"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 112)
-        self.assertEqual(alignment.annotations["Similarity"], 112)
-        self.assertEqual(alignment.annotations["Gaps"], 19)
-        self.assertAlmostEqual(alignment.annotations["Score"], 591.5)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 131))
-        self.assertEqual(alignment.sequences[0].id, "IXI_234")
-        self.assertEqual(alignment.sequences[1].id, "IXI_235")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TSPASIRPPAGPSSRRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 112
+        assert alignment.annotations["Similarity"] == 112
+        assert alignment.annotations["Gaps"] == 19
+        assert alignment.annotations["Score"] == pytest.approx(591.5, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 131)
+        assert alignment.sequences[0].id == "IXI_234"
+        assert alignment.sequences[1].id == "IXI_235"
+        assert alignment.sequences[0].seq == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.sequences[1].seq == "TSPASIRPPAGPSSRRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[0, 15, 24, 74, 84, 131], [0, 15, 15, 65, 65, 112]]),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||||||||||||         ||||||||||||||||||||||||||||||||||||||||||||||||||          |||||||||||||||||||||||||||||||||||||||||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment[1] == "TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||||||||||||         ||||||||||||||||||||||||||||||||||||||||||||||||||          |||||||||||||||||||||||||||||||||||||||||||||||"
+        assert str(alignment) == """\
 IXI_234           0 TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
                   0 |||||||||||||||---------||||||||||||||||||||||||||||||||||||
 IXI_235           0 TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
@@ -84,10 +57,8 @@ IXI_235          51 TTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTG
 IXI_234         120 PPAWAGDRSHE 131
                 120 ||||||||||| 131
 IXI_235         101 PPAWAGDRSHE 112
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S', 'S',
@@ -112,16 +83,10 @@ np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S', 'S',
            'D', 'R', 'S', 'H', 'E']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 620.0; 112 aligned letters; 112 identities; 0 mismatches; 112 positives; 19 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 620.0; 112 aligned letters; 112 identities; 0 mismatches; 112 positives; 19 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 620.0,
     aligned = 112:
@@ -150,77 +115,62 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 19)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 19)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 19)
-        self.assertEqual(counts.gaps, 19)
-        self.assertEqual(counts.aligned, 112)
-        self.assertEqual(counts.identities, 112)
-        self.assertEqual(counts.mismatches, 0)
-        self.assertEqual(counts.positives, 112)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 19
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 19
+        assert counts.insertions == 0
+        assert counts.deletions == 19
+        assert counts.gaps == 19
+        assert counts.aligned == 112
+        assert counts.identities == 112
+        assert counts.mismatches == 0
+        assert counts.positives == 112
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_local_water2(self):
         """Test parsing a local alignment."""
         path = "Emboss/water2.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Sat Apr 04 2009 22:08:44")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "water -asequence asis:ACACACTCACACACACTTGGTCAGAGATGCTGTGCTTCTTGGAAGCAAGGNCTCAAAGGCAAGGTGCACGCAGAGGGACGTTTGAGTCTGGGATGAAGCATGTNCGTATTATTTATATGATGGAATTTCACGTTTTTATG -bsequence asis:CGTTTGAGTACTGGGATG -gapopen 10 -gapextend 0.5 -filter",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Sat Apr 04 2009 22:08:44"
+        assert alignments.metadata["Command line"] == "water -asequence asis:ACACACTCACACACACTTGGTCAGAGATGCTGTGCTTCTTGGAAGCAAGGNCTCAAAGGCAAGGTGCACGCAGAGGGACGTTTGAGTCTGGGATGAAGCATGTNCGTATTATTTATATGATGGAATTTCACGTTTTTATG -bsequence asis:CGTTTGAGTACTGGGATG -gapopen 10 -gapextend 0.5 -filter"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 17)
-        self.assertEqual(alignment.annotations["Similarity"], 17)
-        self.assertEqual(alignment.annotations["Gaps"], 1)
-        self.assertAlmostEqual(alignment.annotations["Score"], 75.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 18))
-        self.assertEqual(alignment.sequences[0].id, "asis")
-        self.assertEqual(alignment.sequences[1].id, "asis")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({78: 'CGTTTGAGTCTGGGATG'}, length=95)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[78:95], "CGTTTGAGTCTGGGATG")
-        self.assertEqual(alignment.sequences[1].seq[0:18], "CGTTTGAGTACTGGGATG")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 17
+        assert alignment.annotations["Similarity"] == 17
+        assert alignment.annotations["Gaps"] == 1
+        assert alignment.annotations["Score"] == pytest.approx(75.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 18)
+        assert alignment.sequences[0].id == "asis"
+        assert alignment.sequences[1].id == "asis"
+        assert repr(alignment.sequences[0].seq) == "Seq({78: 'CGTTTGAGTCTGGGATG'}, length=95)"
+        assert alignment.sequences[0].seq[78:95] == "CGTTTGAGTCTGGGATG"
+        assert alignment.sequences[1].seq[0:18] == "CGTTTGAGTACTGGGATG"
+        assert np.array_equal(
                 alignment.coordinates, np.array([[78, 87, 87, 95], [0, 9, 10, 18]])
             )
-        )
-        self.assertEqual(alignment[0], "CGTTTGAGT-CTGGGATG")
-        self.assertEqual(alignment[1], "CGTTTGAGTACTGGGATG")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"], "||||||||| ||||||||"
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "CGTTTGAGT-CTGGGATG"
+        assert alignment[1] == "CGTTTGAGTACTGGGATG"
+        assert alignment.column_annotations["emboss_consensus"] == "||||||||| ||||||||"
+        assert str(alignment) == """\
 asis             78 CGTTTGAGT-CTGGGATG 95
                   0 |||||||||-|||||||| 18
 asis              0 CGTTTGAGTACTGGGATG 18
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'G', 'T', 'T', 'T', 'G', 'A', 'G', 'T', '-', 'C', 'T', 'G',
@@ -229,16 +179,10 @@ np.array([['C', 'G', 'T', 'T', 'T', 'G', 'A', 'G', 'T', '-', 'C', 'T', 'G',
            'G', 'G', 'A', 'T', 'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (17 aligned letters; 17 identities; 0 mismatches; 1 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (17 aligned letters; 17 identities; 0 mismatches; 1 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 17:
         identities = 17,
@@ -265,77 +209,59 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 1)
-        self.assertEqual(counts.aligned, 17)
-        self.assertEqual(counts.identities, 17)
-        self.assertEqual(counts.mismatches, 0)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1
+        assert counts.insertions == 1
+        assert counts.deletions == 0
+        assert counts.gaps == 1
+        assert counts.aligned == 17
+        assert counts.identities == 17
+        assert counts.mismatches == 0
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_matcher_simple(self):
         path = "Emboss/matcher_simple.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "matcher")
-        self.assertEqual(alignments.metadata["Rundate"], "Tue  8 Dec 2009 11:48:35")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "matcher [-asequence] rose.pro [-bsequence] rosemary.pro [-outfile] matcher_simple.txt -auto -sprotein -aformat simple",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "simple")
-        self.assertEqual(alignments.metadata["Report_file"], "matcher_simple.txt")
+        assert alignments.metadata["Program"] == "matcher"
+        assert alignments.metadata["Rundate"] == "Tue  8 Dec 2009 11:48:35"
+        assert alignments.metadata["Command line"] == "matcher [-asequence] rose.pro [-bsequence] rosemary.pro [-outfile] matcher_simple.txt -auto -sprotein -aformat simple"
+        assert alignments.metadata["Align_format"] == "simple"
+        assert alignments.metadata["Report_file"] == "matcher_simple.txt"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 7)
-        self.assertEqual(alignment.annotations["Similarity"], 8)
-        self.assertEqual(alignment.annotations["Gaps"], 0)
-        self.assertAlmostEqual(alignment.annotations["Score"], 29)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 16))
-        self.assertEqual(alignment.sequences[0].id, "AF069992_1")
-        self.assertEqual(alignment.sequences[1].id, "CAA85685.1")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({72: 'GPPPQSPDENRAGESS'}, length=88)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({46: 'GVPPEEAGAAVAAESS'}, length=62)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[72:88], "GPPPQSPDENRAGESS")
-        self.assertEqual(alignment.sequences[1].seq[46:62], "GVPPEEAGAAVAAESS")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[72, 88], [46, 62]]))
-        )
-        self.assertEqual(alignment[0], "GPPPQSPDENRAGESS")
-        self.assertEqual(alignment[1], "GVPPEEAGAAVAAESS")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"], "|.||:......|.|||"
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 7
+        assert alignment.annotations["Similarity"] == 8
+        assert alignment.annotations["Gaps"] == 0
+        assert alignment.annotations["Score"] == pytest.approx(29, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 16)
+        assert alignment.sequences[0].id == "AF069992_1"
+        assert alignment.sequences[1].id == "CAA85685.1"
+        assert repr(alignment.sequences[0].seq) == "Seq({72: 'GPPPQSPDENRAGESS'}, length=88)"
+        assert repr(alignment.sequences[1].seq) == "Seq({46: 'GVPPEEAGAAVAAESS'}, length=62)"
+        assert alignment.sequences[0].seq[72:88] == "GPPPQSPDENRAGESS"
+        assert alignment.sequences[1].seq[46:62] == "GVPPEEAGAAVAAESS"
+        assert np.array_equal(alignment.coordinates, np.array([[72, 88], [46, 62]]))
+        assert alignment[0] == "GPPPQSPDENRAGESS"
+        assert alignment[1] == "GVPPEEAGAAVAAESS"
+        assert alignment.column_annotations["emboss_consensus"] == "|.||:......|.|||"
+        assert str(alignment) == """\
 AF069992_        72 GPPPQSPDENRAGESS 88
                   0 |.||.......|.||| 16
 CAA85685.        46 GVPPEEAGAAVAAESS 62
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['G', 'P', 'P', 'P', 'Q', 'S', 'P', 'D', 'E', 'N', 'R', 'A', 'G',
@@ -344,16 +270,10 @@ np.array([['G', 'P', 'P', 'P', 'Q', 'S', 'P', 'D', 'E', 'N', 'R', 'A', 'G',
            'E', 'S', 'S']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 29.0; 16 aligned letters; 7 identities; 9 mismatches; 8 positives; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 29.0; 16 aligned letters; 7 identities; 9 mismatches; 8 positives; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 29.0,
     aligned = 16:
@@ -382,25 +302,24 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 16)
-        self.assertEqual(counts.identities, 7)
-        self.assertEqual(counts.mismatches, 9)
-        self.assertEqual(counts.positives, 8)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 16
+        assert counts.identities == 7
+        assert counts.mismatches == 9
+        assert counts.positives == 8
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_matcher_pair(self):
@@ -411,11 +330,11 @@ AlignmentCounts object with
         self.check_matcher_pair(alignments)
         with Align.parse(path, "emboss") as alignments:
             self.check_matcher_pair(alignments)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(path, "emboss") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with open(path) as stream:
             data = stream.read()
@@ -426,65 +345,37 @@ AlignmentCounts object with
         self.check_matcher_pair(alignments)
 
     def check_matcher_pair(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "matcher")
-        self.assertEqual(alignments.metadata["Rundate"], "Tue  8 Dec 2009 12:01:34")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "matcher [-asequence] hba_human.fasta [-bsequence] hbb_human.fasta [-outfile] matcher_pair.txt -alternatives 5 -aformat pair -sprotein",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "pair")
-        self.assertEqual(alignments.metadata["Report_file"], "matcher_pair.txt")
+        assert alignments.metadata["Program"] == "matcher"
+        assert alignments.metadata["Rundate"] == "Tue  8 Dec 2009 12:01:34"
+        assert alignments.metadata["Command line"] == "matcher [-asequence] hba_human.fasta [-bsequence] hbb_human.fasta [-outfile] matcher_pair.txt -alternatives 5 -aformat pair -sprotein"
+        assert alignments.metadata["Align_format"] == "pair"
+        assert alignments.metadata["Report_file"] == "matcher_pair.txt"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 63)
-        self.assertEqual(alignment.annotations["Similarity"], 88)
-        self.assertEqual(alignment.annotations["Gaps"], 8)
-        self.assertAlmostEqual(alignment.annotations["Score"], 264)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 145))
-        self.assertEqual(alignment.sequences[0].id, "HBA_HUMAN")
-        self.assertEqual(alignment.sequences[1].id, "HBB_HUMAN")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({2: 'LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQV...SKY'}, length=141)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({3: 'LTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMG...HKY'}, length=146)",
-        )
-        self.assertEqual(
-            alignment.sequences[0].seq[2:141],
-            "LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKY",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq[3:146],
-            "LTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKY",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 63
+        assert alignment.annotations["Similarity"] == 88
+        assert alignment.annotations["Gaps"] == 8
+        assert alignment.annotations["Score"] == pytest.approx(264, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 145)
+        assert alignment.sequences[0].id == "HBA_HUMAN"
+        assert alignment.sequences[1].id == "HBB_HUMAN"
+        assert repr(alignment.sequences[0].seq) == "Seq({2: 'LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQV...SKY'}, length=141)"
+        assert repr(alignment.sequences[1].seq) == "Seq({3: 'LTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMG...HKY'}, length=146)"
+        assert alignment.sequences[0].seq[2:141] == "LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKY"
+        assert alignment.sequences[1].seq[3:146] == "LTPEEKSAVTALWGKVNVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKY"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [[2, 18, 20, 47, 47, 51, 51, 141], [3, 19, 19, 46, 47, 51, 56, 146]]
                 ),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHF-DLSH-----GSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKY",
-        )
-        self.assertEqual(
-            alignment[1],
-            "LTPEEKSAVTALWGKV--NVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKY",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|:|.:|:.|.|.||||  :..|.|.|||.|:.:.:|.|:.:|..| |||.     |:.:||.|||||..|.::.:||:|::....:.||:||..||.|||.||:||.:.|:..||.|...||||.|.|:..|.:|.|:..|..||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHF-DLSH-----GSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKY"
+        assert alignment[1] == "LTPEEKSAVTALWGKV--NVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKVKAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKY"
+        assert alignment.column_annotations["emboss_consensus"] == "|:|.:|:.|.|.||||  :..|.|.|||.|:.:.:|.|:.:|..| |||.     |:.:||.|||||..|.::.:||:|::....:.||:||..||.|||.||:||.:.|:..||.|...||||.|.|:..|.:|.|:..|..||"
+        assert str(alignment) == """\
 HBA_HUMAN         2 LSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHF-DLSH-----GSAQV
                   0 |.|..|..|.|.||||--...|.|.|||.|.....|.|...|..|-|||.-----|...|
 HBB_HUMAN         3 LTPEEKSAVTALWGKV--NVDEVGGEALGRLLVVYPWTQRFFESFGDLSTPDAVMGNPKV
@@ -496,10 +387,8 @@ HBB_HUMAN        61 KAHGKKVLGAFSDGLAHLDNLKGTFATLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGK
 HBA_HUMAN       116 EFTPAVHASLDKFLASVSTVLTSKY 141
                 120 ||||.|.|...|..|.|...|..|| 145
 HBB_HUMAN       121 EFTPPVQAAYQKVVAGVANALAHKY 146
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['L', 'S', 'P', 'A', 'D', 'K', 'T', 'N', 'V', 'K', 'A', 'A', 'W',
@@ -528,16 +417,10 @@ np.array([['L', 'S', 'P', 'A', 'D', 'K', 'T', 'N', 'V', 'K', 'A', 'A', 'W',
            'K', 'Y']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 326.0; 137 aligned letters; 63 identities; 74 mismatches; 88 positives; 8 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 326.0; 137 aligned letters; 63 identities; 74 mismatches; 88 positives; 8 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 326.0,
     aligned = 137:
@@ -566,64 +449,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 2)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 8)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 8)
-        self.assertEqual(counts.aligned, 137)
-        self.assertEqual(counts.identities, 63)
-        self.assertEqual(counts.mismatches, 74)
-        self.assertEqual(counts.positives, 88)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 2
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 8
+        assert counts.insertions == 6
+        assert counts.deletions == 2
+        assert counts.gaps == 8
+        assert counts.aligned == 137
+        assert counts.identities == 63
+        assert counts.mismatches == 74
+        assert counts.positives == 88
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 6)
-        self.assertEqual(alignment.annotations["Similarity"], 9)
-        self.assertEqual(alignment.annotations["Gaps"], 0)
-        self.assertAlmostEqual(alignment.annotations["Score"], 32)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 13))
-        self.assertEqual(alignment.sequences[0].id, "HBA_HUMAN")
-        self.assertEqual(alignment.sequences[1].id, "HBB_HUMAN")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({60: 'KKVADALTNAVAH'}, length=73)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({131: 'QKVVAGVANALAH'}, length=144)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[60:73], "KKVADALTNAVAH")
-        self.assertEqual(alignment.sequences[1].seq[131:144], "QKVVAGVANALAH")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[60, 73], [131, 144]]))
-        )
-        self.assertEqual(alignment[0], "KKVADALTNAVAH")
-        self.assertEqual(alignment[1], "QKVVAGVANALAH")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"], ":||...:.||:||"
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 6
+        assert alignment.annotations["Similarity"] == 9
+        assert alignment.annotations["Gaps"] == 0
+        assert alignment.annotations["Score"] == pytest.approx(32, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 13)
+        assert alignment.sequences[0].id == "HBA_HUMAN"
+        assert alignment.sequences[1].id == "HBB_HUMAN"
+        assert repr(alignment.sequences[0].seq) == "Seq({60: 'KKVADALTNAVAH'}, length=73)"
+        assert repr(alignment.sequences[1].seq) == "Seq({131: 'QKVVAGVANALAH'}, length=144)"
+        assert alignment.sequences[0].seq[60:73] == "KKVADALTNAVAH"
+        assert alignment.sequences[1].seq[131:144] == "QKVVAGVANALAH"
+        assert np.array_equal(alignment.coordinates, np.array([[60, 73], [131, 144]]))
+        assert alignment[0] == "KKVADALTNAVAH"
+        assert alignment[1] == "QKVVAGVANALAH"
+        assert alignment.column_annotations["emboss_consensus"] == ":||...:.||:||"
+        assert str(alignment) == """\
 HBA_HUMAN        60 KKVADALTNAVAH  73
                   0 .||.....||.||  13
 HBB_HUMAN       131 QKVVAGVANALAH 144
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'K', 'V', 'A', 'D', 'A', 'L', 'T', 'N', 'A', 'V', 'A', 'H'],
@@ -631,16 +499,10 @@ np.array([['K', 'K', 'V', 'A', 'D', 'A', 'L', 'T', 'N', 'A', 'V', 'A', 'H'],
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 32.0; 13 aligned letters; 6 identities; 7 mismatches; 9 positives; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 32.0; 13 aligned letters; 6 identities; 7 mismatches; 9 positives; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 32.0,
     aligned = 13:
@@ -669,64 +531,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 13)
-        self.assertEqual(counts.identities, 6)
-        self.assertEqual(counts.mismatches, 7)
-        self.assertEqual(counts.positives, 9)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 13
+        assert counts.identities == 6
+        assert counts.mismatches == 7
+        assert counts.positives == 9
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 7)
-        self.assertEqual(alignment.annotations["Similarity"], 10)
-        self.assertEqual(alignment.annotations["Gaps"], 0)
-        self.assertAlmostEqual(alignment.annotations["Score"], 28)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 18))
-        self.assertEqual(alignment.sequences[0].id, "HBA_HUMAN")
-        self.assertEqual(alignment.sequences[1].id, "HBB_HUMAN")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({90: 'KLRVDPVNFKLLSHCLLV'}, length=108)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({17: 'KVNVDEVGGEALGRLLVV'}, length=35)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[90:108], "KLRVDPVNFKLLSHCLLV")
-        self.assertEqual(alignment.sequences[1].seq[17:35], "KVNVDEVGGEALGRLLVV")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[90, 108], [17, 35]]))
-        )
-        self.assertEqual(alignment[0], "KLRVDPVNFKLLSHCLLV")
-        self.assertEqual(alignment[1], "KVNVDEVGGEALGRLLVV")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"], "|:.||.|..:.|...|:|"
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 7
+        assert alignment.annotations["Similarity"] == 10
+        assert alignment.annotations["Gaps"] == 0
+        assert alignment.annotations["Score"] == pytest.approx(28, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 18)
+        assert alignment.sequences[0].id == "HBA_HUMAN"
+        assert alignment.sequences[1].id == "HBB_HUMAN"
+        assert repr(alignment.sequences[0].seq) == "Seq({90: 'KLRVDPVNFKLLSHCLLV'}, length=108)"
+        assert repr(alignment.sequences[1].seq) == "Seq({17: 'KVNVDEVGGEALGRLLVV'}, length=35)"
+        assert alignment.sequences[0].seq[90:108] == "KLRVDPVNFKLLSHCLLV"
+        assert alignment.sequences[1].seq[17:35] == "KVNVDEVGGEALGRLLVV"
+        assert np.array_equal(alignment.coordinates, np.array([[90, 108], [17, 35]]))
+        assert alignment[0] == "KLRVDPVNFKLLSHCLLV"
+        assert alignment[1] == "KVNVDEVGGEALGRLLVV"
+        assert alignment.column_annotations["emboss_consensus"] == "|:.||.|..:.|...|:|"
+        assert str(alignment) == """\
 HBA_HUMAN        90 KLRVDPVNFKLLSHCLLV 108
                   0 |..||.|....|...|.|  18
 HBB_HUMAN        17 KVNVDEVGGEALGRLLVV  35
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'L', 'R', 'V', 'D', 'P', 'V', 'N', 'F', 'K', 'L', 'L', 'S',
@@ -735,16 +582,10 @@ np.array([['K', 'L', 'R', 'V', 'D', 'P', 'V', 'N', 'F', 'K', 'L', 'L', 'S',
            'R', 'L', 'L', 'V', 'V']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 28.0; 18 aligned letters; 7 identities; 11 mismatches; 10 positives; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 28.0; 18 aligned letters; 7 identities; 11 mismatches; 10 positives; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 28.0,
     aligned = 18:
@@ -773,78 +614,59 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 18)
-        self.assertEqual(counts.identities, 7)
-        self.assertEqual(counts.mismatches, 11)
-        self.assertEqual(counts.positives, 10)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 18
+        assert counts.identities == 7
+        assert counts.mismatches == 11
+        assert counts.positives == 10
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 6)
-        self.assertEqual(alignment.annotations["Similarity"], 6)
-        self.assertEqual(alignment.annotations["Gaps"], 0)
-        self.assertAlmostEqual(alignment.annotations["Score"], 23)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 10))
-        self.assertEqual(alignment.sequences[0].id, "HBA_HUMAN")
-        self.assertEqual(alignment.sequences[1].id, "HBB_HUMAN")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({80: 'LSALSDLHAH'}, length=90)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({68: 'LGAFSDGLAH'}, length=78)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[80:90], "LSALSDLHAH")
-        self.assertEqual(alignment.sequences[1].seq[68:78], "LGAFSDGLAH")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[80, 90], [68, 78]]))
-        )
-        self.assertEqual(alignment[0], "LSALSDLHAH")
-        self.assertEqual(alignment[1], "LGAFSDGLAH")
-        self.assertEqual(alignment.column_annotations["emboss_consensus"], "|.|.||..||")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 6
+        assert alignment.annotations["Similarity"] == 6
+        assert alignment.annotations["Gaps"] == 0
+        assert alignment.annotations["Score"] == pytest.approx(23, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 10)
+        assert alignment.sequences[0].id == "HBA_HUMAN"
+        assert alignment.sequences[1].id == "HBB_HUMAN"
+        assert repr(alignment.sequences[0].seq) == "Seq({80: 'LSALSDLHAH'}, length=90)"
+        assert repr(alignment.sequences[1].seq) == "Seq({68: 'LGAFSDGLAH'}, length=78)"
+        assert alignment.sequences[0].seq[80:90] == "LSALSDLHAH"
+        assert alignment.sequences[1].seq[68:78] == "LGAFSDGLAH"
+        assert np.array_equal(alignment.coordinates, np.array([[80, 90], [68, 78]]))
+        assert alignment[0] == "LSALSDLHAH"
+        assert alignment[1] == "LGAFSDGLAH"
+        assert alignment.column_annotations["emboss_consensus"] == "|.|.||..||"
+        assert str(alignment) == """\
 HBA_HUMAN        80 LSALSDLHAH 90
                   0 |.|.||..|| 10
 HBB_HUMAN        68 LGAFSDGLAH 78
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['L', 'S', 'A', 'L', 'S', 'D', 'L', 'H', 'A', 'H'],
           ['L', 'G', 'A', 'F', 'S', 'D', 'G', 'L', 'A', 'H']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 23.0; 10 aligned letters; 6 identities; 4 mismatches; 6 positives; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 23.0; 10 aligned letters; 6 identities; 4 mismatches; 6 positives; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 23.0,
     aligned = 10:
@@ -873,78 +695,59 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 10)
-        self.assertEqual(counts.identities, 6)
-        self.assertEqual(counts.mismatches, 4)
-        self.assertEqual(counts.positives, 6)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 10
+        assert counts.identities == 6
+        assert counts.mismatches == 4
+        assert counts.positives == 6
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 14)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 6)
-        self.assertEqual(alignment.annotations["Similarity"], 8)
-        self.assertEqual(alignment.annotations["Gaps"], 0)
-        self.assertAlmostEqual(alignment.annotations["Score"], 23)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 10))
-        self.assertEqual(alignment.sequences[0].id, "HBA_HUMAN")
-        self.assertEqual(alignment.sequences[1].id, "HBB_HUMAN")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({10: 'VKAAWGKVGA'}, length=20)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({126: 'VQAAYQKVVA'}, length=136)",
-        )
-        self.assertEqual(alignment.sequences[0].seq[10:20], "VKAAWGKVGA")
-        self.assertEqual(alignment.sequences[1].seq[126:136], "VQAAYQKVVA")
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[10, 20], [126, 136]]))
-        )
-        self.assertEqual(alignment[0], "VKAAWGKVGA")
-        self.assertEqual(alignment[1], "VQAAYQKVVA")
-        self.assertEqual(alignment.column_annotations["emboss_consensus"], "|:||:.||.|")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(14, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 6
+        assert alignment.annotations["Similarity"] == 8
+        assert alignment.annotations["Gaps"] == 0
+        assert alignment.annotations["Score"] == pytest.approx(23, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 10)
+        assert alignment.sequences[0].id == "HBA_HUMAN"
+        assert alignment.sequences[1].id == "HBB_HUMAN"
+        assert repr(alignment.sequences[0].seq) == "Seq({10: 'VKAAWGKVGA'}, length=20)"
+        assert repr(alignment.sequences[1].seq) == "Seq({126: 'VQAAYQKVVA'}, length=136)"
+        assert alignment.sequences[0].seq[10:20] == "VKAAWGKVGA"
+        assert alignment.sequences[1].seq[126:136] == "VQAAYQKVVA"
+        assert np.array_equal(alignment.coordinates, np.array([[10, 20], [126, 136]]))
+        assert alignment[0] == "VKAAWGKVGA"
+        assert alignment[1] == "VQAAYQKVVA"
+        assert alignment.column_annotations["emboss_consensus"] == "|:||:.||.|"
+        assert str(alignment) == """\
 HBA_HUMAN        10 VKAAWGKVGA  20
                   0 |.||..||.|  10
 HBB_HUMAN       126 VQAAYQKVVA 136
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['V', 'K', 'A', 'A', 'W', 'G', 'K', 'V', 'G', 'A'],
           ['V', 'Q', 'A', 'A', 'Y', 'Q', 'K', 'V', 'V', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 23.0; 10 aligned letters; 6 identities; 4 mismatches; 8 positives; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 23.0; 10 aligned letters; 6 identities; 4 mismatches; 8 positives; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 23.0,
     aligned = 10:
@@ -973,25 +776,24 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 10)
-        self.assertEqual(counts.identities, 6)
-        self.assertEqual(counts.mismatches, 4)
-        self.assertEqual(counts.positives, 8)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 10
+        assert counts.identities == 6
+        assert counts.mismatches == 4
+        assert counts.positives == 8
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_pair_example_nobrief(self):
@@ -1001,59 +803,37 @@ AlignmentCounts object with
         # command line option.
         path = "Emboss/needle_nobrief_multiple.pair"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "needle")
-        self.assertEqual(alignments.metadata["Rundate"], "Fri 23 Jul 2021 22:45:41")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "needle -asequence seqa.fa -bsequence seqb.fa -datafile EBLOSUM62 -gapopen 10 -gapextend 0.5 -nobrief -outfile stdout",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "needle"
+        assert alignments.metadata["Rundate"] == "Fri 23 Jul 2021 22:45:41"
+        assert alignments.metadata["Command line"] == "needle -asequence seqa.fa -bsequence seqb.fa -datafile EBLOSUM62 -gapopen 10 -gapextend 0.5 -nobrief -outfile stdout"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 112)
-        self.assertEqual(alignment.annotations["Similarity"], 112)
-        self.assertEqual(alignment.annotations["Gaps"], 19)
-        self.assertAlmostEqual(alignment.annotations["Score"], 591.5)
-        self.assertEqual(alignment.annotations["Longest_Identity"], "100.00%")
-        self.assertEqual(alignment.annotations["Longest_Similarity"], "100.00%")
-        self.assertEqual(alignment.annotations["Shortest_Identity"], "85.50%")
-        self.assertEqual(alignment.annotations["Shortest_Similarity"], "85.50%")
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 131))
-        self.assertEqual(alignment.sequences[0].id, "IXI_234")
-        self.assertEqual(alignment.sequences[1].id, "IXI_235")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TSPASIRPPAGPSSRRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 112
+        assert alignment.annotations["Similarity"] == 112
+        assert alignment.annotations["Gaps"] == 19
+        assert alignment.annotations["Score"] == pytest.approx(591.5, abs=5e-8)
+        assert alignment.annotations["Longest_Identity"] == "100.00%"
+        assert alignment.annotations["Longest_Similarity"] == "100.00%"
+        assert alignment.annotations["Shortest_Identity"] == "85.50%"
+        assert alignment.annotations["Shortest_Similarity"] == "85.50%"
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 131)
+        assert alignment.sequences[0].id == "IXI_234"
+        assert alignment.sequences[1].id == "IXI_235"
+        assert alignment.sequences[0].seq == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.sequences[1].seq == "TSPASIRPPAGPSSRRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[0, 15, 24, 74, 84, 131], [0, 15, 15, 65, 65, 112]]),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||||||||||||         ||||||||||||||||||||||||||||||||||||||||||||||||||          |||||||||||||||||||||||||||||||||||||||||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment[1] == "TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||||||||||||         ||||||||||||||||||||||||||||||||||||||||||||||||||          |||||||||||||||||||||||||||||||||||||||||||||||"
+        assert str(alignment) == """\
 IXI_234           0 TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
                   0 |||||||||||||||---------||||||||||||||||||||||||||||||||||||
 IXI_235           0 TSPASIRPPAGPSSR---------RPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
@@ -1065,10 +845,8 @@ IXI_235          51 TTSTSTRHRGRSGW----------RASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTG
 IXI_234         120 PPAWAGDRSHE 131
                 120 ||||||||||| 131
 IXI_235         101 PPAWAGDRSHE 112
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
@@ -1095,16 +873,10 @@ np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
            'E']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 620.0; 112 aligned letters; 112 identities; 0 mismatches; 112 positives; 19 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 620.0; 112 aligned letters; 112 identities; 0 mismatches; 112 positives; 19 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 620.0,
     aligned = 112:
@@ -1133,69 +905,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 19)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 19)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 19)
-        self.assertEqual(counts.gaps, 19)
-        self.assertEqual(counts.aligned, 112)
-        self.assertEqual(counts.identities, 112)
-        self.assertEqual(counts.mismatches, 0)
-        self.assertEqual(counts.positives, 112)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 19
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 19
+        assert counts.insertions == 0
+        assert counts.deletions == 19
+        assert counts.gaps == 19
+        assert counts.aligned == 112
+        assert counts.identities == 112
+        assert counts.mismatches == 0
+        assert counts.positives == 112
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 120)
-        self.assertEqual(alignment.annotations["Similarity"], 120)
-        self.assertEqual(alignment.annotations["Gaps"], 4)
-        self.assertAlmostEqual(alignment.annotations["Score"], 618.0)
-        self.assertEqual(alignment.annotations["Longest_Identity"], "94.49%")
-        self.assertEqual(alignment.annotations["Longest_Similarity"], "94.49%")
-        self.assertEqual(alignment.annotations["Shortest_Identity"], "91.60%")
-        self.assertEqual(alignment.annotations["Shortest_Similarity"], "91.60%")
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 131))
-        self.assertEqual(alignment.sequences[0].id, "IXI_234")
-        self.assertEqual(alignment.sequences[1].id, "IXI_236")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TSPASIRPPAGPSSRPAMVSSRRPSPPPPRRPPGRPCCSAAPPRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRGSRPPRFAPPLMSSCITSTTGPPPPAGDRSHE",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 120
+        assert alignment.annotations["Similarity"] == 120
+        assert alignment.annotations["Gaps"] == 4
+        assert alignment.annotations["Score"] == pytest.approx(618.0, abs=5e-8)
+        assert alignment.annotations["Longest_Identity"] == "94.49%"
+        assert alignment.annotations["Longest_Similarity"] == "94.49%"
+        assert alignment.annotations["Shortest_Identity"] == "91.60%"
+        assert alignment.annotations["Shortest_Similarity"] == "91.60%"
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 131)
+        assert alignment.sequences[0].id == "IXI_234"
+        assert alignment.sequences[1].id == "IXI_236"
+        assert alignment.sequences[0].seq == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.sequences[1].seq == "TSPASIRPPAGPSSRPAMVSSRRPSPPPPRRPPGRPCCSAAPPRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRGSRPPRFAPPLMSSCITSTTGPPPPAGDRSHE"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[0, 22, 24, 97, 99, 131], [0, 22, 22, 95, 95, 127]]),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TSPASIRPPAGPSSRPAMVSSR--RPSPPPPRRPPGRPCCSAAPPRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSR--GSRPPRFAPPLMSSCITSTTGPPPPAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "||||||||||||||||||||||  |||||.||||.|||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||  ||||.||||.|||||||||||||..|||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment[1] == "TSPASIRPPAGPSSRPAMVSSR--RPSPPPPRRPPGRPCCSAAPPRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSR--GSRPPRFAPPLMSSCITSTTGPPPPAGDRSHE"
+        assert alignment.column_annotations["emboss_consensus"] == "||||||||||||||||||||||  |||||.||||.|||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||  ||||.||||.|||||||||||||..|||||||"
+        assert str(alignment) == """\
 IXI_234           0 TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
                   0 ||||||||||||||||||||||--|||||.||||.|||||||||.|||||||||||||||
 IXI_236           0 TSPASIRPPAGPSSRPAMVSSR--RPSPPPPRRPPGRPCCSAAPPRPQATGGWKTCSGTC
@@ -1207,10 +959,8 @@ IXI_236          58 TTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSR--GSRPPRFAPPLMSSCITSTTG
 IXI_234         120 PPAWAGDRSHE 131
                 120 ||..||||||| 131
 IXI_236         116 PPPPAGDRSHE 127
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
@@ -1237,16 +987,10 @@ np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
            'E']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 639.0; 127 aligned letters; 120 identities; 7 mismatches; 120 positives; 4 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 639.0; 127 aligned letters; 120 identities; 7 mismatches; 120 positives; 4 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 639.0,
     aligned = 127:
@@ -1275,71 +1019,51 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 4)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 4)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 4)
-        self.assertEqual(counts.gaps, 4)
-        self.assertEqual(counts.aligned, 127)
-        self.assertEqual(counts.identities, 120)
-        self.assertEqual(counts.mismatches, 7)
-        self.assertEqual(counts.positives, 120)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 4
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 4
+        assert counts.insertions == 0
+        assert counts.deletions == 4
+        assert counts.gaps == 4
+        assert counts.aligned == 127
+        assert counts.identities == 120
+        assert counts.mismatches == 7
+        assert counts.positives == 120
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 119)
-        self.assertEqual(alignment.annotations["Similarity"], 124)
-        self.assertEqual(alignment.annotations["Gaps"], 7)
-        self.assertAlmostEqual(alignment.annotations["Score"], 609.0)
-        self.assertEqual(alignment.annotations["Longest_Identity"], "95.97%")
-        self.assertEqual(alignment.annotations["Longest_Similarity"], "100.00%")
-        self.assertEqual(alignment.annotations["Shortest_Identity"], "90.84%")
-        self.assertEqual(alignment.annotations["Shortest_Similarity"], "94.66%")
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 131))
-        self.assertEqual(alignment.sequences[0].id, "IXI_234")
-        self.assertEqual(alignment.sequences[1].id, "IXI_237")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TSPASLRPPAGPSSRPAMVSSRRRPSPPGPRRPTCSAAPRRPQATGGYKTCSGTCTTSTSTRHRGRSGYSARTTTAACLRASRKSMRAACSRGSRPNRFAPTLMSSCLTSTTGPPAYAGDRSHE",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 119
+        assert alignment.annotations["Similarity"] == 124
+        assert alignment.annotations["Gaps"] == 7
+        assert alignment.annotations["Score"] == pytest.approx(609.0, abs=5e-8)
+        assert alignment.annotations["Longest_Identity"] == "95.97%"
+        assert alignment.annotations["Longest_Similarity"] == "100.00%"
+        assert alignment.annotations["Shortest_Identity"] == "90.84%"
+        assert alignment.annotations["Shortest_Similarity"] == "94.66%"
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 131)
+        assert alignment.sequences[0].id == "IXI_234"
+        assert alignment.sequences[1].id == "IXI_237"
+        assert alignment.sequences[0].seq == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment.sequences[1].seq == "TSPASLRPPAGPSSRPAMVSSRRRPSPPGPRRPTCSAAPRRPQATGGYKTCSGTCTTSTSTRHRGRSGYSARTTTAACLRASRKSMRAACSRGSRPNRFAPTLMSSCLTSTTGPPAYAGDRSHE"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [[0, 23, 24, 35, 39, 97, 99, 131], [0, 23, 23, 34, 34, 92, 92, 124]]
                 ),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TSPASLRPPAGPSSRPAMVSSRR-RPSPPGPRRPT----CSAAPRRPQATGGYKTCSGTCTTSTSTRHRGRSGYSARTTTAACLRASRKSMRAACSR--GSRPNRFAPTLMSSCLTSTTGPPAYAGDRSHE",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||:||||||||||||||||| |||||||||||    |||||||||||||:||||||||||||||||||||:|||||||||||||||||||||||  |||||||||||||||:||||||||:|||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTCTTSTSTRHRGRSGWSARTTTAACLRASRKSMRAACSRSAGSRPNRFAPTLMSSCITSTTGPPAWAGDRSHE"
+        assert alignment[1] == "TSPASLRPPAGPSSRPAMVSSRR-RPSPPGPRRPT----CSAAPRRPQATGGYKTCSGTCTTSTSTRHRGRSGYSARTTTAACLRASRKSMRAACSR--GSRPNRFAPTLMSSCLTSTTGPPAYAGDRSHE"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||:||||||||||||||||| |||||||||||    |||||||||||||:||||||||||||||||||||:|||||||||||||||||||||||  |||||||||||||||:||||||||:|||||||"
+        assert str(alignment) == """\
 IXI_234           0 TSPASIRPPAGPSSRPAMVSSRRTRPSPPGPRRPTGRPCCSAAPRRPQATGGWKTCSGTC
                   0 |||||.|||||||||||||||||-|||||||||||----|||||||||||||.|||||||
 IXI_237           0 TSPASLRPPAGPSSRPAMVSSRR-RPSPPGPRRPT----CSAAPRRPQATGGYKTCSGTC
@@ -1351,10 +1075,8 @@ IXI_237          55 TTSTSTRHRGRSGYSARTTTAACLRASRKSMRAACSR--GSRPNRFAPTLMSSCLTSTTG
 IXI_234         120 PPAWAGDRSHE 131
                 120 |||.||||||| 131
 IXI_237         113 PPAYAGDRSHE 124
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
@@ -1381,16 +1103,10 @@ np.array([['T', 'S', 'P', 'A', 'S', 'I', 'R', 'P', 'P', 'A', 'G', 'P', 'S',
            'E']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 641.0; 124 aligned letters; 119 identities; 5 mismatches; 124 positives; 7 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 641.0; 124 aligned letters; 119 identities; 5 mismatches; 124 positives; 7 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 641.0,
     aligned = 124:
@@ -1419,60 +1135,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 7)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 7)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 7)
-        self.assertEqual(counts.gaps, 7)
-        self.assertEqual(counts.aligned, 124)
-        self.assertEqual(counts.identities, 119)
-        self.assertEqual(counts.mismatches, 5)
-        self.assertEqual(counts.positives, 124)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 7
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 7
+        assert counts.insertions == 0
+        assert counts.deletions == 7
+        assert counts.gaps == 7
+        assert counts.aligned == 124
+        assert counts.identities == 119
+        assert counts.mismatches == 5
+        assert counts.positives == 124
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_pair_example2(self):
         path = "Emboss/needle.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "needle")
-        self.assertEqual(alignments.metadata["Rundate"], "Sun 27 Apr 2007 17:20:35")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "needle [-asequence] Spo0F.faa [-bsequence] paired_r.faa -sformat2 pearson",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "ref_rec .needle")
+        assert alignments.metadata["Program"] == "needle"
+        assert alignments.metadata["Rundate"] == "Sun 27 Apr 2007 17:20:35"
+        assert alignments.metadata["Command line"] == "needle [-asequence] Spo0F.faa [-bsequence] paired_r.faa -sformat2 pearson"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "ref_rec .needle"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 32)
-        self.assertEqual(alignment.annotations["Similarity"], 64)
-        self.assertEqual(alignment.annotations["Gaps"], 17)
-        self.assertAlmostEqual(alignment.annotations["Score"], 112.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 124))
-        self.assertEqual(alignment.sequences[0].id, "ref_rec")
-        self.assertEqual(alignment.sequences[1].id, "gi|94968718|receiver")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "VLLADDHALVRRGFRLMLEDDPEIEIVAEAGDGAQAVKLAGELHPRVVVMDCAMPGMSGMDATKQIRTQWPDIAVLMLTMHSEDTWVRLALEAGANGYILKSAIDLDLIQAVRRVANGET",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 32
+        assert alignment.annotations["Similarity"] == 64
+        assert alignment.annotations["Gaps"] == 17
+        assert alignment.annotations["Score"] == pytest.approx(112.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 124)
+        assert alignment.sequences[0].id == "ref_rec"
+        assert alignment.sequences[1].id == "gi|94968718|receiver"
+        assert alignment.sequences[0].seq == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV"
+        assert alignment.sequences[1].seq == "VLLADDHALVRRGFRLMLEDDPEIEIVAEAGDGAQAVKLAGELHPRVVVMDCAMPGMSGMDATKQIRTQWPDIAVLMLTMHSEDTWVRLALEAGANGYILKSAIDLDLIQAVRRVANGET"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -1481,22 +1186,10 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "KILIVDD----QYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAK-PFDIDEIRDAV--------",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-VLLADDHALVRRGFRLMLED--DPEIEIVAEAGDGAQAVKLAGELHPRVVVMDCAMPGMSGMDATKQIRTQWPDIAVLMLTMHSEDTWVRLALEAGANGYILKSAIDLDLIQ-AVRRVANGET",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            " :|:.||    :.|.|::|.:  :.|.....:|.:|.||:.:..:..|.:|::|..:|||.|::..|:::....:|.|:::|.:.|...::.:.|.||..:..| ..|:|.|: ||        ",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "KILIVDD----QYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAK-PFDIDEIRDAV--------"
+        assert alignment[1] == "-VLLADDHALVRRGFRLMLED--DPEIEIVAEAGDGAQAVKLAGELHPRVVVMDCAMPGMSGMDATKQIRTQWPDIAVLMLTMHSEDTWVRLALEAGANGYILKSAIDLDLIQ-AVRRVANGET"
+        assert alignment.column_annotations["emboss_consensus"] == " :|:.||    :.|.|::|.:  :.|.....:|.:|.||:.:..:..|.:|::|..:|||.|::..|:::....:|.|:::|.:.|...::.:.|.||..:..| ..|:|.|: ||        "
+        assert str(alignment) == """\
 ref_rec           0 KILIVDD----QYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGM
                   0 -.|..||----..|.|..|..--..|......|..|.||........|..|..|...|||
 gi|949687         0 -VLLADDHALVRRGFRLMLED--DPEIEIVAEAGDGAQAVKLAGELHPRVVVMDCAMPGM
@@ -1508,10 +1201,8 @@ gi|949687        57 SGMDATKQIRTQWPDIAVLMLTMHSEDTWVRLALEAGANGYILKSAIDLDLIQ-AVRRVA
 ref_rec         111 ---- 111
                 120 ---- 124
 gi|949687       116 NGET 120
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', '-', '-', '-', '-', 'Q', 'Y',
@@ -1536,16 +1227,10 @@ np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', '-', '-', '-', '-', 'Q', 'Y',
            'R', 'V', 'A', 'N', 'G', 'E', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 154.0; 107 aligned letters; 32 identities; 75 mismatches; 64 positives; 17 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 154.0; 107 aligned letters; 32 identities; 75 mismatches; 64 positives; 17 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 154.0,
     aligned = 107:
@@ -1574,64 +1259,44 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 1)
-        self.assertEqual(counts.right_insertions, 8)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 5)
-        self.assertEqual(counts.internal_deletions, 3)
-        self.assertEqual(counts.left_gaps, 1)
-        self.assertEqual(counts.right_gaps, 8)
-        self.assertEqual(counts.internal_gaps, 8)
-        self.assertEqual(counts.insertions, 13)
-        self.assertEqual(counts.deletions, 4)
-        self.assertEqual(counts.gaps, 17)
-        self.assertEqual(counts.aligned, 107)
-        self.assertEqual(counts.identities, 32)
-        self.assertEqual(counts.mismatches, 75)
-        self.assertEqual(counts.positives, 64)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 1
+        assert counts.right_insertions == 8
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 5
+        assert counts.internal_deletions == 3
+        assert counts.left_gaps == 1
+        assert counts.right_gaps == 8
+        assert counts.internal_gaps == 8
+        assert counts.insertions == 13
+        assert counts.deletions == 4
+        assert counts.gaps == 17
+        assert counts.aligned == 107
+        assert counts.identities == 32
+        assert counts.mismatches == 75
+        assert counts.positives == 64
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 34)
-        self.assertEqual(alignment.annotations["Similarity"], 58)
-        self.assertEqual(alignment.annotations["Gaps"], 9)
-        self.assertAlmostEqual(alignment.annotations["Score"], 154.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 119))
-        self.assertEqual(alignment.sequences[0].id, "ref_rec")
-        self.assertEqual(alignment.sequences[1].id, "gi|94968761|receiver")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "ILIVDDEANTLASLSRAFRLAGHEATVCDNAVRALEIAKSKPFDLILSDVVMPGRDGLTLLEDLKTAGVQAPVVMMSGQAHIEMAVKATRLGALDFLEKPLSTDKLLLTVENALKLKR",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 34
+        assert alignment.annotations["Similarity"] == 58
+        assert alignment.annotations["Gaps"] == 9
+        assert alignment.annotations["Score"] == pytest.approx(154.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 119)
+        assert alignment.sequences[0].id == "ref_rec"
+        assert alignment.sequences[1].id == "gi|94968761|receiver"
+        assert alignment.sequences[0].seq == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV"
+        assert alignment.sequences[1].seq == "ILIVDDEANTLASLSRAFRLAGHEATVCDNAVRALEIAKSKPFDLILSDVVMPGRDGLTLLEDLKTAGVQAPVVMMSGQAHIEMAVKATRLGALDFLEKPLSTDKLLLTVENALKLKR"
+        assert np.array_equal(
                 alignment.coordinates, np.array([[0, 1, 111, 111], [0, 0, 110, 118]])
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV--------",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-ILIVDDEANTLASLSRAFRLAGHEATVCDNAVRALEIAKSKPFDLILSDVVMPGRDGLTLLEDLKTAGVQAPVVMMSGQAHIEMAVKATRLGALDFLEKPLSTDKLLLTVENALKLKR",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            " ||||||:......|:..|...|::.....|.::||:|...:..||:|.|:.:||.||:.:|:.:|.......|::|:....::|..::..||||....||...|::...|        ",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV--------"
+        assert alignment[1] == "-ILIVDDEANTLASLSRAFRLAGHEATVCDNAVRALEIAKSKPFDLILSDVVMPGRDGLTLLEDLKTAGVQAPVVMMSGQAHIEMAVKATRLGALDFLEKPLSTDKLLLTVENALKLKR"
+        assert alignment.column_annotations["emboss_consensus"] == " ||||||:......|:..|...|::.....|.::||:|...:..||:|.|:.:||.||:.:|:.:|.......|::|:....::|..::..||||....||...|::...|        "
+        assert str(alignment) == """\
 ref_rec           0 KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIE
                   0 -||||||.......|...|...|.......|...||.|......||.|.|...||.||..
 gi|949687         0 -ILIVDDEANTLASLSRAFRLAGHEATVCDNAVRALEIAKSKPFDLILSDVVMPGRDGLT
@@ -1643,10 +1308,8 @@ gi|949687        59 LLEDLKTAGVQAPVVMMSGQAHIEMAVKATRLGALDFLEKPLSTDKLLLTVENALKLKR
 ref_rec         111
                 119
 gi|949687       118
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
@@ -1671,16 +1334,10 @@ np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
            'K', 'R']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 154.0; 110 aligned letters; 34 identities; 76 mismatches; 58 positives; 9 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 154.0; 110 aligned letters; 34 identities; 76 mismatches; 58 positives; 9 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 154.0,
     aligned = 110:
@@ -1709,64 +1366,44 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 1)
-        self.assertEqual(counts.right_insertions, 8)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 1)
-        self.assertEqual(counts.right_gaps, 8)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 8)
-        self.assertEqual(counts.deletions, 1)
-        self.assertEqual(counts.gaps, 9)
-        self.assertEqual(counts.aligned, 110)
-        self.assertEqual(counts.identities, 34)
-        self.assertEqual(counts.mismatches, 76)
-        self.assertEqual(counts.positives, 58)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 1
+        assert counts.right_insertions == 8
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 1
+        assert counts.right_gaps == 8
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 8
+        assert counts.deletions == 1
+        assert counts.gaps == 9
+        assert counts.aligned == 110
+        assert counts.identities == 34
+        assert counts.mismatches == 76
+        assert counts.positives == 58
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 29)
-        self.assertEqual(alignment.annotations["Similarity"], 53)
-        self.assertEqual(alignment.annotations["Gaps"], 9)
-        self.assertAlmostEqual(alignment.annotations["Score"], 121.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 120))
-        self.assertEqual(alignment.sequences[0].id, "ref_rec")
-        self.assertEqual(alignment.sequences[1].id, "gi|94967506|receiver")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "LHIVVVDDDPGTCVYIESVFAELGHTCKSFVRPEAAEEYILTHPVDLAIVDVYLGSTTGVEVLRRCRVHRPKLYAVIITGQISLEMAARSIAEGAVDYIQKPIDIDALLNIAERALEHKE",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 29
+        assert alignment.annotations["Similarity"] == 53
+        assert alignment.annotations["Gaps"] == 9
+        assert alignment.annotations["Score"] == pytest.approx(121.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 120)
+        assert alignment.sequences[0].id == "ref_rec"
+        assert alignment.sequences[1].id == "gi|94967506|receiver"
+        assert alignment.sequences[0].seq == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV"
+        assert alignment.sequences[1].seq == "LHIVVVDDDPGTCVYIESVFAELGHTCKSFVRPEAAEEYILTHPVDLAIVDVYLGSTTGVEVLRRCRVHRPKLYAVIITGQISLEMAARSIAEGAVDYIQKPIDIDALLNIAERALEHKE"
+        assert np.array_equal(
                 alignment.coordinates, np.array([[0, 0, 111, 111], [0, 1, 112, 120]])
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "-KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV--------",
-        )
-        self.assertEqual(
-            alignment[1],
-            "LHIVVVDDDPGTCVYIESVFAELGHTCKSFVRPEAAEEYILTHPVDLAIVDVYLGSTTGVEVLRRCRVHRPKLYAVIITGQISLEMAARSIAEGAVDYIQKPIDIDALLNIAERALEHKE",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            " .|::|||..|..:.:..||.:.|:..........|.:.:.....||.::|:.:....|:|:|:|.:|....:..:|:|....|:|...|...||:.:..||.|||.:.:..        ",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "-KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV--------"
+        assert alignment[1] == "LHIVVVDDDPGTCVYIESVFAELGHTCKSFVRPEAAEEYILTHPVDLAIVDVYLGSTTGVEVLRRCRVHRPKLYAVIITGQISLEMAARSIAEGAVDYIQKPIDIDALLNIAERALEHKE"
+        assert alignment.column_annotations["emboss_consensus"] == " .|::|||..|..:.:..||.:.|:..........|.:.:.....||.::|:.:....|:|:|:|.:|....:..:|:|....|:|...|...||:.:..||.|||.:.:..        "
+        assert str(alignment) == """\
 ref_rec           0 -KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGI
                   0 -.|..|||..|.......||...|...........|.........||...|.......|.
 gi|949675         0 LHIVVVDDDPGTCVYIESVFAELGHTCKSFVRPEAAEEYILTHPVDLAIVDVYLGSTTGV
@@ -1778,10 +1415,8 @@ gi|949675        60 EVLRRCRVHRPKLYAVIITGQISLEMAARSIAEGAVDYIQKPIDIDALLNIAERALEHKE
 ref_rec         111 
                 120 
 gi|949675       120 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['-', 'K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R',
@@ -1806,16 +1441,10 @@ np.array([['-', 'K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R',
            'H', 'K', 'E']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 121.0; 111 aligned letters; 29 identities; 82 mismatches; 53 positives; 9 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 121.0; 111 aligned letters; 29 identities; 82 mismatches; 53 positives; 9 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 121.0,
     aligned = 111:
@@ -1844,46 +1473,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 1)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 8)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 1)
-        self.assertEqual(counts.right_gaps, 8)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 9)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 9)
-        self.assertEqual(counts.aligned, 111)
-        self.assertEqual(counts.identities, 29)
-        self.assertEqual(counts.mismatches, 82)
-        self.assertEqual(counts.positives, 53)
+"""
+        assert counts.left_insertions == 1
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 8
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 1
+        assert counts.right_gaps == 8
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 9
+        assert counts.deletions == 0
+        assert counts.gaps == 9
+        assert counts.aligned == 111
+        assert counts.identities == 29
+        assert counts.mismatches == 82
+        assert counts.positives == 53
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 30)
-        self.assertEqual(alignment.annotations["Similarity"], 64)
-        self.assertEqual(alignment.annotations["Gaps"], 9)
-        self.assertAlmostEqual(alignment.annotations["Score"], 126.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 118))
-        self.assertEqual(alignment.sequences[0].id, "ref_rec")
-        self.assertEqual(alignment.sequences[1].id, "gi|94970045|receiver")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "VLLVEDEEALRAAAGDFLETRGYKIMTARDGTEALSMASKFAERIDVLITDLVMPGISGRVLAQELVKIHPETKVMYMSGYDDETVMVNGEIDSSSAFLRKPFRMDALSAKIREVL",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 30
+        assert alignment.annotations["Similarity"] == 64
+        assert alignment.annotations["Gaps"] == 9
+        assert alignment.annotations["Score"] == pytest.approx(126.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 118)
+        assert alignment.sequences[0].id == "ref_rec"
+        assert alignment.sequences[1].id == "gi|94970045|receiver"
+        assert alignment.sequences[0].seq == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV"
+        assert alignment.sequences[1].seq == "VLLVEDEEALRAAAGDFLETRGYKIMTARDGTEALSMASKFAERIDVLITDLVMPGISGRVLAQELVKIHPETKVMYMSGYDDETVMVNGEIDSSSAFLRKPFRMDALSAKIREVL"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -1892,22 +1513,10 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTK--ERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHF-AKPFDID----EIRDAV",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-VLLVEDEEALRAAAGDFLETRGYKIMTARDGTEALSMASKFAERIDVLITDLVMPGISGRVLAQELVKIHPETKVMYMSGYDD-ETVMVNGEIDSSSAFLRKPFRMDALSAKIREVL",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            " :|:|:|:..:|....:.....||:...|.:|.:||.:.:|  ||.|:::.|:.:||:.|..:.:.:..|....:|:.|:.|.: :.:..:.|:.:.:.| .|||.:|    :||:.:",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTK--ERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHF-AKPFDID----EIRDAV"
+        assert alignment[1] == "-VLLVEDEEALRAAAGDFLETRGYKIMTARDGTEALSMASKFAERIDVLITDLVMPGISGRVLAQELVKIHPETKVMYMSGYDD-ETVMVNGEIDSSSAFLRKPFRMDALSAKIREVL"
+        assert alignment.column_annotations["emboss_consensus"] == " :|:|:|:..:|....:.....||:...|.:|.:||.:.:|  ||.|:::.|:.:||:.|..:.:.:..|....:|:.|:.|.: :.:..:.|:.:.:.| .|||.:|    :||:.:"
+        assert str(alignment) == """\
 ref_rec           0 KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTK--ERPDLVLLDMKIPGMDG
                   0 -.|.|.|....|..........||....|..|..||....|--||.|....|...||..|
 gi|949700         0 -VLLVEDEEALRAAAGDFLETRGYKIMTARDGTEALSMASKFAERIDVLITDLVMPGISG
@@ -1919,10 +1528,8 @@ gi|949700        59 RVLAQELVKIHPETKVMYMSGYDD-ETVMVNGEIDSSSAFLRKPFRMDALSAKIREVL
 ref_rec         111
                 118
 gi|949700       116
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
@@ -1947,16 +1554,10 @@ np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
            'L']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 168.0; 109 aligned letters; 30 identities; 79 mismatches; 64 positives; 9 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 168.0; 109 aligned letters; 30 identities; 79 mismatches; 64 positives; 9 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 168.0,
     aligned = 109:
@@ -1985,46 +1586,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 1)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 7)
-        self.assertEqual(counts.internal_deletions, 1)
-        self.assertEqual(counts.left_gaps, 1)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 8)
-        self.assertEqual(counts.insertions, 7)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 9)
-        self.assertEqual(counts.aligned, 109)
-        self.assertEqual(counts.identities, 30)
-        self.assertEqual(counts.mismatches, 79)
-        self.assertEqual(counts.positives, 64)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 1
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 7
+        assert counts.internal_deletions == 1
+        assert counts.left_gaps == 1
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 8
+        assert counts.insertions == 7
+        assert counts.deletions == 2
+        assert counts.gaps == 9
+        assert counts.aligned == 109
+        assert counts.identities == 30
+        assert counts.mismatches == 79
+        assert counts.positives == 64
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EBLOSUM62")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 35)
-        self.assertEqual(alignment.annotations["Similarity"], 70)
-        self.assertEqual(alignment.annotations["Gaps"], 18)
-        self.assertAlmostEqual(alignment.annotations["Score"], 156.5)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 125))
-        self.assertEqual(alignment.sequences[0].id, "ref_rec")
-        self.assertEqual(alignment.sequences[1].id, "gi|94970041|receiver")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TVLLVEDEEGVRKLVRGILSRQGYHVLEATSGEEALEIVRESTQKIDMLLSDVVLVGMSGRELSERLRIQMPSLKVIYMSGYTDDAIVRHGVLTESAEFLQKPFTSDSLLRKVRAVLQKRQ",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EBLOSUM62"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 35
+        assert alignment.annotations["Similarity"] == 70
+        assert alignment.annotations["Gaps"] == 18
+        assert alignment.annotations["Score"] == pytest.approx(156.5, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 125)
+        assert alignment.sequences[0].id == "ref_rec"
+        assert alignment.sequences[1].id == "gi|94970041|receiver"
+        assert alignment.sequences[0].seq == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIVTKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFAKPFDIDEIRDAV"
+        assert alignment.sequences[1].seq == "TVLLVEDEEGVRKLVRGILSRQGYHVLEATSGEEALEIVRESTQKIDMLLSDVVLVGMSGRELSERLRIQMPSLKVIYMSGYTDDAIVRHGVLTESAEFLQKPFTSDSLLRKVRAVLQKRQ"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -2033,22 +1626,10 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIV--TKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFA----KPFDIDEIRDAV--------",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TVLLVEDEEGVRKLVRGILSRQGYHVLEATSGEEALEIVRESTQKIDMLLSDVVLVGMSGRELSERLRIQMPSLKVIYMSGYTDDAIVRH----GVLTESAEFLQKPFTSDSLLRKVRAVLQKRQ",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            ".:|:|:|:.|:|.|:..:.:::||...:|.:|.:||:||  :.::.|::|.|:.:.||.|.|:.:|:::...:::||.|:.|.:..:::.    |.||..|    |||..|.:...|        ",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIV--TKERPDLVLLDMKIPGMDGIEILKRMKVIDENIRVIIMTAYGELDMIQESKELGALTHFA----KPFDIDEIRDAV--------"
+        assert alignment[1] == "TVLLVEDEEGVRKLVRGILSRQGYHVLEATSGEEALEIVRESTQKIDMLLSDVVLVGMSGRELSERLRIQMPSLKVIYMSGYTDDAIVRH----GVLTESAEFLQKPFTSDSLLRKVRAVLQKRQ"
+        assert alignment.column_annotations["emboss_consensus"] == ".:|:|:|:.|:|.|:..:.:::||...:|.:|.:||:||  :.::.|::|.|:.:.||.|.|:.:|:::...:::||.|:.|.:..:::.    |.||..|    |||..|.:...|        "
+        assert str(alignment) == """\
 ref_rec           0 KILIVDDQYGIRILLNEVFNKEGYQTFQAANGLQALDIV--TKERPDLVLLDMKIPGMDG
                   0 ..|.|.|..|.|.|........||....|..|..||.||--.....|..|.|....||.|
 gi|949700         0 TVLLVEDEEGVRKLVRGILSRQGYHVLEATSGEEALEIVRESTQKIDMLLSDVVLVGMSG
@@ -2060,10 +1641,8 @@ gi|949700        60 RELSERLRIQMPSLKVIYMSGYTDDAIVRH----GVLTESAEFLQKPFTSDSLLRKVRAV
 ref_rec         111 ----- 111
                 120 ----- 125
 gi|949700       116 LQKRQ 121
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
@@ -2088,16 +1667,10 @@ np.array([['K', 'I', 'L', 'I', 'V', 'D', 'D', 'Q', 'Y', 'G', 'I', 'R', 'I',
            'R', 'A', 'V', 'L', 'Q', 'K', 'R', 'Q']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 190.0; 107 aligned letters; 35 identities; 72 mismatches; 70 positives; 18 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 190.0; 107 aligned letters; 35 identities; 72 mismatches; 70 positives; 18 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 190.0,
     aligned = 107:
@@ -2126,60 +1699,49 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 8)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 4)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 8)
-        self.assertEqual(counts.internal_gaps, 10)
-        self.assertEqual(counts.insertions, 14)
-        self.assertEqual(counts.deletions, 4)
-        self.assertEqual(counts.gaps, 18)
-        self.assertEqual(counts.aligned, 107)
-        self.assertEqual(counts.identities, 35)
-        self.assertEqual(counts.mismatches, 72)
-        self.assertEqual(counts.positives, 70)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 8
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 4
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 8
+        assert counts.internal_gaps == 10
+        assert counts.insertions == 14
+        assert counts.deletions == 4
+        assert counts.gaps == 18
+        assert counts.aligned == 107
+        assert counts.identities == 35
+        assert counts.mismatches == 72
+        assert counts.positives == 70
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_pair_example3(self):
         path = "Emboss/needle_overhang.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "needle")
-        self.assertEqual(alignments.metadata["Rundate"], "Mon 14 Jul 2008 11:45:42")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "needle [-asequence] asis:TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC [-bsequence] asis:TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTT -filter",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "needle"
+        assert alignments.metadata["Rundate"] == "Mon 14 Jul 2008 11:45:42"
+        assert alignments.metadata["Command line"] == "needle [-asequence] asis:TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC [-bsequence] asis:TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTT -filter"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 210)
-        self.assertEqual(alignment.annotations["Similarity"], 210)
-        self.assertEqual(alignment.annotations["Gaps"], 408)
-        self.assertAlmostEqual(alignment.annotations["Score"], 561.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 667))
-        self.assertEqual(alignment.sequences[0].id, "asis")
-        self.assertEqual(alignment.sequences[1].id, "asis")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTT",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 210
+        assert alignment.annotations["Similarity"] == 210
+        assert alignment.annotations["Gaps"] == 408
+        assert alignment.annotations["Score"] == pytest.approx(561.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 667)
+        assert alignment.sequences[0].id == "asis"
+        assert alignment.sequences[1].id == "asis"
+        assert alignment.sequences[0].seq == "TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC"
+        assert alignment.sequences[1].seq == "TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTT"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[  0, 162, 169, 201, 210, 210, 220, 222, 236, 240,
@@ -2194,22 +1756,10 @@ AlignmentCounts object with
                            254, 255, 260, 260, 273, 273, 303, 303, 311, 311]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGT------GTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTT------GAAATTTTTAGGTTATTTAGACC-----ATTTTTTTTT--GTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTT----TGGGGTTAAGACAAGGTGTCGT-TGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATA---------------------GGATCTACCTTTTATCTTTCTAAT--CTTTT----GTTTTAGT-ATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "------------------------------------------------------------------------------------------------------------------------------------------------------------------TTATTAA--------------------------------TCTTATGGTTTTGCCGTAAAATTTC--TTTCTTTATTTTTT----ATTG---------TTAGGATTTTGTTGATTTTATTTTTCTCAAG-AATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGT------TTAAAGTTTTATTA-----------------ATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTT-------------TT--GGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGG----AGTAAGAAT-----TTCGATTCAGCAA-CTTTAGTTCACAGTCTTTTTTTTTATTAAG-AAAGGTTT-------------------------------------------------------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "                                                                                                                                                                  .||||||                                .|||||.||      |||..|..||  ||||.||||.||.|    ||.|         ||.|.|||||.|||.||||.||||      | |||||||||||.|.|||||||     ||||||||.|  ||.|      |||.|.||||||||                 ||||||    .||||...||||..|||||..| |||||||||||             ||  ||.||.||.||                     ||..||.||.|.|||..||||.||  |||||    |    ||| |.|||     |||||||||.||| .||||||...|||||||||||||||||..| ||||||||                                                                                                 ",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGT------GTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTT------GAAATTTTTAGGTTATTTAGACC-----ATTTTTTTTT--GTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTT----TGGGGTTAAGACAAGGTGTCGT-TGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATA---------------------GGATCTACCTTTTATCTTTCTAAT--CTTTT----GTTTTAGT-ATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGC"
+        assert alignment[1] == "------------------------------------------------------------------------------------------------------------------------------------------------------------------TTATTAA--------------------------------TCTTATGGTTTTGCCGTAAAATTTC--TTTCTTTATTTTTT----ATTG---------TTAGGATTTTGTTGATTTTATTTTTCTCAAG-AATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGT------TTAAAGTTTTATTA-----------------ATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTT-------------TT--GGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGG----AGTAAGAAT-----TTCGATTCAGCAA-CTTTAGTTCACAGTCTTTTTTTTTATTAAG-AAAGGTTT-------------------------------------------------------------------------------------------------"
+        assert alignment.column_annotations["emboss_consensus"] == "                                                                                                                                                                  .||||||                                .|||||.||      |||..|..||  ||||.||||.||.|    ||.|         ||.|.|||||.|||.||||.||||      | |||||||||||.|.|||||||     ||||||||.|  ||.|      |||.|.||||||||                 ||||||    .||||...||||..|||||..| |||||||||||             ||  ||.||.||.||                     ||..||.||.|.|||..||||.||  |||||    |    ||| |.|||     |||||||||.||| .||||||...|||||||||||||||||..| ||||||||                                                                                                 "
+        assert str(alignment) == """\
 asis              0 TGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGG
                   0 ------------------------------------------------------------
 asis              0 ------------------------------------------------------------
@@ -2257,17 +1807,11 @@ asis            311 ------------------------------------------------------------
 asis            608 TAATAGC 615
                 660 ------- 667
 asis            311 ------- 311
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (259 aligned letters; 210 identities; 49 mismatches; 408 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (259 aligned letters; 210 identities; 49 mismatches; 408 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 259:
         identities = 210,
@@ -2294,59 +1838,48 @@ AlignmentCounts object with
             right_deletions = 97:
                 open_right_deletions = 1,
                 extend_right_deletions = 96.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 162)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 97)
-        self.assertEqual(counts.internal_insertions, 52)
-        self.assertEqual(counts.internal_deletions, 97)
-        self.assertEqual(counts.left_gaps, 162)
-        self.assertEqual(counts.right_gaps, 97)
-        self.assertEqual(counts.internal_gaps, 149)
-        self.assertEqual(counts.insertions, 52)
-        self.assertEqual(counts.deletions, 356)
-        self.assertEqual(counts.gaps, 408)
-        self.assertEqual(counts.aligned, 259)
-        self.assertEqual(counts.identities, 210)
-        self.assertEqual(counts.mismatches, 49)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 162
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 97
+        assert counts.internal_insertions == 52
+        assert counts.internal_deletions == 97
+        assert counts.left_gaps == 162
+        assert counts.right_gaps == 97
+        assert counts.internal_gaps == 149
+        assert counts.insertions == 52
+        assert counts.deletions == 356
+        assert counts.gaps == 408
+        assert counts.aligned == 259
+        assert counts.identities == 210
+        assert counts.mismatches == 49
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_needle_asis(self):
         path = "Emboss/needle_asis.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "needle")
-        self.assertEqual(alignments.metadata["Rundate"], "Mon 14 Jul 2008 11:37:15")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "needle [-asequence] asis:TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGCAGGATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAAGGTGTTTCTTTCTTTTTTTCTTTAAAGTTCTTGACTGTTGGCACTTGTCTCCATAAATTTTCTTTCTTGTAAAGGGCTCCTAAGGCTTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTGCTCTCATTATTCCTTCTCCCTGCTTGTTTCACCCTGTGGGCTCTTTGAGCCCCACTAAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTTTATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAAGATTTAATTCTACCGGGACGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA [-bsequence] asis:TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTTTAATATTCTTGTGGTTTTGAACCTTTAGGTTTCTTTCTTTACCTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAATGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAGAGAGTGTTTTTTTTCTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCTGGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTTTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTCGCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTCCCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAATTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGCTTTACTTTTTATATTTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGATTTCTTGACAGAGGGACTCTGTCAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAATGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGGATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA -filter",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "needle"
+        assert alignments.metadata["Rundate"] == "Mon 14 Jul 2008 11:37:15"
+        assert alignments.metadata["Command line"] == "needle [-asequence] asis:TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGCAGGATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAAGGTGTTTCTTTCTTTTTTTCTTTAAAGTTCTTGACTGTTGGCACTTGTCTCCATAAATTTTCTTTCTTGTAAAGGGCTCCTAAGGCTTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTGCTCTCATTATTCCTTCTCCCTGCTTGTTTCACCCTGTGGGCTCTTTGAGCCCCACTAAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTTTATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAAGATTTAATTCTACCGGGACGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA [-bsequence] asis:TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTTTAATATTCTTGTGGTTTTGAACCTTTAGGTTTCTTTCTTTACCTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAATGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAGAGAGTGTTTTTTTTCTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCTGGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTTTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTCGCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTCCCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAATTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGCTTTACTTTTTATATTTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGATTTCTTGACAGAGGGACTCTGTCAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAATGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGGATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA -filter"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 10.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 2296)
-        self.assertEqual(alignment.annotations["Similarity"], 2301)
-        self.assertEqual(alignment.annotations["Gaps"], 1202)
-        self.assertAlmostEqual(alignment.annotations["Score"], 10155.0)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 3653))
-        self.assertEqual(alignment.sequences[0].id, "asis")
-        self.assertEqual(alignment.sequences[1].id, "asis")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGCAGGATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAAGGTGTTTCTTTCTTTTTTTCTTTAAAGTTCTTGACTGTTGGCACTTGTCTCCATAAATTTTCTTTCTTGTAAAGGGCTCCTAAGGCTTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTGCTCTCATTATTCCTTCTCCCTGCTTGTTTCACCCTGTGGGCTCTTTGAGCCCCACTAAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTTTATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAAGATTTAATTCTACCGGGACGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTTTAATATTCTTGTGGTTTTGAACCTTTAGGTTTCTTTCTTTACCTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAATGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAGAGAGTGTTTTTTTTCTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCTGGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTTTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTCGCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTCCCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAATTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGCTTTACTTTTTATATTTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGATTTCTTGACAGAGGGACTCTGTCAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAATGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGGATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(10.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 2296
+        assert alignment.annotations["Similarity"] == 2301
+        assert alignment.annotations["Gaps"] == 1202
+        assert alignment.annotations["Score"] == pytest.approx(10155.0, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 3653)
+        assert alignment.sequences[0].id == "asis"
+        assert alignment.sequences[1].id == "asis"
+        assert alignment.sequences[0].seq == "TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGTGTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTTGAAATTTTTAGGTTATTTAGACCATTTTTTTTTGTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTTTGGGGTTAAGACAAGGTGTCGTTGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATAGGATCTACCTTTTATCTTTCTAATCTTTTGTTTTAGTATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCTTGGTTTTGGAGGCTTTGGCTTTCTTCTTACTCTTAGGAGGATGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGGTTAATAGCAGGATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAAGGTGTTTCTTTCTTTTTTTCTTTAAAGTTCTTGACTGTTGGCACTTGTCTCCATAAATTTTCTTTCTTGTAAAGGGCTCCTAAGGCTTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTGCTCTCATTATTCCTTCTCCCTGCTTGTTTCACCCTGTGGGCTCTTTGAGCCCCACTAAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTTTATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAAGATTTAATTCTACCGGGACGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA"
+        assert alignment.sequences[1].seq == "TTATTAATCTTATGGTTTTGCCGTAAAATTTCTTTCTTTATTTTTTATTGTTAGGATTTTGTTGATTTTATTTTTCTCAAGAATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGTTTAAAGTTTTATTAATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTTTTGGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGGAGTAAGAATTTCGATTCAGCAACTTTAGTTCACAGTCTTTTTTTTTATTAAGAAAGGTTTTAATATTCTTGTGGTTTTGAACCTTTAGGTTTCTTTCTTTACCTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAATGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAGAGAGTGTTTTTTTTCTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCTGGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTTTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTCGCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTCCCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAATTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGCTTTACTTTTTATATTTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGATTTCTTGACAGAGGGACTCTGTCAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAATGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGGATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[   0,  958,  965,  997, 1006, 1006, 1016, 1018,
@@ -2385,22 +1918,10 @@ AlignmentCounts object with
                            2521, 2521, 2558]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGT------GTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTT------GAAATTTTTAGGTTATTTAGACC-----ATTTTTTTTT--GTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTT----TGGGGTTAAGACAAGGTGTCGT-TGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATA---------------------GGATCTACCTTTTATCTTTCTAAT--CTTTT----GTTTTAGT-ATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCT--TGGTTTTGGAGGCTTTGGCTTTCTT--CTTACTCTTAGGAGGA-TGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGG-TTAATAGCAGG---ATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAA-GGTGTTTCTTTCTTTTTTTCTTT-AAAGTTC-TTGACTGTTGGCAC--TTGTCTCCATAAATTTTC----TTTCTTGTAAAGGGCTC-CTAAGGC--TTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTG---CTCT---------CATTA-------TTCCTTCTCC---CTGCTTGTTTCACCCT-GTGGGCTCTTTGAGCCC-CACT-AAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTT-TATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAA-GATTTAATTCT----ACCGGGA--CGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGG-TTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TTATTAA--------------------------------TCTTATGGTTTTGCCGTAAAATTTC--TTTCTTTATTTTTT----ATTG---------TTAGGATTTTGTTGATTTTATTTTTCTCAAG-AATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGT------TTAAAGTTTTATTA-----------------ATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTT-------------TT--GGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGG----AGTAAGAAT-----TTCGATTCAGCAA-CTTTAGTTCACAGTCTTTTTTTTTATTAAG-AAAGGTTTTAATATTCTTGTGGTTTT-GAACCTTTAGGTTTCTTTCTTTAC-CTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAA--TGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAG--AGAGTGTTTTTTTT-CTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCT-------GGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTT-TTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTC-GCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTC-CCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAA-TTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGC-TTTACTTTTTATATT------------TTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGAT----TTCTTGACAGAGGGACTCTGT-CAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAAT-GGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAA-TTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGG--ATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              .||||||                                .|||||.||      |||..|..||  ||||.||||.||.|    ||.|         ||.|.|||||.|||.||||.||||      | |||||||||||.|.|||||||     ||||||||.|  ||.|      |||.|.||||||||                 ||||||    .||||...||||..|||||..| |||||||||||             ||  ||.||.||.||                     ||..||.||.|.|||..||||.||  |||||    |    ||| |.|||     |||||||||.||| .||||||...|||||||||||||||||..| |||||||||||.|.|||  ||||||| ||..||||.|.||||||  .|||| |||.|..||| |||||.||||||.||||||||||||.||||||||||||| ||.||||||||   |  |||||||||||||||||||||.|||||||||||.||.||||||||||||||.||||||||||||||||||||.|||||||||||.|||||.||  .||||.|||||||| ||||.|||| |||.||.||||||||.||||||| |||.||| |||.||||.|.|||  ||.|||||....|.|.||    |||||       ||||| ||..|||  ||.||||||.|||||.|||||||| ||||||||||||||||||||||||||||||||..||||||||||||.||||||||||||||||||||||| |   ||||         |||||       ||..||| ||   ||.|||.|.||||||| |.||||||||||||||| |||| ||||||||||||||||.||||||||||||||||| |||||||||||||||||||||||||||||||||||||||||||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||.|||||||.||||||||||||||||||.||||||||.||.|| |||||||||| ||||            |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||.|||..|..|||||||||.||||||||||||||||||| |||    ||||    |..||||  |.|| .|||||||||||||||||||||||||||||||||||||.||||.||..||||||||.||..||||||||||||||||||||.|||||.|||||||||.|..|||||||||||||||||||||||||||||||||||.|||||..||||||||||||||.||||||.||| ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||.|||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| |||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||.|.|||||||||||||||||||||||||.||||||||||||||||||||.||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ||||||||||..||||||||||||||||||||||||.||  .||||||||||||||||||||||||||||||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAGTGTTTGAGTTTTGACAGGTCTCCACTTTGGGGGCTCCATCGCAAGGAAATTAGAATTCTTATACTTGGTTCTCTTTCCCAGGGACTCCAAGGATCTTTTCATTAGTTTGGATTTTGGTGTTTTCTTTAATTTTGTTAAGAAACAAATCCTTTCTAGAGTTTTTTCTAGCATTATGTTTTTTTTTCTCCTTATCTAAGGGGGTTTGTCGAGGTTTCTTAAATCTTTTTTTCTCTGGGTTTTAAAATTGTTTAAATTTTTTTGACCGAGGGGTTGGGGTGGTTTTCTCATGATAACAGGGGCTGGTGCTTTAGATCCTACCTCTACTGACCCGGGGTCTGCTACTGTGGCTTCTGATGAAGATCCACAGTATGCGCCTACGGAARCTCGGCAGTTTGGTGTTCGAAATCCAGCCCCTCGAATTAATACTCTTGTGCAGGTGGTTGACGAGCGCGGTATCGAATTGCAAAATTTGGGGCGGGACCCCGCTGTTCCGCCTGTTGCTCCGGGGGGGGCAGGTTAATCCTCCAGTCGTCTCCTTTTGGGGGCGTCTTTGACGGGGGTTTAAATCTTTCTTTGGTTGTGGATAGGATTTTTTTTCTAATATCGATCCTACCTGTTTTGGCGGGGCTATTACTTTGTTACTTTTGACCGAAATTTTAATGGAAATTTCTTTGATTCAAATGAATCCCTTAGTTTTCCAACACTTTTTTTTGGTTTTTTTAGGGATAGTCTACGCTGTGGTTAGGTTTGGTTTTATTGGGGGCTTGGTTTGGGCCCACCCCAAATAGGGAGTGGGGGTATGACCTCAGATAGACGAGCTTATTTTAGGGCGGCGACTATAATTATTTCGTTTCCTACAAGGATTAAAGTTTTTTCTTTTACTGTGGGAGGGGGTTTGGTATTAAGAAACGCTAGTCCGGATGTGGCTCTCCATGATACTTATTGT------GTAGTAGCTCATTTTCATTATGTTCTTCGAATGGGAGCAGTCATTGGTATTTTTTTGGTTTTTTTTT------GAAATTTTTAGGTTATTTAGACC-----ATTTTTTTTT--GTTTCGCTAATTAGAATTTTATTAGCCTTTGGTTTTTTTTTATTTTT----TGGGGTTAAGACAAGGTGTCGT-TGAATTAGTTTAGCAAAATACTGCTTAAGGTAGGCTATA---------------------GGATCTACCTTTTATCTTTCTAAT--CTTTT----GTTTTAGT-ATAATTGGTCTTCGATTCAACAATTTTTAGTCTTCAGTCTTTTTTTTTATTTTGAAAAGGTTTTAACACTCT--TGGTTTTGGAGGCTTTGGCTTTCTT--CTTACTCTTAGGAGGA-TGGGCGCTAGAAAGAGTTTTAAGAGGGTGTGAAAGGGGG-TTAATAGCAGG---ATTTGCTTTTTTAACTTATACTGGTTCGTAACGCATTAGCTCAACTCTCTCTTGTAGTTCTAGCAGCCGCCTTTTCTTTGTTGGGGGAGGGTTTAGGAGGAGTCTTTTTTTTCCTAACCCAA-GGTGTTTCTTTCTTTTTTTCTTT-AAAGTTC-TTGACTGTTGGCAC--TTGTCTCCATAAATTTTC----TTTCTTGTAAAGGGCTC-CTAAGGC--TTCTTGTTTCTGAATTCCTCTTTTCTTTTATTCTGTTTTGAGCTTATTTTTCTTGTTAGCTATTACGTAGGCATAGGGCAAATAATTTTTTTTTCTG---CTCT---------CATTA-------TTCCTTCTCC---CTGCTTGTTTCACCCT-GTGGGCTCTTTGAGCCC-CACT-AAGTGAGCGGGGCTCCTGCTTCCGCTCAATTAAATTTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAATCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAAGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTAGTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTAYATATTTGTTCATTACATATTTGTTGACTTTTCTATCTCTGCTTTTACTTTTT-TATTTATTTTTAAATCTTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTTTATCAGTTGAGAGGAATTTAGTATAAGAAGGCCCATTGGGGCTCTTGTCTTATCCAAGAACTGGTAA-GATTTAATTCT----ACCGGGA--CGGTAGAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGCTATAGGGACTAGGTGCTAGGGAGGTATTAGGGCACCGCTCTTTATACAATCTCCATAGATACAACCAGGTCAACTAGGACAACGGAGGACGTTGACAGAGCATAAATAGCGATAGCGTACAAGATAWAATAGGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAAGGGTGTGGCAAAGAGAAATGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTTTCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGG-TTTAAACTCCTTTGGCAAAGATTGACTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATWAACACCAGTAGGTTCAATAAGGTAGTAATCCAATAGAATGGAAAACTCAAGATCTAATCTCTCGAYTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGACTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTAGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTAGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAATTTTTTTATTTTGTTTTTTTTTTGCTCTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA"
+        assert alignment[1] == "----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------TTATTAA--------------------------------TCTTATGGTTTTGCCGTAAAATTTC--TTTCTTTATTTTTT----ATTG---------TTAGGATTTTGTTGATTTTATTTTTCTCAAG-AATTTTTAGGTCAATTAGACCGGCTTATTTTTTTGTCAGTGT------TTAAAGTTTTATTA-----------------ATTTTTGGGGGGGGGGGGAGACGGGGTGTTATCTGAATTAGTTT-------------TT--GGGAGTCTCTAGACATCTCATGGGTTGGCCGGGGGCCTGCCGTCTATAGTTCTTATTCCTTTTAAGGG----AGTAAGAAT-----TTCGATTCAGCAA-CTTTAGTTCACAGTCTTTTTTTTTATTAAG-AAAGGTTTTAATATTCTTGTGGTTTT-GAACCTTTAGGTTTCTTTCTTTAC-CTTCGAGGGATTGGGCACTAGAATGAGTTTTAAGAGTGTGTGAAAGGGGGCTTGATAGCAGGGGAA--TGCTTTTTTAACTTATACTGGCTCGTAACGCATCAGTTCAACTCTCTCTTGCAGTTCTAGCAGCCGCCTTTTTTTTGTTGGGGGGGGGTTAAG--AGAGTGTTTTTTTT-CTAATCCAAGGGTCTTACTTTCTTTCTTTCTTTAAAAATTCTTTGGCTGTCGACACCTTTCTCTCCCGTCAGTCTCATGGTTTCT-------GGCTCTCTTGGGCTTTTTTTGTTTGTGAATGCCTCTTTT-TTTTATTCTGTTTTGAGCTTATTTTTCTTGTTTACTATTACGTAGGTATAGGGCAAATAATTTTTTTTTC-GCGTCTCTTGGCATGCCCATTACTCTAGTTTTATTC-CCGGGCTTCTTCTCTCACCCTAGAGGGCTCTTTGAGCCCACACTCAAGTGAGCGGGGCTCCCGCTTCCGCTCAATTAAA-TTTGGTGGGTATTGAGTCTCAGAGGGACTATGATATAGGTTCAGATTGATGGACCTAGTCAATCAATTGTATCGCTATACAATCTAGTACCCCTACCAGGGTACCAGGAGAGAGATAACTAGGGTGAATACTACGACTTAGATGTACTGTTTAAGTTTCTACGGGCTACAGAGAAGCTACCCGCAGGGTATATATTTGCTCATTACATATTTGTTGATTTTTCTATGTCCGC-TTTACTTTTTATATT------------TTTTTAACTTCAGCTGTTTTTCCTTATCTATTTGACGTAGGCATAGGAAAGTTAACGAATTTTGTAATATTTTTAATTATTTTGTATAGTATACAGGGTAGTGGTATGTAATAGGTAAATTCCATAAGTTCATTATAGTCTATCAGTTGAGAGGAATTTAGTATAAGAAAGCCTGTCAGGGCTCTTGCCTTATCCAAGAACTGGTAAGGAT----TTCTTGACAGAGGGACTCTGT-CAAATCGGGCAGAGCATGATCTATTTCTTCGGGTATGGTTATAAGGCTTAGGTGCTTGGAGGGTATTAGGGCACCGCTCTTAATACAGTCTCCATAGGTGTAACCAGGTCAACTAGGACAACGGAGGACGTTGACAAAGCATGGATAGCGATAGCGTAGAAGATAAAAT-GGGGCAGTGGTAGCGAAGCGTAGAAGAAAAAATAAGAGTATTGTTTGTAAATAATTCTTTTTTTAGTTTTTAAATATTCTTTTTTTAGGTGGTGTGTGGTTAGGTATGGGGTTAGGGGAGTGGCAAAGAGAAGTGTTTATTAAACATTCTTATGGCCGTAGATAGCATATCGATTATACGAGACCTTCGTAAGATCAATCCCCACTAGCATTGCTCATACAGGTTAACTCAATAGGAGGAGCTGGGGTAGAACGTATCTAGTTCGGGGGTAACCGCAGTTCAATGAAAGTGACGACGTCGGATGGAACAAACTTAATACCACCAGTTGTGCTAACGATTGTTATCTCAATCTATCCCAACAGGCCCCCAGGTAGTGATGAGTGGTGGAATGGTACAGGGTACCAGTGGGTGAAGAGCGTCACGAACCAGGGAATACGGAGTACAGAGTTGAGCGCCCGGGGCTCCGCCCCCGGCTTTTATAGCGCGAGACGTGGTCAGTCGATTCAGCGTTAGGTTTTAAACTCCTTTGGCAAAGATTGATTCTAGCGATCCAGAGACCCTGCCTGGCATAAAAGTCTTTATTAGCACCAGTAGGTTCAATAAGGTAGTAGTCCAATAGAATGGAAAACTCGAGATCTAATCTCTCGATTTCCTAGTGTCATGGAAATCAGCCAGGTTCTCTTCATCTGCAACAGTAGAAGAAGAAGAGAGGCTAGCGAGAGAGTCTTATGGCGGAGACGCTAAGGCTTAAATGTAATGTAGATAACCCCTTACGGAACACTTGAGTGCGACGTAGACTACATAATCCCTCAGGGATATTAGCTCTGCTCGATTAACAATAGCATACTTTGTTACACGGAGTGTATCTGGGGGGAATAATACTAACTTACTTAGCACTATCGCGATGCTACGCATTCGCTCTTTCGCTAAATAAGATACGACGATGAGTGGTTGGTGGAGAGAATAACCGATTCTAACTTGATAATTCGCATGAAATAA-TTTTTTATTTGTTTTTTTTTTTGCTCTTAATTTTAGAGG--ATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA"
+        assert alignment.column_annotations["emboss_consensus"] == "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              .||||||                                .|||||.||      |||..|..||  ||||.||||.||.|    ||.|         ||.|.|||||.|||.||||.||||      | |||||||||||.|.|||||||     ||||||||.|  ||.|      |||.|.||||||||                 ||||||    .||||...||||..|||||..| |||||||||||             ||  ||.||.||.||                     ||..||.||.|.|||..||||.||  |||||    |    ||| |.|||     |||||||||.||| .||||||...|||||||||||||||||..| |||||||||||.|.|||  ||||||| ||..||||.|.||||||  .|||| |||.|..||| |||||.||||||.||||||||||||.||||||||||||| ||.||||||||   |  |||||||||||||||||||||.|||||||||||.||.||||||||||||||.||||||||||||||||||||.|||||||||||.|||||.||  .||||.|||||||| ||||.|||| |||.||.||||||||.||||||| |||.||| |||.||||.|.|||  ||.|||||....|.|.||    |||||       ||||| ||..|||  ||.||||||.|||||.|||||||| ||||||||||||||||||||||||||||||||..||||||||||||.||||||||||||||||||||||| |   ||||         |||||       ||..||| ||   ||.|||.|.||||||| |.||||||||||||||| |||| ||||||||||||||||.||||||||||||||||| |||||||||||||||||||||||||||||||||||||||||||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||.|||||||.||||||||||||||||||.||||||||.||.|| |||||||||| ||||            |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||.|||..|..|||||||||.||||||||||||||||||| |||    ||||    |..||||  |.|| .|||||||||||||||||||||||||||||||||||||.||||.||..||||||||.||..||||||||||||||||||||.|||||.|||||||||.|..|||||||||||||||||||||||||||||||||||.|||||..||||||||||||||.||||||.||| ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||.|||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| |||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||.|.|||||||||||||||||||||||||.||||||||||||||||||||.||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||.|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ||||||||||..||||||||||||||||||||||||.||  .||||||||||||||||||||||||||||||||||||"
+        assert str(alignment) == """\
 asis              0 TATTTTTTGGATTTTTTTCTAGATTTTCTAGGTTATTTAAACCGTTTTTTTTTAATTTAG
                   0 ------------------------------------------------------------
 asis              0 ------------------------------------------------------------
@@ -2644,17 +2165,11 @@ asis           2448 AACCGATTCTAACTTGATAATTCGCATGAAATAA-TTTTTTATTTGTTTTTTTTTTTGCT
 asis           3493 CTTAATTTTAGWGGGRGTGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA 3546
                3600 |||||||||||.||--.|||||||||||||||||||||||||||||||||||| 3653
 asis           2507 CTTAATTTTAGAGG--ATGTTTATTTTTATTCTAATAAAAAGGATCCGTTGAA 2558
-""",
-        )
+"""
         counts = alignment.counts(substitution_matrix)
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (substitution score = 12769.0; 2451 aligned letters; 2296 identities; 155 mismatches; 2296 positives; 1202 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (substitution score = 12769.0; 2451 aligned letters; 2296 identities; 155 mismatches; 2296 positives; 1202 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     substitution_score = 12769.0,
     aligned = 2451:
@@ -2683,84 +2198,61 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 958)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 107)
-        self.assertEqual(counts.internal_deletions, 137)
-        self.assertEqual(counts.left_gaps, 958)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 244)
-        self.assertEqual(counts.insertions, 107)
-        self.assertEqual(counts.deletions, 1095)
-        self.assertEqual(counts.gaps, 1202)
-        self.assertEqual(counts.aligned, 2451)
-        self.assertEqual(counts.identities, 2296)
-        self.assertEqual(counts.mismatches, 155)
-        self.assertEqual(counts.positives, 2296)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 958
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 107
+        assert counts.internal_deletions == 137
+        assert counts.left_gaps == 958
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 244
+        assert counts.insertions == 107
+        assert counts.deletions == 1095
+        assert counts.gaps == 1202
+        assert counts.aligned == 2451
+        assert counts.identities == 2296
+        assert counts.mismatches == 155
+        assert counts.positives == 2296
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_water_reverse1(self):
         # water -asequence seqA.fa -bsequence seqB.fa -gapopen 10 -gapextend 0.5 -sreverse1 -outfile water_reverse1.txt
         path = "Emboss/water_reverse1.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Sat 22 Oct 2022 23:47:41")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "water -asequence seqA.fa -bsequence seqB.fa -gapopen 0.001 -gapextend 0.001 -sreverse1 -outfile water_reverse1.txt",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "water_reverse1.txt")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Sat 22 Oct 2022 23:47:41"
+        assert alignments.metadata["Command line"] == "water -asequence seqA.fa -bsequence seqB.fa -gapopen 0.001 -gapextend 0.001 -sreverse1 -outfile water_reverse1.txt"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "water_reverse1.txt"
 
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 0.001)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.001)
-        self.assertEqual(alignment.annotations["Identity"], 32)
-        self.assertEqual(alignment.annotations["Similarity"], 32)
-        self.assertEqual(alignment.annotations["Gaps"], 89)
-        self.assertAlmostEqual(alignment.annotations["Score"], 159.911)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 121))
-        self.assertEqual(alignment.sequences[0].id, "seqA")
-        self.assertEqual(alignment.sequences[1].id, "seqB")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "GGGGGGGGGGGGGGGGGGGCCCCCCCCCCCCC",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(0.001, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.001, abs=5e-8)
+        assert alignment.annotations["Identity"] == 32
+        assert alignment.annotations["Similarity"] == 32
+        assert alignment.annotations["Gaps"] == 89
+        assert alignment.annotations["Score"] == pytest.approx(159.911, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 121)
+        assert alignment.sequences[0].id == "seqA"
+        assert alignment.sequences[1].id == "seqB"
+        assert alignment.sequences[0].seq == "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC"
+        assert alignment.sequences[1].seq == "GGGGGGGGGGGGGGGGGGGCCCCCCCCCCCCC"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[121, 102, 13,  0],
                           [  0,  19, 19, 32]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "GGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTCCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "GGGGGGGGGGGGGGGGGGG-----------------------------------------------------------------------------------------CCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||||||||||||||||                                                                                         |||||||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "GGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTCCCCCCCCCCCCC"
+        assert alignment[1] == "GGGGGGGGGGGGGGGGGGG-----------------------------------------------------------------------------------------CCCCCCCCCCCCC"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||||||||||||||||                                                                                         |||||||||||||"
+        assert str(alignment) == """\
 seqA            121 GGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
                   0 |||||||||||||||||||-----------------------------------------
 seqB              0 GGGGGGGGGGGGGGGGGGG-----------------------------------------
@@ -2772,17 +2264,11 @@ seqB             19 ------------------------------------------------CCCCCCCCCCCC
 seqA              1 C   0
                 120 | 121
 seqB             31 C  32
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (32 aligned letters; 32 identities; 0 mismatches; 89 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (32 aligned letters; 32 identities; 0 mismatches; 89 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 32:
         identities = 32,
@@ -2809,82 +2295,59 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 89)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 89)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 89)
-        self.assertEqual(counts.gaps, 89)
-        self.assertEqual(counts.aligned, 32)
-        self.assertEqual(counts.identities, 32)
-        self.assertEqual(counts.mismatches, 0)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 89
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 89
+        assert counts.insertions == 0
+        assert counts.deletions == 89
+        assert counts.gaps == 89
+        assert counts.aligned == 32
+        assert counts.identities == 32
+        assert counts.mismatches == 0
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_water_reverse2(self):
         # water -asequence seqA.fa -bsequence seqB.fa -gapopen 10 -gapextend 0.5 -sreverse2 -outfile water_reverse2.txt
         path = "Emboss/water_reverse2.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Sun 23 Oct 2022 00:06:18")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "water -asequence seqA.fa -bsequence seqB.fa -gapopen 0.001 -gapextend 0.001 -sreverse2 -outfile water_reverse2.txt",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "water_reverse2.txt")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Sun 23 Oct 2022 00:06:18"
+        assert alignments.metadata["Command line"] == "water -asequence seqA.fa -bsequence seqB.fa -gapopen 0.001 -gapextend 0.001 -sreverse2 -outfile water_reverse2.txt"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "water_reverse2.txt"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 0.001)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.001)
-        self.assertEqual(alignment.annotations["Identity"], 32)
-        self.assertEqual(alignment.annotations["Similarity"], 32)
-        self.assertEqual(alignment.annotations["Gaps"], 89)
-        self.assertAlmostEqual(alignment.annotations["Score"], 159.911)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 121))
-        self.assertEqual(alignment.sequences[0].id, "seqA")
-        self.assertEqual(alignment.sequences[1].id, "seqB")
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "GGGGGGGGGGGGGGGGGGGCCCCCCCCCCCCC",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(0.001, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.001, abs=5e-8)
+        assert alignment.annotations["Identity"] == 32
+        assert alignment.annotations["Similarity"] == 32
+        assert alignment.annotations["Gaps"] == 89
+        assert alignment.annotations["Score"] == pytest.approx(159.911, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 121)
+        assert alignment.sequences[0].id == "seqA"
+        assert alignment.sequences[1].id == "seqB"
+        assert alignment.sequences[0].seq == "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC"
+        assert alignment.sequences[1].seq == "GGGGGGGGGGGGGGGGGGGCCCCCCCCCCCCC"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 0, 13, 102, 121],
                           [32, 19,  19,   0]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "GGGGGGGGGGGGG-----------------------------------------------------------------------------------------CCCCCCCCCCCCCCCCCCC",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||||||||||                                                                                         |||||||||||||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCC"
+        assert alignment[1] == "GGGGGGGGGGGGG-----------------------------------------------------------------------------------------CCCCCCCCCCCCCCCCCCC"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||||||||||                                                                                         |||||||||||||||||||"
+        assert str(alignment) == """\
 seqA              0 GGGGGGGGGGGGGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
                   0 |||||||||||||-----------------------------------------------
 seqB             32 GGGGGGGGGGGGG-----------------------------------------------
@@ -2896,17 +2359,11 @@ seqB             19 ------------------------------------------CCCCCCCCCCCCCCCCCC
 seqA            120 C 121
                 120 | 121
 seqB              1 C   0
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (32 aligned letters; 32 identities; 0 mismatches; 89 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (32 aligned letters; 32 identities; 0 mismatches; 89 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 32:
         identities = 32,
@@ -2933,91 +2390,68 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 89)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 89)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 89)
-        self.assertEqual(counts.gaps, 89)
-        self.assertEqual(counts.aligned, 32)
-        self.assertEqual(counts.identities, 32)
-        self.assertEqual(counts.mismatches, 0)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 89
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 89
+        assert counts.insertions == 0
+        assert counts.deletions == 89
+        assert counts.gaps == 89
+        assert counts.aligned == 32
+        assert counts.identities == 32
+        assert counts.mismatches == 0
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_water_reverse3(self):
         # water -asequence seqA.fa -bsequence seqB.fa -gapopen 10 -gapextend 0.5 -sreverse1 -outfile water_reverse3.txt
         path = "Emboss/water_reverse3.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Sat 22 Oct 2022 22:56:03")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "water -asequence seqA.fa -bsequence seqB.fa -gapopen 1 -gapextend 0.5 -sreverse1 -outfile water_reverse3.txt",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "water_reverse3.txt")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Sat 22 Oct 2022 22:56:03"
+        assert alignments.metadata["Command line"] == "water -asequence seqA.fa -bsequence seqB.fa -gapopen 1 -gapextend 0.5 -sreverse1 -outfile water_reverse3.txt"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "water_reverse3.txt"
 
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 1.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 16)
-        self.assertEqual(alignment.annotations["Similarity"], 16)
-        self.assertEqual(alignment.annotations["Gaps"], 3)
-        self.assertAlmostEqual(alignment.annotations["Score"], 77.5)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 19))
-        self.assertEqual(alignment.sequences[0].id, "seqA")
-        self.assertEqual(alignment.sequences[1].id, "seqB")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({2: 'GGGCCCGGTTTAAAAAAA'}, length=20)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({2: 'TTTTTTTACCCGGGCCC'}, length=19)",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(1.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 16
+        assert alignment.annotations["Similarity"] == 16
+        assert alignment.annotations["Gaps"] == 3
+        assert alignment.annotations["Score"] == pytest.approx(77.5, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 19)
+        assert alignment.sequences[0].id == "seqA"
+        assert alignment.sequences[1].id == "seqB"
+        assert repr(alignment.sequences[0].seq) == "Seq({2: 'GGGCCCGGTTTAAAAAAA'}, length=20)"
+        assert repr(alignment.sequences[1].seq) == "Seq({2: 'TTTTTTTACCCGGGCCC'}, length=19)"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[20, 13, 11, 10, 10,  2],
                           [ 2,  9,  9, 10, 11, 19]])
                 # fmt: on
             )
-        )
-        self.assertEqual(alignment[0], "TTTTTTTAAA-CCGGGCCC")
-        self.assertEqual(alignment[1], "TTTTTTT--ACCCGGGCCC")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|||||||  | ||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "TTTTTTTAAA-CCGGGCCC"
+        assert alignment[1] == "TTTTTTT--ACCCGGGCCC"
+        assert alignment.column_annotations["emboss_consensus"] == "|||||||  | ||||||||"
+        assert str(alignment) == """\
 seqA             20 TTTTTTTAAA-CCGGGCCC  2
                   0 |||||||--|-|||||||| 19
 seqB              2 TTTTTTT--ACCCGGGCCC 19
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16 aligned letters; 16 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16 aligned letters; 16 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16:
         identities = 16,
@@ -3044,90 +2478,67 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 2)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 16)
-        self.assertEqual(counts.identities, 16)
-        self.assertEqual(counts.mismatches, 0)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 2
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 1
+        assert counts.deletions == 2
+        assert counts.gaps == 3
+        assert counts.aligned == 16
+        assert counts.identities == 16
+        assert counts.mismatches == 0
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_water_reverse4(self):
         # water -asequence seqA.fa -bsequence seqB.fa -gapopen 10 -gapextend 0.5 -sreverse2 -outfile water_reverse4.txt
         path = "Emboss/water_reverse4.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "water")
-        self.assertEqual(alignments.metadata["Rundate"], "Sat 22 Oct 2022 22:56:15")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "water -asequence seqA.fa -bsequence seqB.fa -gapopen 1 -gapextend 0.5 -sreverse2 -outfile water_reverse4.txt",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "srspair")
-        self.assertEqual(alignments.metadata["Report_file"], "water_reverse4.txt")
+        assert alignments.metadata["Program"] == "water"
+        assert alignments.metadata["Rundate"] == "Sat 22 Oct 2022 22:56:15"
+        assert alignments.metadata["Command line"] == "water -asequence seqA.fa -bsequence seqB.fa -gapopen 1 -gapextend 0.5 -sreverse2 -outfile water_reverse4.txt"
+        assert alignments.metadata["Align_format"] == "srspair"
+        assert alignments.metadata["Report_file"] == "water_reverse4.txt"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 1.0)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 0.5)
-        self.assertEqual(alignment.annotations["Identity"], 16)
-        self.assertEqual(alignment.annotations["Similarity"], 16)
-        self.assertEqual(alignment.annotations["Gaps"], 3)
-        self.assertAlmostEqual(alignment.annotations["Score"], 77.5)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 19))
-        self.assertEqual(alignment.sequences[0].id, "seqA")
-        self.assertEqual(alignment.sequences[1].id, "seqB")
-        self.assertEqual(
-            repr(alignment.sequences[0].seq),
-            "Seq({2: 'GGGCCCGGTTTAAAAAAA'}, length=20)",
-        )
-        self.assertEqual(
-            repr(alignment.sequences[1].seq),
-            "Seq({2: 'TTTTTTTACCCGGGCCC'}, length=19)",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(1.0, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(0.5, abs=5e-8)
+        assert alignment.annotations["Identity"] == 16
+        assert alignment.annotations["Similarity"] == 16
+        assert alignment.annotations["Gaps"] == 3
+        assert alignment.annotations["Score"] == pytest.approx(77.5, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 19)
+        assert alignment.sequences[0].id == "seqA"
+        assert alignment.sequences[1].id == "seqB"
+        assert repr(alignment.sequences[0].seq) == "Seq({2: 'GGGCCCGGTTTAAAAAAA'}, length=20)"
+        assert repr(alignment.sequences[1].seq) == "Seq({2: 'TTTTTTTACCCGGGCCC'}, length=19)"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 2, 10, 12, 12, 20],
                           [19, 11, 11, 10,  2]])
                 # fmt: on
             )
-        )
-        self.assertEqual(alignment[0], "GGGCCCGGTT-TAAAAAAA")
-        self.assertEqual(alignment[1], "GGGCCCGG--GTAAAAAAA")
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "||||||||   ||||||||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "GGGCCCGGTT-TAAAAAAA"
+        assert alignment[1] == "GGGCCCGG--GTAAAAAAA"
+        assert alignment.column_annotations["emboss_consensus"] == "||||||||   ||||||||"
+        assert str(alignment) == """\
 seqA              2 GGGCCCGGTT-TAAAAAAA 20
                   0 ||||||||---|||||||| 19
 seqB             19 GGGCCCGG--GTAAAAAAA  2
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16 aligned letters; 16 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16 aligned letters; 16 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16:
         identities = 16,
@@ -3154,63 +2565,48 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 2)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 16)
-        self.assertEqual(counts.identities, 16)
-        self.assertEqual(counts.mismatches, 0)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 2
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 1
+        assert counts.deletions == 2
+        assert counts.gaps == 3
+        assert counts.aligned == 16
+        assert counts.identities == 16
+        assert counts.mismatches == 0
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_pair_aln_full_blank_line(self):
         path = "Emboss/emboss_pair_aln_full_blank_line.txt"
         alignments = Align.parse(path, "emboss")
-        self.assertEqual(alignments.metadata["Program"], "stretcher")
-        self.assertEqual(alignments.metadata["Rundate"], "Tue 15 May 2018 17:01:31")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "stretcher -auto -stdout -asequence emboss_stretcher-I20180515-170128-0371-22292969-p1m.aupfile -bsequence emboss_stretcher-I20180515-170128-0371-22292969-p1m.bupfile -datafile EDNAFULL -gapopen 16 -gapextend 4 -aformat3 pair -snucleotide1 -snucleotide2",
-        )
-        self.assertEqual(alignments.metadata["Align_format"], "pair")
-        self.assertEqual(alignments.metadata["Report_file"], "stdout")
+        assert alignments.metadata["Program"] == "stretcher"
+        assert alignments.metadata["Rundate"] == "Tue 15 May 2018 17:01:31"
+        assert alignments.metadata["Command line"] == "stretcher -auto -stdout -asequence emboss_stretcher-I20180515-170128-0371-22292969-p1m.aupfile -bsequence emboss_stretcher-I20180515-170128-0371-22292969-p1m.bupfile -datafile EDNAFULL -gapopen 16 -gapextend 4 -aformat3 pair -snucleotide1 -snucleotide2"
+        assert alignments.metadata["Align_format"] == "pair"
+        assert alignments.metadata["Report_file"] == "stdout"
         alignment = next(alignments)
-        self.assertEqual(alignment.annotations["Matrix"], "EDNAFULL")
-        self.assertAlmostEqual(alignment.annotations["Gap_penalty"], 16)
-        self.assertAlmostEqual(alignment.annotations["Extend_penalty"], 4)
-        self.assertEqual(alignment.annotations["Identity"], 441)
-        self.assertEqual(alignment.annotations["Similarity"], 441)
-        self.assertEqual(alignment.annotations["Gaps"], 847)
-        self.assertAlmostEqual(alignment.annotations["Score"], -2623)
-        self.assertEqual(len(alignment), 2)
-        self.assertEqual(alignment.shape, (2, 1450))
-        self.assertEqual(
-            alignment.sequences[0].id, "hg38_chrX_131691529_131830643_47210_48660"
-        )
-        self.assertEqual(
-            alignment.sequences[1].id, "mm10_chrX_50555743_50635321_27140_27743"
-        )
-        self.assertEqual(
-            alignment.sequences[0].seq,
-            "GGCAGGTGCATAGCTTGAGCCTAGGAGTTCAAGTCCAGCCCTGACAATGTAGAGAGACCCCGTCTCTTCAAAAAATACAAAAAATAGCCAGGCATGGTGACCTACAATGGAAGCCCTAGCTACGTAGGAGGCGGAAATGGGAGGATCACCTCAGCCCAGGGAGGCTGATGTTGCAGTGAGCCATGATCATGCCTCTACACTCCACCCTGGGCAACAGAGTAAGATGCTGTCTAAAATATATATATATGCATATCTGTGTGTATATATATATATATATATGTGTGTGTGTGTGTGTGTATATACATATGTGTGTGTATATACATATATGTGTATATATATATGTGTGTATATATACATATACATATTCAGCATCACCTTATATTCTTTGAATATATCTACATCAATACATACTTTTGAGTGCTTGAAATTTTTTATATTTTACTCTAGAAGAACTGTAAGAAATTATAAAGTAGAAAACTTGTGGTAGGTCAAACATAGTAAGAAGAAATAATCACTTTTTAAAGGTCTGTGCTAGGTACTATGATCTGTTCCCTATATATACATAATATGGACTTTTATAAACTAATGTTCAAATTCCCCTGTAGTATAACTTCTTGTTGTTGTTTATTTTTTTTTTTTTGTATTTTTCATTTTAGATATGGGGTTTCACTCTGTTGACCAGGCTGATCTCGAACCACTGGTCTCAAGCGATCCTCCCATCTTGGACTCCCAAAGTGCTAGGATTACAGGCACGAGGCACCTTGACTGGCCACCATGTACTATAGCTGTTAAAACAAGTTTGTTTCACTGATAACTGGAGTACTTTTCAAATATAATTAATAATTCATGGAAATAATGATAGCTTTAAAAGTATTGGCACTTTTAAAAACTGAGTTTGTAAACTTCATATAACATAAAATTAACCATTAAAATGTATTAATTTCAATGGCATTTAGGACACTCACAATGCAGTGCAAGCATTACCACTATGTAGTGGCAAATCATTTTCACTACCACAAAAGAAAATCCTGGACCCATTAGTTAGTCATTCCCCATTCCACTCTCTGCCCAGCCCCTGGCAAACACTCATCTGATTTCCCTCACTACTGATCATCACAACAAGTGGCCTTGTTCATCTTGTTGTGGGAACCAGGAGACCAGAGAGACCAATGGGTGGAACAGGAGGATTTTACTAGGTGGTCACCGACTCAGCAGATTAACATCCAAAGGCTGAGCCCCAAACCAAGAGAGGGCTTGACTTTTATACATATATCTGAAAAGGGCCCAAAACCTGTAAGGCCGGTAAGCAAGCTTACAGCAGAACAAAGGCAGTTTATCAAACAGTGACAGGTTTTACAGTTCAGGCATGTCTTGTGACCTTTGCCATAACTGCACAGCTGGAAAACAGGAACTTACAAAATCCTTACAAGCTTGCAGAAACAGTTACAAA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq,
-            "GTTCAAGGCCATCCGGGATTAAAGGTGTGGTAGAACTCTTCTGATGGAGACAATATAAGGACATTGGAAGAAGGGAGTCTTGCCCTTGCTCCTTCGCCTACTTGCTGTGTAAGACTGAGTAACTCCTAGACCCTTGGACTTCCATTTCAGCCACTACTGAACCATTGTTGGGAATTGGGCTGCAGACTGTAAGTCATCAATAAATTCCTTTACTATATAGAGACTATCCATAAATTCTGTGACTCTAGAGAACCCTGACAATACAACTGGGAAGCACGGACATCCTCTTTGAGATATAATTATCAACTGGCAAGTGTTTGTTTATTGATATTTTACTTAAGACAAAGTTAAACCTACTCCTGTCCTCTGGGCATGGTAGCATGGACTTATTCTGGAACTACCAGAGGAAAAGACAGAAGCCTACTGGAAAGGCCCAGGCCATCCTGCCTCTTGTAGTTCACTAGGACCAGGGCTCAGCATAGTCCTTGGCTTCTAAATCTGCTACCATATCTTTATCATGTAAAACTGACACAAAATTAAACATATCAAAATTTTATGAAAACCATTAAGTATCTGGAAAAGAAAAAAATCAACAGTTATAAA",
-        )
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.annotations["Matrix"] == "EDNAFULL"
+        assert alignment.annotations["Gap_penalty"] == pytest.approx(16, abs=5e-8)
+        assert alignment.annotations["Extend_penalty"] == pytest.approx(4, abs=5e-8)
+        assert alignment.annotations["Identity"] == 441
+        assert alignment.annotations["Similarity"] == 441
+        assert alignment.annotations["Gaps"] == 847
+        assert alignment.annotations["Score"] == pytest.approx(-2623, abs=5e-8)
+        assert len(alignment) == 2
+        assert alignment.shape == (2, 1450)
+        assert alignment.sequences[0].id == "hg38_chrX_131691529_131830643_47210_48660"
+        assert alignment.sequences[1].id == "mm10_chrX_50555743_50635321_27140_27743"
+        assert alignment.sequences[0].seq == "GGCAGGTGCATAGCTTGAGCCTAGGAGTTCAAGTCCAGCCCTGACAATGTAGAGAGACCCCGTCTCTTCAAAAAATACAAAAAATAGCCAGGCATGGTGACCTACAATGGAAGCCCTAGCTACGTAGGAGGCGGAAATGGGAGGATCACCTCAGCCCAGGGAGGCTGATGTTGCAGTGAGCCATGATCATGCCTCTACACTCCACCCTGGGCAACAGAGTAAGATGCTGTCTAAAATATATATATATGCATATCTGTGTGTATATATATATATATATATGTGTGTGTGTGTGTGTGTATATACATATGTGTGTGTATATACATATATGTGTATATATATATGTGTGTATATATACATATACATATTCAGCATCACCTTATATTCTTTGAATATATCTACATCAATACATACTTTTGAGTGCTTGAAATTTTTTATATTTTACTCTAGAAGAACTGTAAGAAATTATAAAGTAGAAAACTTGTGGTAGGTCAAACATAGTAAGAAGAAATAATCACTTTTTAAAGGTCTGTGCTAGGTACTATGATCTGTTCCCTATATATACATAATATGGACTTTTATAAACTAATGTTCAAATTCCCCTGTAGTATAACTTCTTGTTGTTGTTTATTTTTTTTTTTTTGTATTTTTCATTTTAGATATGGGGTTTCACTCTGTTGACCAGGCTGATCTCGAACCACTGGTCTCAAGCGATCCTCCCATCTTGGACTCCCAAAGTGCTAGGATTACAGGCACGAGGCACCTTGACTGGCCACCATGTACTATAGCTGTTAAAACAAGTTTGTTTCACTGATAACTGGAGTACTTTTCAAATATAATTAATAATTCATGGAAATAATGATAGCTTTAAAAGTATTGGCACTTTTAAAAACTGAGTTTGTAAACTTCATATAACATAAAATTAACCATTAAAATGTATTAATTTCAATGGCATTTAGGACACTCACAATGCAGTGCAAGCATTACCACTATGTAGTGGCAAATCATTTTCACTACCACAAAAGAAAATCCTGGACCCATTAGTTAGTCATTCCCCATTCCACTCTCTGCCCAGCCCCTGGCAAACACTCATCTGATTTCCCTCACTACTGATCATCACAACAAGTGGCCTTGTTCATCTTGTTGTGGGAACCAGGAGACCAGAGAGACCAATGGGTGGAACAGGAGGATTTTACTAGGTGGTCACCGACTCAGCAGATTAACATCCAAAGGCTGAGCCCCAAACCAAGAGAGGGCTTGACTTTTATACATATATCTGAAAAGGGCCCAAAACCTGTAAGGCCGGTAAGCAAGCTTACAGCAGAACAAAGGCAGTTTATCAAACAGTGACAGGTTTTACAGTTCAGGCATGTCTTGTGACCTTTGCCATAACTGCACAGCTGGAAAACAGGAACTTACAAAATCCTTACAAGCTTGCAGAAACAGTTACAAA"
+        assert alignment.sequences[1].seq == "GTTCAAGGCCATCCGGGATTAAAGGTGTGGTAGAACTCTTCTGATGGAGACAATATAAGGACATTGGAAGAAGGGAGTCTTGCCCTTGCTCCTTCGCCTACTTGCTGTGTAAGACTGAGTAACTCCTAGACCCTTGGACTTCCATTTCAGCCACTACTGAACCATTGTTGGGAATTGGGCTGCAGACTGTAAGTCATCAATAAATTCCTTTACTATATAGAGACTATCCATAAATTCTGTGACTCTAGAGAACCCTGACAATACAACTGGGAAGCACGGACATCCTCTTTGAGATATAATTATCAACTGGCAAGTGTTTGTTTATTGATATTTTACTTAAGACAAAGTTAAACCTACTCCTGTCCTCTGGGCATGGTAGCATGGACTTATTCTGGAACTACCAGAGGAAAAGACAGAAGCCTACTGGAAAGGCCCAGGCCATCCTGCCTCTTGTAGTTCACTAGGACCAGGGCTCAGCATAGTCCTTGGCTTCTAAATCTGCTACCATATCTTTATCATGTAAAACTGACACAAAATTAAACATATCAAAATTTTATGAAAACCATTAAGTATCTGGAAAAGAAAAAAATCAACAGTTATAAA"
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[   0,    1,   27,   45,   49,   54,   61,   68,
@@ -3249,22 +2645,10 @@ AlignmentCounts object with
                             571,  583,  583,  591,  591,  603]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment[0],
-            "GGCAGGTGCATAGCTTGAGCCTAGGAGTTCAAGTCCAGCCCTGACAATGTAGAGAGACCCCGTCTCTTCAAAAAATACAAAAAATAGCCAGGCATGGTGACCTACAATGGAAGCCCTAGCTACGTAGGAGGCGGAAATGGGAGGATCACCTCAGCCCAGGGAGGCTGATGTTGCAGTGAGCCATGATCATGCCTCTACACTCCACCCTGGGCAACAGAGTAAGATGCTGTCTAAAATATATATATATGCATATCTGTGTGTATATATATATATATATATGTGTGTGTGTGTGTGTGTATATACATATGTGTGTGTATATACATATATGTGTATATATATATGTGTGTATATATACATATACATATTCAGCATCACCTTATATTCTTTGAATATATCTACATCAATACATACTTTTGAGTGCTTGAAATTTTTTATATTTTACTCTAGAAGAACTGTAAGAAATTATAAAGTAGAAAACTTGTGGTAGGTCAAACATAGTAAGAAGAAATAATCACTTTTTAAAGGTCTGTGCTAGGTACTATGATCTGTTCCCTATATATACATAATATGGACTTTTATAAACTAATGTTCAAATTCCCCTGTAGTATAACTTCTTGTTGTTGTTTATTTTTTTTTTTTTGTATTTTTCATTTTAGATATGGGGTTTCACTCTGTTGACCAGGCTGATCTCGAACCACTGGTCTCAAGCGATCCTCCCATCTTGGACTCCCAAAGTGCTAGGATTACAGGCACGAGGCACCTTGACTGGCCACCATGTACTATAGCTGTTAAAACAAGTTTGTTTCACTGATAACTGGAGTACTTTTCAAATATAATTAATAATTCATGGAAATAATGATAGCTTTAAAAGTATTGGCACTTTTAAAAACTGAGTTTGTAAACTTCATATAACATAAAATTAACCATTAAAATGTATTAATTTCAATGGCATTTAGGACACTCACAATGCAGTGCAAGCATTACCACTATGTAGTGGCAAATCATTTTCACTACCACAAAAGAAAATCCTGGACCCATTAGTTAGTCATTCCCCATTCCACTCTCTGCCCAGCCCCTGGCAAACACTCATCTGATTTCCCTCACTACTGATCATCACAACAAGTGGCCTTGTTCATCTTGTTGTGGGAACCAGGAGACCAGAGAGACCAATGGGTGGAACAGGAGGATTTTACTAGGTGGTCACCGACTCAGCAGATTAACATCCAAAGGCTGAGCCCCAAACCAAGAGAGGGCTTGACTTTTATACATATATCTGAAAAGGGCCCAAAACCTGTAAGGCCGGTAAGCAAGCTTACAGCAGAACAAAGGCAGTTTATCAAACAGTGACAGGTTTTACAGTTCAGGCATGTCTTGTGACCTTTGCCATAACTGCACAGCTGGAAAACAGGAACTTACAAAATCCTTACAAGCTTGCAGAAACAGTTACAAA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "G--------------------------TTCAAGGCCATCCGGGAT----TAAAG-------GTGTGGT-----------AGAACTCTTCTG--ATGGAGAC----AATATAAG--------------------GACATTGGAAGA------------AGGGAG-----TCTTGC------CCTTGCTCCTTCGCCTACT-------------------------TGCTGTGTAAGA-----------------CTGAGT---------------------------------------------------------------------------------------------------------------AACTCCT-AGACCCTTGGACT-----------------TCCATTTCAGCC--------------------ACTACTGAACCATTGTTGGGAATTGG---GCTGCAGACT----GTAAGTCATCAATA------------AATTCCTTT-------------------ACTATA---------------------------------TAGAGACTA----------TCC--------ATAAATTCTG-------------------------------TGACTCTAGAGA---------ACCCT---GACAAT-----------ACAACTGG----------------------------------------------------GAAGCAC-------GGACATCCTCT-----------------------------------------------TTGAGATATAATTA-----TCA-------ACTG---GC-----AAGTGTTTG----TTTA----------TTG-ATATTTTACTTAAGACAAAGTTAAACCT------------ACTCC--TGTCCTCTGGG-----CA--------TGGTAGCATGG--ACT-TATTCTGG-----------AACTACCAGAG--GAAAAGACAGAAGCC------TA--------------------CTGGAAAGGCCCAGGC-------CATC---------------CTG------------------------CCTCTTGTAGT---------------------------------------------TCACTAGG-------------ACCAG-------------GGCTCAGC-----------ATAGTCCTTGGCTTCT------AAATCTGCTA------CCATATCTTTAT--CATGTA---AAACTGACACAAAATTAAA--CA---TATCAAA----------------ATTTTATGAAA--------ACCAT-----TAAGT----ATCTGGAAAAGA-------AAAAAATC----------------AACAGTTATAAA",
-        )
-        self.assertEqual(
-            alignment.column_annotations["emboss_consensus"],
-            "|                          ||||||.|||.||..||.    ||.||       ||.|..|           |.||.|...|.|  ||||.|||    |||..|||                    ||.||.|||.||            ||||||     |.||||      ||.||.||.|.|..||||.                         ||||||.|||.|                 |||.||                                                                                                               |.|.||| |.|..|||.||.|                 |.|.|||.||..                    |||...|||..|.|||..|.||||..   |..|.|.|||    |||.||||...|||            |||..||||                   |||||.                                 ||.|.||||          |||        ||||.||||.                               |.|.|.||||.|         ||.||   |||.|.           ||.|||||                                                    ||.||||       ||.||.|.|.|                                               ||.|.|||||||||     |||       |.||   ||     ||||.||.|    ||||          ||| |.|.||.|..|||.|.|||.||||.|.|            |.|.|  ||.|.|.|.||     ||        ||..|||||..  ||| |.|..|||           .|||||||.|.  |||||..|.|.|.||      ||                    |||...||.|||.|||       ||||               |||                        |.||||||.||                                             |.||||||             |.|||             ||||.|||           |.||..||||.|||.|      |.|||||..|      |.|.|.||.||.  |..|||   ||.||.|||..|.|..|||  ||   |||||||                |.||.|.|.|.        |||.|     |||.|    |.||||||||.|       |.||||||                ||||||||.|||",
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment[0] == "GGCAGGTGCATAGCTTGAGCCTAGGAGTTCAAGTCCAGCCCTGACAATGTAGAGAGACCCCGTCTCTTCAAAAAATACAAAAAATAGCCAGGCATGGTGACCTACAATGGAAGCCCTAGCTACGTAGGAGGCGGAAATGGGAGGATCACCTCAGCCCAGGGAGGCTGATGTTGCAGTGAGCCATGATCATGCCTCTACACTCCACCCTGGGCAACAGAGTAAGATGCTGTCTAAAATATATATATATGCATATCTGTGTGTATATATATATATATATATGTGTGTGTGTGTGTGTGTATATACATATGTGTGTGTATATACATATATGTGTATATATATATGTGTGTATATATACATATACATATTCAGCATCACCTTATATTCTTTGAATATATCTACATCAATACATACTTTTGAGTGCTTGAAATTTTTTATATTTTACTCTAGAAGAACTGTAAGAAATTATAAAGTAGAAAACTTGTGGTAGGTCAAACATAGTAAGAAGAAATAATCACTTTTTAAAGGTCTGTGCTAGGTACTATGATCTGTTCCCTATATATACATAATATGGACTTTTATAAACTAATGTTCAAATTCCCCTGTAGTATAACTTCTTGTTGTTGTTTATTTTTTTTTTTTTGTATTTTTCATTTTAGATATGGGGTTTCACTCTGTTGACCAGGCTGATCTCGAACCACTGGTCTCAAGCGATCCTCCCATCTTGGACTCCCAAAGTGCTAGGATTACAGGCACGAGGCACCTTGACTGGCCACCATGTACTATAGCTGTTAAAACAAGTTTGTTTCACTGATAACTGGAGTACTTTTCAAATATAATTAATAATTCATGGAAATAATGATAGCTTTAAAAGTATTGGCACTTTTAAAAACTGAGTTTGTAAACTTCATATAACATAAAATTAACCATTAAAATGTATTAATTTCAATGGCATTTAGGACACTCACAATGCAGTGCAAGCATTACCACTATGTAGTGGCAAATCATTTTCACTACCACAAAAGAAAATCCTGGACCCATTAGTTAGTCATTCCCCATTCCACTCTCTGCCCAGCCCCTGGCAAACACTCATCTGATTTCCCTCACTACTGATCATCACAACAAGTGGCCTTGTTCATCTTGTTGTGGGAACCAGGAGACCAGAGAGACCAATGGGTGGAACAGGAGGATTTTACTAGGTGGTCACCGACTCAGCAGATTAACATCCAAAGGCTGAGCCCCAAACCAAGAGAGGGCTTGACTTTTATACATATATCTGAAAAGGGCCCAAAACCTGTAAGGCCGGTAAGCAAGCTTACAGCAGAACAAAGGCAGTTTATCAAACAGTGACAGGTTTTACAGTTCAGGCATGTCTTGTGACCTTTGCCATAACTGCACAGCTGGAAAACAGGAACTTACAAAATCCTTACAAGCTTGCAGAAACAGTTACAAA"
+        assert alignment[1] == "G--------------------------TTCAAGGCCATCCGGGAT----TAAAG-------GTGTGGT-----------AGAACTCTTCTG--ATGGAGAC----AATATAAG--------------------GACATTGGAAGA------------AGGGAG-----TCTTGC------CCTTGCTCCTTCGCCTACT-------------------------TGCTGTGTAAGA-----------------CTGAGT---------------------------------------------------------------------------------------------------------------AACTCCT-AGACCCTTGGACT-----------------TCCATTTCAGCC--------------------ACTACTGAACCATTGTTGGGAATTGG---GCTGCAGACT----GTAAGTCATCAATA------------AATTCCTTT-------------------ACTATA---------------------------------TAGAGACTA----------TCC--------ATAAATTCTG-------------------------------TGACTCTAGAGA---------ACCCT---GACAAT-----------ACAACTGG----------------------------------------------------GAAGCAC-------GGACATCCTCT-----------------------------------------------TTGAGATATAATTA-----TCA-------ACTG---GC-----AAGTGTTTG----TTTA----------TTG-ATATTTTACTTAAGACAAAGTTAAACCT------------ACTCC--TGTCCTCTGGG-----CA--------TGGTAGCATGG--ACT-TATTCTGG-----------AACTACCAGAG--GAAAAGACAGAAGCC------TA--------------------CTGGAAAGGCCCAGGC-------CATC---------------CTG------------------------CCTCTTGTAGT---------------------------------------------TCACTAGG-------------ACCAG-------------GGCTCAGC-----------ATAGTCCTTGGCTTCT------AAATCTGCTA------CCATATCTTTAT--CATGTA---AAACTGACACAAAATTAAA--CA---TATCAAA----------------ATTTTATGAAA--------ACCAT-----TAAGT----ATCTGGAAAAGA-------AAAAAATC----------------AACAGTTATAAA"
+        assert alignment.column_annotations["emboss_consensus"] == "|                          ||||||.|||.||..||.    ||.||       ||.|..|           |.||.|...|.|  ||||.|||    |||..|||                    ||.||.|||.||            ||||||     |.||||      ||.||.||.|.|..||||.                         ||||||.|||.|                 |||.||                                                                                                               |.|.||| |.|..|||.||.|                 |.|.|||.||..                    |||...|||..|.|||..|.||||..   |..|.|.|||    |||.||||...|||            |||..||||                   |||||.                                 ||.|.||||          |||        ||||.||||.                               |.|.|.||||.|         ||.||   |||.|.           ||.|||||                                                    ||.||||       ||.||.|.|.|                                               ||.|.|||||||||     |||       |.||   ||     ||||.||.|    ||||          ||| |.|.||.|..|||.|.|||.||||.|.|            |.|.|  ||.|.|.|.||     ||        ||..|||||..  ||| |.|..|||           .|||||||.|.  |||||..|.|.|.||      ||                    |||...||.|||.|||       ||||               |||                        |.||||||.||                                             |.||||||             |.|||             ||||.|||           |.||..||||.|||.|      |.|||||..|      |.|.|.||.||.  |..|||   ||.||.|||..|.|..|||  ||   |||||||                |.||.|.|.|.        |||.|     |||.|    |.||||||||.|       |.||||||                ||||||||.|||"
+        assert str(alignment) == """\
 hg38_chrX         0 GGCAGGTGCATAGCTTGAGCCTAGGAGTTCAAGTCCAGCCCTGACAATGTAGAGAGACCC
                   0 |--------------------------||||||.|||.||..||.----||.||------
 mm10_chrX         0 G--------------------------TTCAAGGCCATCCGGGAT----TAAAG------
@@ -3364,17 +2748,11 @@ mm10_chrX       565 T-----TAAGT----ATCTGGAAAAGA-------AAAAAATC----------------AA
 hg38_chrX      1440 CAGTTACAAA 1450
                1440 ||||||.||| 1450
 mm10_chrX       593 CAGTTATAAA  603
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (603 aligned letters; 441 identities; 162 mismatches; 847 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (603 aligned letters; 441 identities; 162 mismatches; 847 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 603:
         identities = 441,
@@ -3401,27 +2779,25 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 847)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 847)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 847)
-        self.assertEqual(counts.gaps, 847)
-        self.assertEqual(counts.aligned, 603)
-        self.assertEqual(counts.identities, 441)
-        self.assertEqual(counts.mismatches, 162)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 847
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 847
+        assert counts.insertions == 0
+        assert counts.deletions == 847
+        assert counts.gaps == 847
+        assert counts.aligned == 603
+        assert counts.identities == 441
+        assert counts.mismatches == 162
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

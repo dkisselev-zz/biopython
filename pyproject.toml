@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+testpaths      = ["Tests", "Doc/Tutorial"]
+python_files   = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# ELLIPSIS is the only doctest flag the legacy runner used.
+doctest_optionflags = ["ELLIPSIS"]
+
+markers = [
+    "online: test requires internet access; skipped under --offline",
+]

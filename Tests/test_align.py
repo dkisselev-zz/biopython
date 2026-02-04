@@ -18,6 +18,7 @@ Right now we've got tests for:
 # standard library
 import os
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
@@ -40,11 +41,11 @@ class TestBasics(unittest.TestCase):
     def test_empty_alignment(self):
         """Very simple tests on an empty alignment."""
         alignment = MultipleSeqAlignment([])
-        self.assertEqual(alignment.get_alignment_length(), 0)
-        self.assertEqual(len(alignment), 0)
+        assert alignment.get_alignment_length() == 0
+        assert len(alignment) == 0
         alignment = alignment.alignment  # new-style Alignment object
-        self.assertEqual(alignment.length, 0)
-        self.assertEqual(len(alignment), 0)
+        assert alignment.length == 0
+        assert len(alignment) == 0
 
     def test_basic_alignment(self):
         """Basic tests on a simple alignment of three sequences."""
@@ -55,44 +56,42 @@ class TestBasics(unittest.TestCase):
         msa.append(SeqRecord(Seq(letters.upper()), id="upper"))
         msa.append(SeqRecord(Seq(letters), id="duplicate"))
         del msa[3]
-        self.assertEqual(msa.get_alignment_length(), 26)
-        self.assertEqual(len(msa), 3)
-        self.assertEqual(msa[0].seq, letters)
-        self.assertEqual(msa[1].seq, letters.lower())
-        self.assertEqual(msa[2].seq, letters.upper())
-        self.assertEqual(msa[0].id, "mixed")
-        self.assertEqual(msa[1].id, "lower")
-        self.assertEqual(msa[2].id, "upper")
+        assert msa.get_alignment_length() == 26
+        assert len(msa) == 3
+        assert msa[0].seq == letters
+        assert msa[1].seq == letters.lower()
+        assert msa[2].seq == letters.upper()
+        assert msa[0].id == "mixed"
+        assert msa[1].id == "lower"
+        assert msa[2].id == "upper"
         for col, letter in enumerate(letters):
-            self.assertEqual(msa[:, col], letter + letter.lower() + letter.upper())
+            assert msa[:, col] == letter + letter.lower() + letter.upper()
         # Check row extractions:
-        self.assertEqual(msa[0].id, "mixed")
-        self.assertEqual(msa[-1].id, "upper")
+        assert msa[0].id == "mixed"
+        assert msa[-1].id == "upper"
         # Check sub-alignment extraction by row slicing:
-        self.assertIsInstance(msa[::-1], MultipleSeqAlignment)
-        self.assertEqual(msa[::-1][0].id, "upper")
-        self.assertEqual(msa[::-1][2].id, "mixed")
+        assert isinstance(msa[::-1], MultipleSeqAlignment)
+        assert msa[::-1][0].id == "upper"
+        assert msa[::-1][2].id == "mixed"
         # create a new-style Alignment object
         alignment = msa.alignment
-        self.assertEqual(alignment.shape, (3, 26))
-        self.assertEqual(len(alignment), 3)
-        self.assertEqual(alignment.sequences[0].seq, letters)
-        self.assertEqual(alignment.sequences[1].seq, letters.lower())
-        self.assertEqual(alignment.sequences[2].seq, letters.upper())
-        self.assertEqual(alignment.sequences[0].id, "mixed")
-        self.assertEqual(alignment.sequences[1].id, "lower")
-        self.assertEqual(alignment.sequences[2].id, "upper")
+        assert alignment.shape == (3, 26)
+        assert len(alignment) == 3
+        assert alignment.sequences[0].seq == letters
+        assert alignment.sequences[1].seq == letters.lower()
+        assert alignment.sequences[2].seq == letters.upper()
+        assert alignment.sequences[0].id == "mixed"
+        assert alignment.sequences[1].id == "lower"
+        assert alignment.sequences[2].id == "upper"
         for col, letter in enumerate(letters):
-            self.assertEqual(
-                alignment[:, col], letter + letter.lower() + letter.upper()
-            )
+            assert alignment[:, col] == letter + letter.lower() + letter.upper()
         # Check row extractions:
-        self.assertEqual(alignment[0], letters)
-        self.assertEqual(alignment[-1], letters.upper())
+        assert alignment[0] == letters
+        assert alignment[-1] == letters.upper()
         # Check sub-alignment extraction by row slicing:
-        self.assertIsInstance(alignment[::-1], Alignment)
-        self.assertEqual(alignment[::-1].sequences[0].id, "upper")
-        self.assertEqual(alignment[::-1].sequences[2].id, "mixed")
+        assert isinstance(alignment[::-1], Alignment)
+        assert alignment[::-1].sequences[0].id == "upper"
+        assert alignment[::-1].sequences[2].id == "mixed"
 
 
 class TestReading(unittest.TestCase):
@@ -207,20 +206,18 @@ TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATT
         path = os.path.join(os.getcwd(), "Clustalw", "opuntia.aln")
         msa = AlignIO.read(path, "clustal")
         opuntia_clustal = opuntia_clustal_header + opuntia_clustal_body
-        self.assertEqual(format(msa, "clustal"), opuntia_clustal)
-        self.assertEqual(format(msa, "fasta"), opuntia_fasta)
+        assert format(msa, "clustal") == opuntia_clustal
+        assert format(msa, "fasta") == opuntia_fasta
         # create a new-style Alignment object
         alignment = msa.alignment
-        self.assertEqual(format(alignment, "clustal"), opuntia_clustal_body)
+        assert format(alignment, "clustal") == opuntia_clustal_body
         # New-style Alignment objects generate FASTA format with the sequence
         # on one line. Also, the clustal parser in Bio.AlignIO generates
         # SeqRecords with an (identical) ID and a description; the clustal
         # parser in Bio.Align generates SeqRecords with an ID only.
-        self.assertEqual(
-            format(alignment, "fasta"), opuntia_fasta_oneline_with_description
-        )
+        assert format(alignment, "fasta") == opuntia_fasta_oneline_with_description
         alignment = Align.read(path, "clustal")
-        self.assertEqual(format(alignment, "fasta"), opuntia_fasta_oneline)
+        assert format(alignment, "fasta") == opuntia_fasta_oneline
 
     def test_read_clustal2(self):
         """Parse an alignment file and get an alignment object."""
@@ -288,415 +285,329 @@ gi|671626|emb|CAA85685.1|           -
         path = os.path.join(os.curdir, "Clustalw", "clustalw.aln")
         msa = AlignIO.read(path, "clustal")
         clustalw_clustal = clustalw_clustal_header + clustalw_clustal_body
-        self.assertEqual(format(msa, "clustal"), clustalw_clustal)
+        assert format(msa, "clustal") == clustalw_clustal
         # create a new-style Alignment object
         alignment = msa.alignment
-        self.assertEqual(format(alignment, "clustal"), clustalw_clustal_body)
+        assert format(alignment, "clustal") == clustalw_clustal_body
 
     def test_read_write_clustal(self):
         """Test the base alignment stuff."""
         path = os.path.join(os.getcwd(), "Clustalw", "opuntia.aln")
         msa = AlignIO.read(path, "clustal")
-        self.assertEqual(len(msa), 7)
+        assert len(msa) == 7
         seq_record = msa[0]
-        self.assertEqual(seq_record.description, "gi|6273285|gb|AF191659.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            Seq(
+        assert seq_record.description == "gi|6273285|gb|AF191659.1|AF191"
+        assert seq_record.seq == Seq(
                 "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCCATTGATTTAGTGTACCAGA"
-            ),
-        )
+            )
         seq_record = msa[1]
-        self.assertEqual(seq_record.description, "gi|6273284|gb|AF191658.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATA--------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273284|gb|AF191658.1|AF191"
+        assert seq_record.seq == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATA--------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = msa[2]
-        self.assertEqual(seq_record.description, "gi|6273287|gb|AF191661.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273287|gb|AF191661.1|AF191"
+        assert seq_record.seq == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = msa[3]
-        self.assertEqual(seq_record.description, "gi|6273286|gb|AF191660.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273286|gb|AF191660.1|AF191"
+        assert seq_record.seq == "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = msa[4]
-        self.assertEqual(seq_record.description, "gi|6273290|gb|AF191664.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273290|gb|AF191664.1|AF191"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = msa[5]
-        self.assertEqual(seq_record.description, "gi|6273289|gb|AF191663.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA",
-        )
+        assert seq_record.description == "gi|6273289|gb|AF191663.1|AF191"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA"
         seq_record = msa[6]
-        self.assertEqual(seq_record.description, "gi|6273291|gb|AF191665.1|AF191")
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(msa.get_alignment_length(), 156)
+        assert seq_record.description == "gi|6273291|gb|AF191665.1|AF191"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert msa.get_alignment_length() == 156
         alignment = msa.alignment
         dictionary = alignment.substitutions
-        self.assertEqual(len(dictionary), 4)
-        self.assertEqual(dictionary.shape, (4, 4))
-        self.assertEqual(len(dictionary.keys()), 16)
-        self.assertAlmostEqual(dictionary[("A", "A")], 1395)
-        self.assertAlmostEqual(dictionary[("A", "C")], 3)
-        self.assertAlmostEqual(dictionary[("A", "G")], 13)
-        self.assertAlmostEqual(dictionary[("A", "T")], 6)
-        self.assertAlmostEqual(dictionary[("C", "A")], 3)
-        self.assertAlmostEqual(dictionary[("C", "C")], 271)
-        self.assertAlmostEqual(dictionary[("C", "G")], 0)
-        self.assertAlmostEqual(dictionary[("C", "T")], 16)
-        self.assertAlmostEqual(dictionary[("G", "A")], 5)
-        self.assertAlmostEqual(dictionary[("G", "C")], 0)
-        self.assertAlmostEqual(dictionary[("G", "G")], 480)
-        self.assertAlmostEqual(dictionary[("G", "T")], 0)
-        self.assertAlmostEqual(dictionary[("T", "A")], 6)
-        self.assertAlmostEqual(dictionary[("T", "C")], 12)
-        self.assertAlmostEqual(dictionary[("T", "G")], 0)
-        self.assertAlmostEqual(dictionary[("T", "T")], 874)
+        assert len(dictionary) == 4
+        assert dictionary.shape == (4, 4)
+        assert len(dictionary.keys()) == 16
+        assert dictionary[("A", "A")] == pytest.approx(1395, abs=5e-8)
+        assert dictionary[("A", "C")] == pytest.approx(3, abs=5e-8)
+        assert dictionary[("A", "G")] == pytest.approx(13, abs=5e-8)
+        assert dictionary[("A", "T")] == pytest.approx(6, abs=5e-8)
+        assert dictionary[("C", "A")] == pytest.approx(3, abs=5e-8)
+        assert dictionary[("C", "C")] == pytest.approx(271, abs=5e-8)
+        assert dictionary[("C", "G")] == pytest.approx(0, abs=5e-8)
+        assert dictionary[("C", "T")] == pytest.approx(16, abs=5e-8)
+        assert dictionary[("G", "A")] == pytest.approx(5, abs=5e-8)
+        assert dictionary[("G", "C")] == pytest.approx(0, abs=5e-8)
+        assert dictionary[("G", "G")] == pytest.approx(480, abs=5e-8)
+        assert dictionary[("G", "T")] == pytest.approx(0, abs=5e-8)
+        assert dictionary[("T", "A")] == pytest.approx(6, abs=5e-8)
+        assert dictionary[("T", "C")] == pytest.approx(12, abs=5e-8)
+        assert dictionary[("T", "G")] == pytest.approx(0, abs=5e-8)
+        assert dictionary[("T", "T")] == pytest.approx(874, abs=5e-8)
 
         motif = motifs.Motif("ACGT", alignment)
         counts = motif.counts
-        self.assertEqual(
-            counts.calculate_consensus(identity=0.7),
-            "TATACATTAAAGNAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTNCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert counts.calculate_consensus(identity=0.7) == "TATACATTAAAGNAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTNCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert str(counts) == """\
         0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16     17     18     19     20     21     22     23     24     25     26     27     28     29     30     31     32     33     34     35     36     37     38     39     40     41     42     43     44     45     46     47     48     49     50     51     52     53     54     55     56     57     58     59     60     61     62     63     64     65     66     67     68     69     70     71     72     73     74     75     76     77     78     79     80     81     82     83     84     85     86     87     88     89     90     91     92     93     94     95     96     97     98     99    100    101    102    103    104    105    106    107    108    109    110    111    112    113    114    115    116    117    118    119    120    121    122    123    124    125    126    127    128    129    130    131    132    133    134    135    136    137    138    139    140    141    142    143    144    145    146    147    148    149    150    151    152    153    154    155
 A:   0.00   7.00   0.00   7.00   0.00   7.00   0.00   1.00   7.00   7.00   7.00   0.00   4.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   1.00   6.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   1.00   0.00   7.00   0.00   0.00   7.00   0.00   7.00
 C:   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   3.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   2.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   1.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00
 G:   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   3.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00
 T:   7.00   0.00   7.00   0.00   0.00   0.00   7.00   6.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   1.00   0.00   0.00   7.00   7.00   4.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   5.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   7.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00
-""",
-        )
+"""
 
         alignment = msa.alignment
         motif = motifs.Motif("ACGT", alignment)
         counts = motif.counts
-        self.assertEqual(
-            str(counts),
-            """\
+        assert str(counts) == """\
         0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16     17     18     19     20     21     22     23     24     25     26     27     28     29     30     31     32     33     34     35     36     37     38     39     40     41     42     43     44     45     46     47     48     49     50     51     52     53     54     55     56     57     58     59     60     61     62     63     64     65     66     67     68     69     70     71     72     73     74     75     76     77     78     79     80     81     82     83     84     85     86     87     88     89     90     91     92     93     94     95     96     97     98     99    100    101    102    103    104    105    106    107    108    109    110    111    112    113    114    115    116    117    118    119    120    121    122    123    124    125    126    127    128    129    130    131    132    133    134    135    136    137    138    139    140    141    142    143    144    145    146    147    148    149    150    151    152    153    154    155
 A:   0.00   7.00   0.00   7.00   0.00   7.00   0.00   1.00   7.00   7.00   7.00   0.00   4.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   1.00   6.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   1.00   0.00   7.00   0.00   0.00   7.00   0.00   7.00
 C:   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   3.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   2.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   1.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00
 G:   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   3.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00
 T:   7.00   0.00   7.00   0.00   0.00   0.00   7.00   6.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   1.00   0.00   0.00   7.00   7.00   4.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   5.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   7.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00
-""",
-        )
+"""
 
-        with self.assertWarns(BiopythonDeprecationWarning):
+        with pytest.warns(BiopythonDeprecationWarning):
             align_info = AlignInfo.SummaryInfo(msa)
-        self.assertEqual(align_info.get_column(1), "AAAAAAA")
-        self.assertEqual(align_info.get_column(7), "TTTATTT")
+        assert align_info.get_column(1) == "AAAAAAA"
+        assert align_info.get_column(7) == "TTTATTT"
 
         alignment = msa.alignment
         motif = motifs.Motif("ACGT", alignment)
         counts = motif.counts
-        self.assertEqual(
-            str(counts),
-            """\
+        assert str(counts) == """\
         0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16     17     18     19     20     21     22     23     24     25     26     27     28     29     30     31     32     33     34     35     36     37     38     39     40     41     42     43     44     45     46     47     48     49     50     51     52     53     54     55     56     57     58     59     60     61     62     63     64     65     66     67     68     69     70     71     72     73     74     75     76     77     78     79     80     81     82     83     84     85     86     87     88     89     90     91     92     93     94     95     96     97     98     99    100    101    102    103    104    105    106    107    108    109    110    111    112    113    114    115    116    117    118    119    120    121    122    123    124    125    126    127    128    129    130    131    132    133    134    135    136    137    138    139    140    141    142    143    144    145    146    147    148    149    150    151    152    153    154    155
 A:   0.00   7.00   0.00   7.00   0.00   7.00   0.00   1.00   7.00   7.00   7.00   0.00   4.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   1.00   6.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   1.00   0.00   7.00   0.00   0.00   7.00   0.00   7.00
 C:   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   3.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   2.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   1.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00
 G:   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   3.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00
 T:   7.00   0.00   7.00   0.00   0.00   0.00   7.00   6.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   1.00   0.00   0.00   7.00   7.00   4.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   5.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   7.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00
-""",
-        )
+"""
         value = sum(motif[5:50].relative_entropy)
-        self.assertAlmostEqual(value, 88.42309908538343)  # Alignment
+        assert value == pytest.approx(88.42309908538343, abs=5e-8)  # Alignment
         relative_entropy = motif.relative_entropy
         value = sum(relative_entropy)
-        self.assertAlmostEqual(value, 306.2080592664532)  # Alignment
-        self.assertAlmostEqual(relative_entropy[0], 2.0)
-        self.assertAlmostEqual(relative_entropy[1], 2.0)
-        self.assertAlmostEqual(relative_entropy[2], 2.0)
-        self.assertAlmostEqual(relative_entropy[3], 2.0)
-        self.assertAlmostEqual(relative_entropy[4], 2.0)
-        self.assertAlmostEqual(relative_entropy[5], 2.0)
-        self.assertAlmostEqual(relative_entropy[6], 2.0)
-        self.assertAlmostEqual(relative_entropy[7], 1.4083272214176723)
-        self.assertAlmostEqual(relative_entropy[8], 2.0)
-        self.assertAlmostEqual(relative_entropy[9], 2.0)
-        self.assertAlmostEqual(relative_entropy[10], 2.0)
-        self.assertAlmostEqual(relative_entropy[11], 2.0)
-        self.assertAlmostEqual(relative_entropy[12], 1.0147718639657484)
-        self.assertAlmostEqual(relative_entropy[13], 2.0)
-        self.assertAlmostEqual(relative_entropy[14], 2.0)
-        self.assertAlmostEqual(relative_entropy[15], 2.0)
-        self.assertAlmostEqual(relative_entropy[16], 2.0)
-        self.assertAlmostEqual(relative_entropy[17], 2.0)
-        self.assertAlmostEqual(relative_entropy[18], 2.0)
-        self.assertAlmostEqual(relative_entropy[19], 2.0)
-        self.assertAlmostEqual(relative_entropy[20], 2.0)
-        self.assertAlmostEqual(relative_entropy[21], 2.0)
-        self.assertAlmostEqual(relative_entropy[22], 2.0)
-        self.assertAlmostEqual(relative_entropy[23], 2.0)
-        self.assertAlmostEqual(relative_entropy[24], 2.0)
-        self.assertAlmostEqual(relative_entropy[25], 2.0)
-        self.assertAlmostEqual(relative_entropy[26], 2.0)
-        self.assertAlmostEqual(relative_entropy[27], 2.0)
-        self.assertAlmostEqual(relative_entropy[28], 2.0)
-        self.assertAlmostEqual(relative_entropy[29], 2.0)
-        self.assertAlmostEqual(relative_entropy[30], 2.0)
-        self.assertAlmostEqual(relative_entropy[31], 2.0)
-        self.assertAlmostEqual(relative_entropy[32], 2.0)
-        self.assertAlmostEqual(relative_entropy[33], 2.0)
-        self.assertAlmostEqual(relative_entropy[34], 2.0)
-        self.assertAlmostEqual(relative_entropy[35], 2.0)
-        self.assertAlmostEqual(relative_entropy[36], 2.0)
-        self.assertAlmostEqual(relative_entropy[37], 2.0)
-        self.assertAlmostEqual(relative_entropy[38], 2.0)
-        self.assertAlmostEqual(relative_entropy[39], 2.0)
-        self.assertAlmostEqual(relative_entropy[40], 2.0)
-        self.assertAlmostEqual(relative_entropy[41], 2.0)
-        self.assertAlmostEqual(relative_entropy[42], 2.0)
-        self.assertAlmostEqual(relative_entropy[43], 2.0)
-        self.assertAlmostEqual(relative_entropy[44], 2.0)
-        self.assertAlmostEqual(relative_entropy[45], 2.0)
-        self.assertAlmostEqual(relative_entropy[46], 2.0)
-        self.assertAlmostEqual(relative_entropy[47], 2.0)
-        self.assertAlmostEqual(relative_entropy[48], 2.0)
-        self.assertAlmostEqual(relative_entropy[49], 2.0)
-        self.assertAlmostEqual(relative_entropy[50], 2.0)
-        self.assertAlmostEqual(relative_entropy[51], 2.0)
-        self.assertAlmostEqual(relative_entropy[52], 2.0)
-        self.assertAlmostEqual(relative_entropy[53], 2.0)
-        self.assertAlmostEqual(relative_entropy[54], 2.0)
-        self.assertAlmostEqual(relative_entropy[55], 2.0)
-        self.assertAlmostEqual(relative_entropy[56], 2.0)
-        self.assertAlmostEqual(relative_entropy[57], 2.0)
-        self.assertAlmostEqual(relative_entropy[58], 2.0)
-        self.assertAlmostEqual(relative_entropy[59], 2.0)
-        self.assertAlmostEqual(relative_entropy[60], 2.0)
-        self.assertAlmostEqual(relative_entropy[61], 2.0)
-        self.assertAlmostEqual(relative_entropy[62], 2.0)
-        self.assertAlmostEqual(relative_entropy[63], 2.0)
-        self.assertAlmostEqual(relative_entropy[64], 2.0)
-        self.assertAlmostEqual(relative_entropy[65], 2.0)
-        self.assertAlmostEqual(relative_entropy[66], 2.0)
-        self.assertAlmostEqual(relative_entropy[67], 2.0)
-        self.assertAlmostEqual(relative_entropy[68], 2.0)
-        self.assertAlmostEqual(relative_entropy[69], 2.0)
-        self.assertAlmostEqual(relative_entropy[70], 2.0)
-        self.assertAlmostEqual(relative_entropy[71], 2.0)
-        self.assertAlmostEqual(relative_entropy[72], 2.0)
-        self.assertAlmostEqual(relative_entropy[73], 2.0)
-        self.assertAlmostEqual(relative_entropy[74], 1.4083272214176723)
-        self.assertAlmostEqual(relative_entropy[75], 1.4083272214176723)
-        self.assertAlmostEqual(relative_entropy[76], 2.0)
-        self.assertAlmostEqual(relative_entropy[77], 2.0)
-        self.assertAlmostEqual(relative_entropy[78], 2.0)
-        self.assertAlmostEqual(relative_entropy[79], 2.0)
-        self.assertAlmostEqual(relative_entropy[80], 1.0147718639657484)
-        self.assertAlmostEqual(relative_entropy[81], 2.0)
-        self.assertAlmostEqual(relative_entropy[82], 2.0)
-        self.assertAlmostEqual(relative_entropy[83], 2.0)
-        self.assertAlmostEqual(relative_entropy[84], 2.0)
-        self.assertAlmostEqual(relative_entropy[85], 2.0)
-        self.assertAlmostEqual(relative_entropy[86], 2.0)
-        self.assertAlmostEqual(relative_entropy[87], 2.0)
-        self.assertAlmostEqual(relative_entropy[88], 2.0)
-        self.assertAlmostEqual(relative_entropy[89], 2.0)
-        self.assertAlmostEqual(relative_entropy[90], 1.136879431433369)
-        self.assertAlmostEqual(relative_entropy[91], 2.0)
-        self.assertAlmostEqual(relative_entropy[92], 2.0)
-        self.assertAlmostEqual(relative_entropy[93], 2.0)
-        self.assertAlmostEqual(relative_entropy[94], 2.0)
-        self.assertAlmostEqual(relative_entropy[95], 2.0)
-        self.assertAlmostEqual(relative_entropy[96], 2.0)
-        self.assertAlmostEqual(relative_entropy[97], 2.0)
-        self.assertAlmostEqual(relative_entropy[98], 2.0)
-        self.assertAlmostEqual(relative_entropy[99], 2.0)
-        self.assertAlmostEqual(relative_entropy[100], 2.0)
-        self.assertAlmostEqual(relative_entropy[101], 2.0)
-        self.assertAlmostEqual(relative_entropy[102], 2.0)
-        self.assertAlmostEqual(relative_entropy[103], 2.0)
-        self.assertAlmostEqual(relative_entropy[104], 2.0)
-        self.assertAlmostEqual(relative_entropy[105], 2.0)
-        self.assertAlmostEqual(relative_entropy[106], 2.0)
-        self.assertAlmostEqual(relative_entropy[107], 2.0)
-        self.assertAlmostEqual(relative_entropy[108], 2.0)
-        self.assertAlmostEqual(relative_entropy[109], 2.0)
-        self.assertAlmostEqual(relative_entropy[110], 2.0)
-        self.assertAlmostEqual(relative_entropy[111], 2.0)
-        self.assertAlmostEqual(relative_entropy[112], 2.0)
-        self.assertAlmostEqual(relative_entropy[113], 2.0)
-        self.assertAlmostEqual(relative_entropy[114], 2.0)
-        self.assertAlmostEqual(relative_entropy[115], 2.0)
-        self.assertAlmostEqual(relative_entropy[116], 2.0)
-        self.assertAlmostEqual(relative_entropy[117], 2.0)
-        self.assertAlmostEqual(relative_entropy[118], 2.0)
-        self.assertAlmostEqual(relative_entropy[119], 2.0)
-        self.assertAlmostEqual(relative_entropy[120], 2.0)
-        self.assertAlmostEqual(relative_entropy[121], 2.0)
-        self.assertAlmostEqual(relative_entropy[122], 2.0)
-        self.assertAlmostEqual(relative_entropy[123], 2.0)
-        self.assertAlmostEqual(relative_entropy[124], 2.0)
-        self.assertAlmostEqual(relative_entropy[125], 2.0)
-        self.assertAlmostEqual(relative_entropy[126], 2.0)
-        self.assertAlmostEqual(relative_entropy[127], 2.0)
-        self.assertAlmostEqual(relative_entropy[128], 2.0)
-        self.assertAlmostEqual(relative_entropy[129], 2.0)
-        self.assertAlmostEqual(relative_entropy[130], 2.0)
-        self.assertAlmostEqual(relative_entropy[131], 2.0)
-        self.assertAlmostEqual(relative_entropy[132], 2.0)
-        self.assertAlmostEqual(relative_entropy[133], 2.0)
-        self.assertAlmostEqual(relative_entropy[134], 2.0)
-        self.assertAlmostEqual(relative_entropy[135], 2.0)
-        self.assertAlmostEqual(relative_entropy[136], 1.4083272214176723)
-        self.assertAlmostEqual(relative_entropy[137], 2.0)
-        self.assertAlmostEqual(relative_entropy[138], 2.0)
-        self.assertAlmostEqual(relative_entropy[139], 2.0)
-        self.assertAlmostEqual(relative_entropy[140], 2.0)
-        self.assertAlmostEqual(relative_entropy[141], 2.0)
-        self.assertAlmostEqual(relative_entropy[142], 2.0)
-        self.assertAlmostEqual(relative_entropy[143], 2.0)
-        self.assertAlmostEqual(relative_entropy[144], 2.0)
-        self.assertAlmostEqual(relative_entropy[145], 2.0)
-        self.assertAlmostEqual(relative_entropy[146], 2.0)
-        self.assertAlmostEqual(relative_entropy[147], 2.0)
-        self.assertAlmostEqual(relative_entropy[148], 1.4083272214176723)
-        self.assertAlmostEqual(relative_entropy[149], 2.0)
-        self.assertAlmostEqual(relative_entropy[150], 2.0)
-        self.assertAlmostEqual(relative_entropy[151], 2.0)
-        self.assertAlmostEqual(relative_entropy[152], 2.0)
-        self.assertAlmostEqual(relative_entropy[153], 2.0)
-        self.assertAlmostEqual(relative_entropy[154], 2.0)
-        self.assertAlmostEqual(relative_entropy[155], 2.0)
+        assert value == pytest.approx(306.2080592664532, abs=5e-8)  # Alignment
+        assert relative_entropy[0] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[1] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[2] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[3] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[4] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[5] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[6] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[7] == pytest.approx(1.4083272214176723, abs=5e-8)
+        assert relative_entropy[8] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[9] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[10] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[11] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[12] == pytest.approx(1.0147718639657484, abs=5e-8)
+        assert relative_entropy[13] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[14] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[15] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[16] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[17] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[18] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[19] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[20] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[21] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[22] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[23] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[24] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[25] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[26] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[27] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[28] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[29] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[30] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[31] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[32] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[33] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[34] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[35] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[36] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[37] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[38] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[39] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[40] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[41] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[42] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[43] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[44] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[45] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[46] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[47] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[48] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[49] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[50] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[51] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[52] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[53] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[54] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[55] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[56] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[57] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[58] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[59] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[60] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[61] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[62] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[63] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[64] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[65] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[66] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[67] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[68] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[69] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[70] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[71] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[72] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[73] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[74] == pytest.approx(1.4083272214176723, abs=5e-8)
+        assert relative_entropy[75] == pytest.approx(1.4083272214176723, abs=5e-8)
+        assert relative_entropy[76] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[77] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[78] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[79] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[80] == pytest.approx(1.0147718639657484, abs=5e-8)
+        assert relative_entropy[81] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[82] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[83] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[84] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[85] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[86] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[87] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[88] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[89] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[90] == pytest.approx(1.136879431433369, abs=5e-8)
+        assert relative_entropy[91] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[92] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[93] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[94] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[95] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[96] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[97] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[98] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[99] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[100] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[101] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[102] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[103] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[104] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[105] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[106] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[107] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[108] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[109] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[110] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[111] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[112] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[113] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[114] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[115] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[116] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[117] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[118] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[119] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[120] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[121] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[122] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[123] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[124] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[125] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[126] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[127] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[128] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[129] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[130] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[131] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[132] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[133] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[134] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[135] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[136] == pytest.approx(1.4083272214176723, abs=5e-8)
+        assert relative_entropy[137] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[138] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[139] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[140] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[141] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[142] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[143] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[144] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[145] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[146] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[147] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[148] == pytest.approx(1.4083272214176723, abs=5e-8)
+        assert relative_entropy[149] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[150] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[151] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[152] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[153] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[154] == pytest.approx(2.0, abs=5e-8)
+        assert relative_entropy[155] == pytest.approx(2.0, abs=5e-8)
         # create a new-style Alignment object
         del seq_record
         del align_info
         del dictionary
         del value
         alignment = msa.alignment
-        self.assertEqual(len(alignment), 7)
+        assert len(alignment) == 7
         seq_record = alignment.sequences[0]
-        self.assertEqual(seq_record.description, "gi|6273285|gb|AF191659.1|AF191")
-        self.assertEqual(
-            alignment[0],
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCCATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            Seq(
+        assert seq_record.description == "gi|6273285|gb|AF191659.1|AF191"
+        assert alignment[0] == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCCATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == Seq(
                 "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATAATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCCATTGATTTAGTGTACCAGA"
-            ),
-        )
+            )
         seq_record = alignment.sequences[1]
-        self.assertEqual(seq_record.description, "gi|6273284|gb|AF191658.1|AF191")
-        self.assertEqual(
-            alignment[1],
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATA--------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATAATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273284|gb|AF191658.1|AF191"
+        assert alignment[1] == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATA--------ATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATAATATATTTCAAATTTCCTTATATACCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = alignment.sequences[2]
-        self.assertEqual(seq_record.description, "gi|6273287|gb|AF191661.1|AF191")
-        self.assertEqual(
-            alignment[2],
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATAATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273287|gb|AF191661.1|AF191"
+        assert alignment[2] == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATAATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = alignment.sequences[3]
-        self.assertEqual(seq_record.description, "gi|6273286|gb|AF191660.1|AF191")
-        self.assertEqual(
-            alignment[3],
-            "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATAATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273286|gb|AF191660.1|AF191"
+        assert alignment[3] == "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATA----------ATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == "TATACATAAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATAATATATTTATAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = alignment.sequences[4]
-        self.assertEqual(seq_record.description, "gi|6273290|gb|AF191664.1|AF191")
-        self.assertEqual(
-            alignment[4],
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert seq_record.description == "gi|6273290|gb|AF191664.1|AF191"
+        assert alignment[4] == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         seq_record = alignment.sequences[5]
-        self.assertEqual(seq_record.description, "gi|6273289|gb|AF191663.1|AF191")
-        self.assertEqual(
-            alignment[5],
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA",
-        )
+        assert seq_record.description == "gi|6273289|gb|AF191663.1|AF191"
+        assert alignment[5] == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATA------ATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTATACCAGA"
         seq_record = alignment.sequences[6]
-        self.assertEqual(seq_record.description, "gi|6273291|gb|AF191665.1|AF191")
-        self.assertEqual(
-            alignment[6],
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            seq_record.seq,
-            "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(alignment.shape, (7, 156))
+        assert seq_record.description == "gi|6273291|gb|AF191665.1|AF191"
+        assert alignment[6] == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert seq_record.seq == "TATACATTAAAGGAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTCCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert alignment.shape == (7, 156)
         substitutions = alignment.substitutions
-        self.assertEqual(len(substitutions), 4)
-        self.assertEqual(substitutions.shape, (4, 4))
-        self.assertAlmostEqual(substitutions[("A", "A")], 1395)
-        self.assertAlmostEqual(substitutions[("A", "C")], 3)
-        self.assertAlmostEqual(substitutions[("A", "G")], 13)
-        self.assertAlmostEqual(substitutions[("A", "T")], 6)
-        self.assertAlmostEqual(substitutions[("C", "A")], 3)
-        self.assertAlmostEqual(substitutions[("C", "C")], 271)
-        self.assertAlmostEqual(substitutions[("C", "G")], 0)
-        self.assertAlmostEqual(substitutions[("C", "T")], 16)
-        self.assertAlmostEqual(substitutions[("G", "A")], 5)
-        self.assertAlmostEqual(substitutions[("G", "C")], 0)
-        self.assertAlmostEqual(substitutions[("G", "G")], 480)
-        self.assertAlmostEqual(substitutions[("G", "T")], 0)
-        self.assertAlmostEqual(substitutions[("T", "A")], 6)
-        self.assertAlmostEqual(substitutions[("T", "C")], 12)
-        self.assertAlmostEqual(substitutions[("T", "G")], 0)
-        self.assertAlmostEqual(substitutions[("T", "T")], 874)
+        assert len(substitutions) == 4
+        assert substitutions.shape == (4, 4)
+        assert substitutions[("A", "A")] == pytest.approx(1395, abs=5e-8)
+        assert substitutions[("A", "C")] == pytest.approx(3, abs=5e-8)
+        assert substitutions[("A", "G")] == pytest.approx(13, abs=5e-8)
+        assert substitutions[("A", "T")] == pytest.approx(6, abs=5e-8)
+        assert substitutions[("C", "A")] == pytest.approx(3, abs=5e-8)
+        assert substitutions[("C", "C")] == pytest.approx(271, abs=5e-8)
+        assert substitutions[("C", "G")] == pytest.approx(0, abs=5e-8)
+        assert substitutions[("C", "T")] == pytest.approx(16, abs=5e-8)
+        assert substitutions[("G", "A")] == pytest.approx(5, abs=5e-8)
+        assert substitutions[("G", "C")] == pytest.approx(0, abs=5e-8)
+        assert substitutions[("G", "G")] == pytest.approx(480, abs=5e-8)
+        assert substitutions[("G", "T")] == pytest.approx(0, abs=5e-8)
+        assert substitutions[("T", "A")] == pytest.approx(6, abs=5e-8)
+        assert substitutions[("T", "C")] == pytest.approx(12, abs=5e-8)
+        assert substitutions[("T", "G")] == pytest.approx(0, abs=5e-8)
+        assert substitutions[("T", "T")] == pytest.approx(874, abs=5e-8)
         motif = motifs.Motif(alphabet="ACGT", alignment=alignment)
-        self.assertEqual(
-            motif.consensus,
-            "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
-        self.assertEqual(
-            motif.degenerate_consensus,
-            "TATACATTAAAGRAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTYCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA",
-        )
+        assert motif.consensus == "TATACATTAAAGAAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTTCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
+        assert motif.degenerate_consensus == "TATACATTAAAGRAGGGGGATGCGGATAAATGGAAAGGCGAAAGAAAGAATATATATATATATATAATATATTTCAAATTYCCTTATATATCCAAATATAAAAATATCTAATAAATTAGATGAATATCAAAGAATCTATTGATTTAGTGTACCAGA"
         matrix = motif.counts
-        self.assertEqual(
-            str(matrix),
-            """\
+        assert str(matrix) == """\
         0      1      2      3      4      5      6      7      8      9     10     11     12     13     14     15     16     17     18     19     20     21     22     23     24     25     26     27     28     29     30     31     32     33     34     35     36     37     38     39     40     41     42     43     44     45     46     47     48     49     50     51     52     53     54     55     56     57     58     59     60     61     62     63     64     65     66     67     68     69     70     71     72     73     74     75     76     77     78     79     80     81     82     83     84     85     86     87     88     89     90     91     92     93     94     95     96     97     98     99    100    101    102    103    104    105    106    107    108    109    110    111    112    113    114    115    116    117    118    119    120    121    122    123    124    125    126    127    128    129    130    131    132    133    134    135    136    137    138    139    140    141    142    143    144    145    146    147    148    149    150    151    152    153    154    155
 A:   0.00   7.00   0.00   7.00   0.00   7.00   0.00   1.00   7.00   7.00   7.00   0.00   4.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   1.00   6.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   1.00   0.00   7.00   0.00   0.00   7.00   0.00   7.00
 C:   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   3.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   2.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   1.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00
 G:   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   3.00   0.00   7.00   7.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00
 T:   7.00   0.00   7.00   0.00   0.00   0.00   7.00   6.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   4.00   0.00   3.00   0.00   1.00   0.00   1.00   0.00   1.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   7.00   7.00   0.00   1.00   0.00   0.00   7.00   7.00   4.00   0.00   0.00   7.00   7.00   0.00   7.00   0.00   7.00   0.00   5.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   7.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   7.00   0.00   0.00   0.00   7.00   0.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   7.00   0.00   6.00   0.00   7.00   7.00   0.00   0.00   7.00   7.00   7.00   0.00   0.00   7.00   0.00   7.00   0.00   0.00   0.00   0.00   0.00   0.00
-""",
-        )
-        self.assertEqual(
-            format(motif, "transfac"),
-            """\
+"""
+        assert format(motif, "transfac") == """\
 P0      A      C      G      T
 01      0      0      0      7      T
 02      7      0      0      0      A
@@ -856,65 +767,56 @@ P0      A      C      G      T
 156      7      0      0      0      A
 XX
 //
-""",
-        )
-        self.assertAlmostEqual(sum(motif[5:50].relative_entropy), 88.42309908538343)
+"""
+        assert sum(motif[5:50].relative_entropy) == pytest.approx(88.42309908538343, abs=5e-8)
         relative_entropy = motif.relative_entropy
-        self.assertAlmostEqual(sum(relative_entropy[5:50]), 88.42309908538343)
-        self.assertAlmostEqual(sum(relative_entropy), 306.20805926645323)
-        self.assertEqual(alignment[:, 1], "AAAAAAA")
-        self.assertAlmostEqual(motif.relative_entropy[1], 2.0)
-        self.assertEqual(alignment[:, 7], "TTTATTT")
-        self.assertAlmostEqual(relative_entropy[7], 1.4083272214176723)
+        assert sum(relative_entropy[5:50]) == pytest.approx(88.42309908538343, abs=5e-8)
+        assert sum(relative_entropy) == pytest.approx(306.20805926645323, abs=5e-8)
+        assert alignment[:, 1] == "AAAAAAA"
+        assert motif.relative_entropy[1] == pytest.approx(2.0, abs=5e-8)
+        assert alignment[:, 7] == "TTTATTT"
+        assert relative_entropy[7] == pytest.approx(1.4083272214176723, abs=5e-8)
 
     def test_read_fasta(self):
         path = os.path.join(os.curdir, "Quality", "example.fasta")
         msa = AlignIO.read(path, "fasta")
-        self.assertEqual(len(msa), 3)
+        assert len(msa) == 3
         seq_record = msa[0]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_413_324")
-        self.assertEqual(seq_record.seq, "CCCTTCTTGTCTTCAGCGTTTCTCC")
+        assert seq_record.description == "EAS54_6_R1_2_1_413_324"
+        assert seq_record.seq == "CCCTTCTTGTCTTCAGCGTTTCTCC"
         seq_record = msa[1]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_540_792")
-        self.assertEqual(seq_record.seq, "TTGGCAGGCCAAGGCCGATGGATCA")
+        assert seq_record.description == "EAS54_6_R1_2_1_540_792"
+        assert seq_record.seq == "TTGGCAGGCCAAGGCCGATGGATCA"
         seq_record = msa[2]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_443_348")
-        self.assertEqual(seq_record.seq, "GTTGCTTCTGGCGTGGGTGGGGGGG")
-        self.assertEqual(msa.get_alignment_length(), 25)
-        self.assertEqual(
-            str(msa),
-            """\
+        assert seq_record.description == "EAS54_6_R1_2_1_443_348"
+        assert seq_record.seq == "GTTGCTTCTGGCGTGGGTGGGGGGG"
+        assert msa.get_alignment_length() == 25
+        assert str(msa) == """\
 Alignment with 3 rows and 25 columns
 CCCTTCTTGTCTTCAGCGTTTCTCC EAS54_6_R1_2_1_413_324
 TTGGCAGGCCAAGGCCGATGGATCA EAS54_6_R1_2_1_540_792
-GTTGCTTCTGGCGTGGGTGGGGGGG EAS54_6_R1_2_1_443_348""",
-        )
+GTTGCTTCTGGCGTGGGTGGGGGGG EAS54_6_R1_2_1_443_348"""
         alignment = msa.alignment
-        self.assertEqual(len(alignment), 3)
+        assert len(alignment) == 3
         seq_record = alignment.sequences[0]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_413_324")
-        self.assertEqual(seq_record.seq, "CCCTTCTTGTCTTCAGCGTTTCTCC")
+        assert seq_record.description == "EAS54_6_R1_2_1_413_324"
+        assert seq_record.seq == "CCCTTCTTGTCTTCAGCGTTTCTCC"
         seq_record = alignment.sequences[1]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_540_792")
-        self.assertEqual(seq_record.seq, "TTGGCAGGCCAAGGCCGATGGATCA")
+        assert seq_record.description == "EAS54_6_R1_2_1_540_792"
+        assert seq_record.seq == "TTGGCAGGCCAAGGCCGATGGATCA"
         seq_record = alignment.sequences[2]
-        self.assertEqual(seq_record.description, "EAS54_6_R1_2_1_443_348")
-        self.assertEqual(seq_record.seq, "GTTGCTTCTGGCGTGGGTGGGGGGG")
-        self.assertEqual(alignment.length, 25)
+        assert seq_record.description == "EAS54_6_R1_2_1_443_348"
+        assert seq_record.seq == "GTTGCTTCTGGCGTGGGTGGGGGGG"
+        assert alignment.length == 25
         motif = motifs.Motif(alphabet="ACGT", alignment=alignment)
-        self.assertEqual(motif.consensus, "CTCGCATCCCAAGCAGGATGGATCA")
-        self.assertEqual(motif.degenerate_consensus, "BYBKYHKBBBVHKBVSSDKKKVKSV")
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert motif.consensus == "CTCGCATCCCAAGCAGGATGGATCA"
+        assert motif.degenerate_consensus == "BYBKYHKBBBVHKBVSSDKKKVKSV"
+        assert str(alignment) == """\
 EAS54_6_R         0 CCCTTCTTGTCTTCAGCGTTTCTCC 25
 EAS54_6_R         0 TTGGCAGGCCAAGGCCGATGGATCA 25
 EAS54_6_R         0 GTTGCTTCTGGCGTGGGTGGGGGGG 25
-""",
-        )
-        self.assertEqual(
-            motif.counts.calculate_consensus(identity=0.6), "NTNGCNTNNNNNGNNGGNTGGNTCN"
-        )
+"""
+        assert motif.counts.calculate_consensus(identity=0.6) == "NTNGCNTNNNNNGNNGGNTGGNTCN"
 
 
 class TestFromAlignmentsWithSameReference(unittest.TestCase):
@@ -936,15 +838,15 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa = Alignment.from_alignments_with_same_reference([pwa1, pwa2])
 
         # Check that the output is of correct type
-        self.assertIsInstance(msa, Alignment)
+        assert isinstance(msa, Alignment)
 
         # Check the number of sequences in the MSA
-        self.assertEqual(len(msa), 3)
+        assert len(msa) == 3
 
         # Validate that from_alignments_with_same_reference gives the right msa
-        self.assertEqual(str(msa[0]), "ACG-T")
-        self.assertEqual(str(msa[1]), "ACGGT")
-        self.assertEqual(str(msa[2]), "A---T")
+        assert str(msa[0]) == "ACG-T"
+        assert str(msa[1]) == "ACGGT"
+        assert str(msa[2]) == "A---T"
 
     def test_pwas_built_with_seqs(self):
         """Test that from_alignments_with_same_reference works with PWAs built with Seq objects."""
@@ -963,12 +865,12 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa = Alignment.from_alignments_with_same_reference([pwa1, pwa2])
 
         # Check that the output is of correct type
-        self.assertIsInstance(msa, Alignment)
+        assert isinstance(msa, Alignment)
 
         # Validate that from_alignments_with_same_reference gives the right msa
-        self.assertEqual(str(msa[0]), "ACG-T")
-        self.assertEqual(str(msa[1]), "ACGGT")
-        self.assertEqual(str(msa[2]), "A---T")
+        assert str(msa[0]) == "ACG-T"
+        assert str(msa[1]) == "ACGGT"
+        assert str(msa[2]) == "A---T"
 
         # Works with undefined sequences
         pwa1_undefined = Alignment([Seq(None, 4), Seq(None, 5)], pwa1.coordinates)
@@ -976,7 +878,7 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa_undefined = Alignment.from_alignments_with_same_reference(
             [pwa1_undefined, pwa2_undefined]
         )
-        self.assertTrue((msa_undefined.coordinates == msa.coordinates).all())
+        assert (msa_undefined.coordinates == msa.coordinates).all()
 
     def test_metadata_preservation(self):
         """Test that sequence metadata (IDs and descriptions) are preserved in the Alignment.
@@ -999,16 +901,16 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa = Alignment.from_alignments_with_same_reference([pwa1, pwa2])
 
         # Validate that from_alignments_with_same_reference gives the right msa
-        self.assertEqual(str(msa[0]), "ACG-T")
-        self.assertEqual(str(msa[1]), "ACGGT")
-        self.assertEqual(str(msa[2]), "A---T")
+        assert str(msa[0]) == "ACG-T"
+        assert str(msa[1]) == "ACGGT"
+        assert str(msa[2]) == "A---T"
 
         # Check that id and description are retained
-        self.assertEqual(msa.sequences[0].id, "reference")
-        self.assertEqual(msa.sequences[1].id, "seq1")
-        self.assertEqual(msa.sequences[2].id, "seq2")
-        self.assertEqual(msa.sequences[0].description, "desc 1")
-        self.assertEqual(msa.sequences[1].description, "desc 2")
+        assert msa.sequences[0].id == "reference"
+        assert msa.sequences[1].id == "seq1"
+        assert msa.sequences[2].id == "seq2"
+        assert msa.sequences[0].description == "desc 1"
+        assert msa.sequences[1].description == "desc 2"
 
     def test_mismatched_references(self):
         """Test that mismatched reference sequences raise a ValueError."""
@@ -1016,28 +918,28 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         pwa1 = next(aligner.align("ACGAAAT", "ACGGT"))
         pwa2 = next(aligner.align("ACCT", "AT"))
 
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             Alignment.from_alignments_with_same_reference([pwa1, pwa2])
-        self.assertIn("All reference sequences must", str(context.exception))
+        assert "All reference sequences must" in str(context.value)
 
         # Works with undefined sequences
         pwa1_undefined = Alignment([Seq(None, 7), Seq(None, 5)], pwa1.coordinates)
         pwa2_undefined = Alignment([Seq(None, 4), Seq(None, 2)], pwa2.coordinates)
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             Alignment.from_alignments_with_same_reference(
                 [pwa1_undefined, pwa2_undefined]
             )
-        self.assertIn("All reference sequences must", str(context.exception))
+        assert "All reference sequences must" in str(context.value)
 
         # Works with mix
         pwa1_undefined = Alignment([Seq(None, 7), Seq(None, 5)], pwa1.coordinates)
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             Alignment.from_alignments_with_same_reference([pwa1_undefined, pwa2])
-        self.assertIn("All reference sequences must", str(context.exception))
+        assert "All reference sequences must" in str(context.value)
 
     def test_empty_input(self):
         """Test that empty input raises a ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Alignment.from_alignments_with_same_reference([])
 
     def test_input_with_three_sequences(self):
@@ -1062,17 +964,17 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa = Alignment.from_alignments_with_same_reference([alignment1, alignment2])
 
         # Check that the output is of correct type
-        self.assertIsInstance(msa, Alignment)
+        assert isinstance(msa, Alignment)
 
         # Check the number of sequences in the MSA
-        self.assertEqual(len(msa), 5)
+        assert len(msa) == 5
 
         # Validate that from_alignments_with_same_reference gives the right msa
-        self.assertEqual(str(msa[0]), "ACG-T")
-        self.assertEqual(str(msa[1]), "ACGGT")
-        self.assertEqual(str(msa[2]), "A---T")
-        self.assertEqual(str(msa[3]), "A-G-T")
-        self.assertEqual(str(msa[4]), "AC--T")
+        assert str(msa[0]) == "ACG-T"
+        assert str(msa[1]) == "ACGGT"
+        assert str(msa[2]) == "A---T"
+        assert str(msa[3]) == "A-G-T"
+        assert str(msa[4]) == "AC--T"
 
     def test_mixed_input(self):
         """Test that the method works with input Alignments of mixed number of sequences"""
@@ -1095,18 +997,17 @@ class TestFromAlignmentsWithSameReference(unittest.TestCase):
         msa = Alignment.from_alignments_with_same_reference([pwa, not_pwa])
 
         # Check that the output is of correct type
-        self.assertIsInstance(msa, Alignment)
+        assert isinstance(msa, Alignment)
 
         # Check the number of sequences in the MSA
-        self.assertEqual(len(msa), 4)
+        assert len(msa) == 4
 
         # Validate that from_alignments_with_same_reference gives the right msa
-        self.assertEqual(str(msa[0]), "ACG-T")
-        self.assertEqual(str(msa[1]), "AC--T")
-        self.assertEqual(str(msa[2]), "ACGGT")
-        self.assertEqual(str(msa[3]), "A---T")
+        assert str(msa[0]) == "ACG-T"
+        assert str(msa[1]) == "AC--T"
+        assert str(msa[2]) == "ACGGT"
+        assert str(msa[3]) == "A---T"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

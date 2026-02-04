@@ -5,6 +5,7 @@
 """Run BioSQL tests using MySQL."""
 
 import unittest
+import pytest
 
 # Really do want "import *" to get all the test classes:
 from common_BioSQL import *  # noqa: F403
@@ -22,6 +23,4 @@ DBHOST, DBUSER, DBPASSWD, TESTDB = load_biosql_ini(DBTYPE)
 TESTDB = check_config(DBDRIVER, DBTYPE, DBHOST, DBUSER, DBPASSWD, TESTDB)
 
 if __name__ == "__main__":
-    # Run the test cases
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

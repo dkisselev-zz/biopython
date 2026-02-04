@@ -13,6 +13,8 @@ black==22.12.0
 coverage
 
 ## Testing
+pytest
+#pytest-xdist   # uncomment for parallel execution via -n auto
 numpy!=2.1.0
 matplotlib
 mmtf-python

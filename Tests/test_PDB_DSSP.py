@@ -18,18 +18,10 @@
 import re
 import subprocess
 import unittest
+import pytest
 import warnings
 
-try:
-    import numpy as np  # noqa: F401
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
-
+import numpy as np  # noqa: F401
 from Bio.PDB import DSSP
 from Bio.PDB import make_dssp_dict
 from Bio.PDB import MMCIFParser
@@ -103,43 +95,43 @@ class DSSP_tool_test(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # silence DSSP warnings
             dssp = DSSP(model, pdbfile)
-        self.assertEqual(len(dssp), 130)
+        assert len(dssp) == 130
 
     # Only run mmCIF tests if DSSP version installed supports mmcif
     def test_dssp_with_mmcif_file(self):
         """Test DSSP generation from MMCIF."""
         if self.dssp_version < VERSION_2_2_0:
-            self.skipTest("Test requires DSSP version 2.2.0 or greater")
+            pytest.skip("Test requires DSSP version 2.2.0 or greater")
 
         pdbfile = "PDB/4ZHL.cif"
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # silence all warnings
             model = self.cifparser.get_structure("4ZHL", pdbfile)[0]
             dssp = DSSP(model, pdbfile)
-        self.assertEqual(len(dssp), 257)
+        assert len(dssp) == 257
 
     def test_dssp_with_mmcif_file_and_nonstandard_residues(self):
         """Test DSSP generation from MMCIF with non-standard residues."""
         if self.dssp_version < VERSION_2_2_0:
-            self.skipTest("Test requires DSSP version 2.2.0 or greater")
+            pytest.skip("Test requires DSSP version 2.2.0 or greater")
 
         pdbfile = "PDB/1AS5.cif"
         model = self.cifparser.get_structure("1AS5", pdbfile)[0]
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # silence DSSP warnings
             dssp = DSSP(model, pdbfile)
-        self.assertEqual(len(dssp), 24)
+        assert len(dssp) == 24
 
     def test_dssp_with_mmcif_file_and_different_chain_ids(self):
         """Test DSSP generation from MMCIF which has different label and author chain IDs."""
         if self.dssp_version < VERSION_2_2_0:
-            self.skipTest("Test requires DSSP version 2.2.0 or greater")
+            pytest.skip("Test requires DSSP version 2.2.0 or greater")
 
         pdbfile = "PDB/1A7G.cif"
         model = self.cifparser.get_structure("1A7G", pdbfile)[0]
         dssp = DSSP(model, pdbfile)
-        self.assertEqual(len(dssp), 82)
-        self.assertEqual(dssp.keys()[0][0], "E")
+        assert len(dssp) == 82
+        assert dssp.keys()[0][0] == "E"
 
 
 class DSSP_test(unittest.TestCase):
@@ -148,13 +140,13 @@ class DSSP_test(unittest.TestCase):
     def test_DSSP_file(self):
         """Test parsing of pregenerated DSSP."""
         dssp, keys = make_dssp_dict("PDB/2BEG.dssp")
-        self.assertEqual(len(dssp), 130)
+        assert len(dssp) == 130
 
     def test_DSSP_noheader_file(self):
         """Test parsing of pregenerated DSSP missing header information."""
         # New DSSP prints a line containing only whitespace and "."
         dssp, keys = make_dssp_dict("PDB/2BEG_noheader.dssp")
-        self.assertEqual(len(dssp), 130)
+        assert len(dssp) == 130
 
     def test_DSSP_hbonds(self):
         """Test parsing of DSSP hydrogen bond information."""
@@ -173,7 +165,7 @@ class DSSP_test(unittest.TestCase):
             hb_indices |= {val[5] + x for x in (val[6], val[8], val[10], val[12])}
 
         # Check if all h-bond partner indices were successfully parsed.
-        self.assertEqual((dssp_indices & hb_indices), hb_indices)
+        assert (dssp_indices & hb_indices) == hb_indices
 
     def test_DSSP_in_model_obj(self):
         """All elements correctly added to xtra attribute of input model object."""
@@ -204,7 +196,7 @@ class DSSP_test(unittest.TestCase):
                     xtra_list = list(map(will_it_float, xtra_list))
                     # The reason for converting to float is, that casting a float to a string in python2.6
                     # will include fewer decimals than python3 and an assertion error will be thrown.
-                    self.assertEqual(xtra_list, xtra_list_ref)
+                    assert xtra_list == xtra_list_ref
                     i += 1
 
     def test_DSSP_RSA(self):
@@ -224,7 +216,7 @@ class DSSP_test(unittest.TestCase):
                 for res in chain:
                     rasa_ref = float(ref_lines[i].rstrip())
                     rasa = float(res.xtra["EXP_DSSP_RASA"])
-                    self.assertAlmostEqual(rasa, rasa_ref)
+                    assert rasa == pytest.approx(rasa_ref, abs=5e-8)
                     i += 1
 
         # Wilke (procedure similar as for the Sander values above):
@@ -238,7 +230,7 @@ class DSSP_test(unittest.TestCase):
                 for res in chain:
                     rasa_ref = float(ref_lines[i].rstrip())
                     rasa = float(res.xtra["EXP_DSSP_RASA"])
-                    self.assertAlmostEqual(rasa, rasa_ref)
+                    assert rasa == pytest.approx(rasa_ref, abs=5e-8)
                     i += 1
 
         # Miller (procedure similar as for the Sander values above):
@@ -252,7 +244,7 @@ class DSSP_test(unittest.TestCase):
                 for res in chain:
                     rasa_ref = float(ref_lines[i].rstrip())
                     rasa = float(res.xtra["EXP_DSSP_RASA"])
-                    self.assertAlmostEqual(rasa, rasa_ref)
+                    assert rasa == pytest.approx(rasa_ref, abs=5e-8)
                     i += 1
 
         # Ahmad (procedure similar as for the Sander values above):
@@ -266,10 +258,9 @@ class DSSP_test(unittest.TestCase):
                 for res in chain:
                     rasa_ref = float(ref_lines[i].rstrip())
                     rasa = float(res.xtra["EXP_DSSP_RASA"])
-                    self.assertAlmostEqual(rasa, rasa_ref)
+                    assert rasa == pytest.approx(rasa_ref, abs=5e-8)
                     i += 1
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

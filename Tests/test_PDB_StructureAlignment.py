@@ -11,6 +11,7 @@
 
 import os
 import unittest
+import pytest
 import warnings
 
 from Bio import Align
@@ -53,16 +54,14 @@ class StructureAlignTests(unittest.TestCase):
 
         for argument in (records, alignment):
             al = StructureAlignment(argument, m1, m2)
-            self.assertNotEqual(al.map12, al.map21)
-            self.assertTrue(len(al.map12), 566)
-            self.assertTrue(len(al.map21), 70)
+            assert al.map12 != al.map21
+            assert len(al.map12), 566
+            assert len(al.map21), 70
             chain1_A = m1["A"]
             chain2_A = m2["A"]
-            self.assertEqual(chain1_A[202].get_resname(), "ILE")
-            self.assertEqual(chain2_A[202].get_resname(), "LEU")
-            self.assertNotEqual(
-                chain1_A[291].get_resname(), chain2_A[181].get_resname()
-            )
+            assert chain1_A[202].get_resname() == "ILE"
+            assert chain2_A[202].get_resname() == "LEU"
+            assert chain1_A[291].get_resname() != chain2_A[181].get_resname()
 
     def test_msa_vs_alignment_objects(self):
         """Test that MultipleSeqAlignment and Alignment objects produce identical results.
@@ -97,26 +96,22 @@ class StructureAlignTests(unittest.TestCase):
         al_align = StructureAlignment(alignment_obj, m1, m2)
 
         # Results should be identical
-        self.assertEqual(len(al_msa.duos), len(al_align.duos))
-        self.assertEqual(len(al_msa.map12), len(al_align.map12))
-        self.assertEqual(len(al_msa.map21), len(al_align.map21))
+        assert len(al_msa.duos) == len(al_align.duos)
+        assert len(al_msa.map12) == len(al_align.map12)
+        assert len(al_msa.map21) == len(al_align.map21)
 
         # Compare mappings
         for residue in al_msa.map12:
-            self.assertIn(residue, al_align.map12)
-            self.assertEqual(al_msa.map12[residue], al_align.map12[residue])
+            assert residue in al_align.map12
+            assert al_msa.map12[residue] == al_align.map12[residue]
 
         for residue in al_msa.map21:
-            self.assertIn(residue, al_align.map21)
-            self.assertEqual(al_msa.map21[residue], al_align.map21[residue])
+            assert residue in al_align.map21
+            assert al_msa.map21[residue] == al_align.map21[residue]
 
         # Compare duos
         for i, (duo_msa, duo_align) in enumerate(zip(al_msa.duos, al_align.duos)):
-            self.assertEqual(
-                duo_msa,
-                duo_align,
-                f"Duo mismatch at position {i}: {duo_msa} vs {duo_align}",
-            )
+            assert duo_msa == duo_align, f"Duo mismatch at position {i}: {duo_msa} vs {duo_align}"
 
     def test_custom_vs_automatic_alignment(self):
         """Test that custom PairwiseAligner alignment vs automatic alignment work identically.
@@ -171,26 +166,22 @@ class StructureAlignTests(unittest.TestCase):
         al_auto = StructureAlignment(m1=m1, m2=m2)
 
         # Results should be identical since they use the same alignment algorithm
-        self.assertEqual(len(al_custom.duos), len(al_auto.duos))
-        self.assertEqual(len(al_custom.map12), len(al_auto.map12))
-        self.assertEqual(len(al_custom.map21), len(al_auto.map21))
+        assert len(al_custom.duos) == len(al_auto.duos)
+        assert len(al_custom.map12) == len(al_auto.map12)
+        assert len(al_custom.map21) == len(al_auto.map21)
 
         # Compare mappings
         for residue in al_custom.map12:
-            self.assertIn(residue, al_auto.map12)
-            self.assertEqual(al_custom.map12[residue], al_auto.map12[residue])
+            assert residue in al_auto.map12
+            assert al_custom.map12[residue] == al_auto.map12[residue]
 
         for residue in al_custom.map21:
-            self.assertIn(residue, al_auto.map21)
-            self.assertEqual(al_custom.map21[residue], al_auto.map21[residue])
+            assert residue in al_auto.map21
+            assert al_custom.map21[residue] == al_auto.map21[residue]
 
         # Compare duos
         for i, (duo_custom, duo_auto) in enumerate(zip(al_custom.duos, al_auto.duos)):
-            self.assertEqual(
-                duo_custom,
-                duo_auto,
-                f"Duo mismatch at position {i}: {duo_custom} vs {duo_auto}",
-            )
+            assert duo_custom == duo_auto, f"Duo mismatch at position {i}: {duo_custom} vs {duo_auto}"
 
     def test_automatic_alignment_generation(self):
         """Test that automatic alignment generation works correctly.
@@ -211,17 +202,15 @@ class StructureAlignTests(unittest.TestCase):
         al_auto = StructureAlignment(m1=m1, m2=m2)
 
         # Verify that mappings were created
-        self.assertIsNotNone(al_auto.map12)
-        self.assertIsNotNone(al_auto.map21)
-        self.assertIsNotNone(al_auto.duos)
-        self.assertGreater(len(al_auto.duos), 0)
+        assert al_auto.map12 is not None
+        assert al_auto.map21 is not None
+        assert al_auto.duos is not None
+        assert len(al_auto.duos) > 0
 
         # Verify that some residues were mapped
-        self.assertGreater(len(al_auto.map12), 0)
-        self.assertGreater(len(al_auto.map21), 0)
+        assert len(al_auto.map12) > 0
+        assert len(al_auto.map21) > 0
 
 
 if __name__ == "__main__":
-    os.chdir("Tests")
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

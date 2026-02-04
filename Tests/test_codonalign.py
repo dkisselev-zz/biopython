@@ -7,6 +7,7 @@
 
 import tempfile
 import unittest
+import pytest
 import warnings
 
 from Bio import AlignIO
@@ -40,17 +41,16 @@ temp_dir = tempfile.mkdtemp()
 class TestCodonSeq(unittest.TestCase):
     def test_seq(self):
         codonseq1 = codonalign.CodonSeq("AAATTT---TTTGGACCC", rf_table=[0, 3, 6, 9, 12])
-        self.assertEqual(len(codonseq1), 18)
-        self.assertEqual(codonseq1.get_codon_num(), 5)
-        self.assertEqual(str(codonseq1.get_codon(0)), "AAA")
-        self.assertEqual(str(codonseq1.get_codon(-1)), "CCC")
-        self.assertEqual(str(codonseq1.get_codon(slice(1, 3))), "TTT---")
-        self.assertEqual(
-            str(codonseq1.get_codon(slice(None, None, -1))), "CCCGGATTT---TTTAAA"
-        )
+        assert len(codonseq1) == 18
+        assert codonseq1.get_codon_num() == 5
+        assert str(codonseq1.get_codon(0)) == "AAA"
+        assert str(codonseq1.get_codon(-1)) == "CCC"
+        assert str(codonseq1.get_codon(slice(1, 3))) == "TTT---"
+        assert str(codonseq1.get_codon(slice(None, None, -1))) == "CCCGGATTT---TTTAAA"
 
-        self.assertRaises(ValueError, codonalign.CodonSeq, "AAA-T")
-        self.assertIsInstance(codonseq1.toSeq(), Seq)
+        with pytest.raises(ValueError):
+            codonalign.CodonSeq("AAA-T")
+        assert isinstance(codonseq1.toSeq(), Seq)
 
 
 class TestCodonAlignment(unittest.TestCase):
@@ -69,8 +69,8 @@ class TestCodonAlignment(unittest.TestCase):
 
     def test_align(self):
         codonAlign = codonalign.CodonAlignment(self.seqrec)
-        self.assertEqual(codonAlign.get_aln_length(), 6)
-        self.assertIsInstance(codonAlign.toMultipleSeqAlignment(), MultipleSeqAlignment)
+        assert codonAlign.get_aln_length() == 6
+        assert isinstance(codonAlign.toMultipleSeqAlignment(), MultipleSeqAlignment)
 
 
 class TestAddition(unittest.TestCase):
@@ -90,19 +90,15 @@ class TestAddition(unittest.TestCase):
         """Check addition of CodonAlignment and MultipleSeqAlignment."""
         new_aln1 = self.codon_aln + self.multi_aln
 
-        self.assertIsInstance(new_aln1, MultipleSeqAlignment)
+        assert isinstance(new_aln1, MultipleSeqAlignment)
         for x in range(len(self.codon_aln)):
-            self.assertEqual(
-                new_aln1[x].seq, self.codon_aln[x].seq + self.multi_aln[x].seq
-            )
+            assert new_aln1[x].seq == self.codon_aln[x].seq + self.multi_aln[x].seq
 
         new_aln2 = self.multi_aln + self.codon_aln
 
-        self.assertIsInstance(new_aln2, MultipleSeqAlignment)
+        assert isinstance(new_aln2, MultipleSeqAlignment)
         for x in range(len(self.codon_aln)):
-            self.assertEqual(
-                new_aln2[x].seq, self.multi_aln[x].seq + self.codon_aln[x].seq
-            )
+            assert new_aln2[x].seq == self.multi_aln[x].seq + self.codon_aln[x].seq
 
     def test_addition_CodonAlignment(self):
         """Check addition of CodonAlignment and CodonAlignment."""
@@ -110,11 +106,9 @@ class TestAddition(unittest.TestCase):
             warnings.simplefilter("ignore", category=BiopythonWarning)
             new_aln = self.codon_aln + self.codon_aln
 
-        self.assertIsInstance(new_aln, codonalign.CodonAlignment)
+        assert isinstance(new_aln, codonalign.CodonAlignment)
         for x in range(len(self.codon_aln)):
-            self.assertEqual(
-                new_aln[x].seq, self.codon_aln[x].seq + self.codon_aln[x].seq
-            )
+            assert new_aln[x].seq == self.codon_aln[x].seq + self.codon_aln[x].seq
 
     def test_ValueError(self):
         """Check that ValueError is thrown for Alignments of different lengths."""
@@ -125,15 +119,15 @@ class TestAddition(unittest.TestCase):
         triple_codon = codonalign.build(
             aln, [self.seq1, self.seq2, SeqRecord(Seq("ATG"), id="pro3")]
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             triple_codon + self.multi_aln
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             triple_codon + self.codon_aln
 
     def test_TypeError(self):
         """Check that TypeError is thrown for non CodonAlignment/MultipleSequenceAlignment objects."""
         for obj in [0, "string", ["str1", "str2"], Seq("ATGTCTCGT")]:
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 self.codon_aln + obj
 
 
@@ -174,7 +168,7 @@ class TestBuildAndIO(unittest.TestCase):
         self.alns = alns
 
     def test_IO(self):
-        self.assertEqual(len(self.alns), 6)
+        assert len(self.alns) == 6
         for n, i in enumerate(self.alns):
             aln = i.toMultipleSeqAlignment()
             AlignIO.write(aln, temp_dir + "/aln" + str(n) + ".clw", "clustal")
@@ -300,11 +294,11 @@ class Test_dn_ds(unittest.TestCase):
         codon_seq1 = self.aln[0]
         codon_seq2 = self.aln[1]
         dN, dS = cal_dn_ds(codon_seq1, codon_seq2, method="NG86")
-        self.assertAlmostEqual(dN, 0.0209, places=4)
-        self.assertAlmostEqual(dS, 0.0178, places=4)
+        assert dN == pytest.approx(0.0209, abs=5e-05)
+        assert dS == pytest.approx(0.0178, abs=5e-05)
         dN, dS = cal_dn_ds(codon_seq1, codon_seq2, method="LWL85")
-        self.assertAlmostEqual(dN, 0.0203, places=4)
-        self.assertAlmostEqual(dS, 0.0164, places=4)
+        assert dN == pytest.approx(0.0203, abs=5e-05)
+        assert dS == pytest.approx(0.0164, abs=5e-05)
 
         try:
             import scipy
@@ -316,16 +310,16 @@ class Test_dn_ds(unittest.TestCase):
         from scipy.linalg import expm
 
         dN, dS = cal_dn_ds(codon_seq1, codon_seq2, method="YN00")
-        self.assertAlmostEqual(dN, 0.0198, places=4)
-        self.assertAlmostEqual(dS, 0.0222, places=4)
+        assert dN == pytest.approx(0.0198, abs=5e-05)
+        assert dS == pytest.approx(0.0222, abs=5e-05)
 
         try:
             # New in scipy v0.11
             from scipy.optimize import minimize
 
             dN, dS = cal_dn_ds(codon_seq1, codon_seq2, method="ML")
-            self.assertAlmostEqual(dN, 0.0194, places=4)
-            self.assertAlmostEqual(dS, 0.0217, places=4)
+            assert dN == pytest.approx(0.0194, abs=5e-05)
+            assert dS == pytest.approx(0.0217, abs=5e-05)
         except ImportError:
             # TODO - Show a warning?
             pass
@@ -383,12 +377,12 @@ class Test_dn_ds(unittest.TestCase):
         for i in dn.matrix:
             dn_list.extend(i)
         for dn_cal, dn_corr in zip(dn_list, dn_correct):
-            self.assertAlmostEqual(dn_cal, dn_corr, places=4)
+            assert dn_cal == pytest.approx(dn_corr, abs=5e-05)
         ds_list = []
         for i in ds.matrix:
             ds_list.extend(i)
         for ds_cal, ds_corr in zip(ds_list, ds_correct):
-            self.assertAlmostEqual(ds_cal, ds_corr, places=4)
+            assert ds_cal == pytest.approx(ds_corr, abs=5e-05)
         # YN00 method with user specified codon table
         dn_correct = [
             0,
@@ -443,12 +437,12 @@ class Test_dn_ds(unittest.TestCase):
         for i in dn.matrix:
             dn_list.extend(i)
         for dn_cal, dn_corr in zip(dn_list, dn_correct):
-            self.assertAlmostEqual(dn_cal, dn_corr, places=4)
+            assert dn_cal == pytest.approx(dn_corr, abs=5e-05)
         ds_list = []
         for i in ds.matrix:
             ds_list.extend(i)
         for ds_cal, ds_corr in zip(ds_list, ds_correct):
-            self.assertAlmostEqual(ds_cal, ds_corr, places=4)
+            assert ds_cal == pytest.approx(ds_corr, abs=5e-05)
 
 
 try:
@@ -464,13 +458,8 @@ if np:
             pro_aln = AlignIO.read(TEST_ALIGN_FILE7[0][1], "clustal")
             codon_aln = codonalign.build(pro_aln, p)
             p.close()  # Close indexed FASTA file
-            self.assertAlmostEqual(
-                codonalign.mktest([codon_aln[1:12], codon_aln[12:16], codon_aln[16:]]),
-                0.0021,
-                places=4,
-            )
+            assert codonalign.mktest([codon_aln[1:12], codon_aln[12:16], codon_aln[16:]]) == pytest.approx(0.0021, abs=5e-05)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

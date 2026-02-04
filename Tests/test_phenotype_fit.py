@@ -7,27 +7,23 @@
 # package.
 """Tests for the Bio.phenotype module's fitting functionality."""
 
+import pytest
+
 try:
     import numpy as np
 
     del np
 except ImportError:
-    from Bio import MissingExternalDependencyError
 
-    raise MissingExternalDependencyError(
-        "Install NumPy if you want to use Bio.phenotype."
-    ) from None
+    pytest.skip("Install NumPy if you want to use Bio.phenotype.", allow_module_level=True)
 try:
     import scipy
 
     del scipy
     from scipy.optimize import OptimizeWarning
 except ImportError:
-    from Bio import MissingExternalDependencyError
 
-    raise MissingExternalDependencyError(
-        "Install SciPy if you want to use Bio.phenotype fit functionality."
-    ) from None
+    pytest.skip("Install SciPy if you want to use Bio.phenotype fit functionality.", allow_module_level=True)
 
 import json
 import unittest
@@ -60,18 +56,17 @@ class TestPhenoMicro(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", OptimizeWarning)
             w.fit()
-        self.assertAlmostEqual(w.area, 20879.5)
-        self.assertEqual(w.model, "gompertz")
-        self.assertAlmostEqual(w.lag, 6.0425868725090357, places=5)
-        self.assertAlmostEqual(w.plateau, 188.51404344898586, places=4)
-        self.assertAlmostEqual(w.slope, 48.190618284831132, places=3)
-        self.assertAlmostEqual(w.v, 0.10000000000000001, places=5)
-        self.assertAlmostEqual(w.y0, 45.879770069807989, places=4)
-        self.assertEqual(w.max, 313.0)
-        self.assertEqual(w.min, 29.0)
-        self.assertEqual(w.average_height, 217.82552083333334)
+        assert w.area == pytest.approx(20879.5, abs=5e-8)
+        assert w.model == "gompertz"
+        assert w.lag == pytest.approx(6.0425868725090357, abs=5e-06)
+        assert w.plateau == pytest.approx(188.51404344898586, abs=5e-05)
+        assert w.slope == pytest.approx(48.190618284831132, abs=0.0005)
+        assert w.v == pytest.approx(0.10000000000000001, abs=5e-06)
+        assert w.y0 == pytest.approx(45.879770069807989, abs=5e-05)
+        assert w.max == 313.0
+        assert w.min == 29.0
+        assert w.average_height == 217.82552083333334
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

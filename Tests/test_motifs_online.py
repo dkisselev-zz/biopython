@@ -9,8 +9,8 @@
 
 import os
 import unittest
+import pytest
 
-import requires_internet
 
 # We want to test these:
 from Bio import motifs
@@ -18,7 +18,8 @@ from Bio import motifs
 # In order to check any sequences returned
 from Bio.Seq import Seq
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 class TestMotifWeblogo(unittest.TestCase):
@@ -53,5 +54,4 @@ class TestMotifWeblogo(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

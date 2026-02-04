@@ -4,31 +4,22 @@
 # as part of this package.
 """Tests for Align.maf module."""
 import unittest
+import pytest
 from io import StringIO
 from tempfile import NamedTemporaryFile
 
 from Bio import Align
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install numpy if you want to use Bio.Align.maf."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 class TestAlign_reading(unittest.TestCase):
     def test_reading_bundle_without_target(self):
         """Test parsing bundle_without_target.maf."""
         path = "MAF/bundle_without_target.maf"
         alignments = Align.parse(path, "maf")
-        self.assertEqual(alignments.metadata["MAF Version"], "1")
-        self.assertEqual(alignments.metadata["Scoring"], "autoMZ.v1")
+        assert alignments.metadata["MAF Version"] == "1"
+        assert alignments.metadata["Scoring"] == "autoMZ.v1"
         alignment = next(alignments)
-        self.assertTrue(
-            np.array_equal(
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'C', 'A', 'T', 'A', 'G', 'G', 'T', 'A', 'T', 'T', 'T', 'A',
@@ -59,40 +50,24 @@ np.array([['T', 'C', 'A', 'T', 'A', 'G', 'G', 'T', 'A', 'T', 'T', 'T', 'A',
            'C', 'T', 'T', 'T', 'G', 'G', 'T', 'T']], dtype='U')
                 # fmt: on
             )
-        )
-        self.assertRaises(StopIteration, next, alignments)
-        self.assertEqual(alignment.score, 6441)
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(alignment.sequences[0].id, "mm8.chr10")
-        self.assertEqual(alignment.sequences[1].id, "oryCun1.scaffold_133159")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(len(alignment.sequences[1].seq), 13221)
-        self.assertEqual(
-            alignment.sequences[0].seq[3009319 : 3009319 + 162],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].seq[11087 : 11087 + 164],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertTrue(
-            np.array_equal(
+        with pytest.raises(StopIteration):
+            next(alignments)
+        assert alignment.score == 6441
+        assert len(alignment.sequences) == 2
+        assert alignment.sequences[0].id == "mm8.chr10"
+        assert alignment.sequences[1].id == "oryCun1.scaffold_133159"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert len(alignment.sequences[1].seq) == 13221
+        assert alignment.sequences[0].seq[3009319 : 3009319 + 162] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment.sequences[1].seq[11087 : 11087 + 164] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment[0] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment[1] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment.sequences[1].annotations["quality"] == "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[3009319, 3009392, 3009392, 3009481],
@@ -100,10 +75,7 @@ np.array([['T', 'C', 'A', 'T', 'A', 'G', 'G', 'T', 'A', 'T', 'T', 'T', 'A',
                          ])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm8.chr10   3009319 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAA
                   0 |||.||.||||||.|.||||||||||||||.|.|||||.||.....||..|.||||||..
 oryCun1.s     11087 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGG
@@ -115,28 +87,19 @@ oryCun1.s     11147 AATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCT
 mm8.chr10   3009437 CACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT 3009481
                 120 ....||||.|||.|||..|||..|.|..||.|||||.|||||||     164
 oryCun1.s     11207 TGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT   11251
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=6441.000000
 s mm8.chr10               3009319 162 + 129993255 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT
 s oryCun1.scaffold_133159   11087 164 +     13221 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT
 q oryCun1.scaffold_133159                         99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999
 i oryCun1.scaffold_133159 N 0 N 0
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 162:
         identities = 108,
@@ -163,61 +126,44 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 2)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 2)
-        self.assertEqual(counts.insertions, 2)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 2)
-        self.assertEqual(counts.aligned, 162)
-        self.assertEqual(counts.identities, 108)
-        self.assertEqual(counts.mismatches, 54)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 2
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 2
+        assert counts.insertions == 2
+        assert counts.deletions == 0
+        assert counts.gaps == 2
+        assert counts.aligned == 162
+        assert counts.identities == 108
+        assert counts.mismatches == 54
 
     def check_reading_ucsc_mm9_chr10(self, alignments):
-        self.assertEqual(alignments.metadata["MAF Version"], "1")
-        self.assertEqual(alignments.metadata["Scoring"], "autoMZ.v1")
+        assert alignments.metadata["MAF Version"] == "1"
+        assert alignments.metadata["Scoring"] == "autoMZ.v1"
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 6441)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3009319 : 3009319 + 162],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(alignment.sequences[1].id, "oryCun1.scaffold_133159")
-        self.assertEqual(len(alignment.sequences[1].seq), 13221)
-        self.assertEqual(
-            alignment.sequences[1].seq[11087 : 11087 + 164],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertNotIn("empty", alignment.annotations)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 6441
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3009319 : 3009319 + 162] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment[0] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment.sequences[1].id == "oryCun1.scaffold_133159"
+        assert len(alignment.sequences[1].seq) == 13221
+        assert alignment.sequences[1].seq[11087 : 11087 + 164] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment[1] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment.sequences[1].annotations["quality"] == "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert len(alignment.sequences) == 2
+        assert "empty" not in alignment.annotations
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[3009319, 3009392, 3009392, 3009481],
@@ -225,10 +171,7 @@ AlignmentCounts object with
                             ])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3009319 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAA
                   0 |||.||.||||||.|.||||||||||||||.|.|||||.||.....||..|.||||||..
 oryCun1.s     11087 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGG
@@ -240,21 +183,16 @@ oryCun1.s     11147 AATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCT
 mm9.chr10   3009437 CACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT 3009481
                 120 ....||||.|||.|||..|||..|.|..||.|||||.|||||||     164
 oryCun1.s     11207 TGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT   11251
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=6441.000000
 s mm9.chr10               3009319 162 + 129993255 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT
 s oryCun1.scaffold_133159   11087 164 +     13221 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT
 q oryCun1.scaffold_133159                         99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999
 i oryCun1.scaffold_133159 N 0 N 0
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'C', 'A', 'T', 'A', 'G', 'G', 'T', 'A', 'T', 'T', 'T', 'A',
@@ -285,16 +223,10 @@ np.array([['T', 'C', 'A', 'T', 'A', 'G', 'G', 'T', 'A', 'T', 'T', 'T', 'A',
            'C', 'T', 'T', 'T', 'G', 'G', 'T', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 162:
         identities = 108,
@@ -321,85 +253,56 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 2)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 2)
-        self.assertEqual(counts.insertions, 2)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 2)
-        self.assertEqual(counts.aligned, 162)
-        self.assertEqual(counts.identities, 108)
-        self.assertEqual(counts.mismatches, 54)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 2
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 2
+        assert counts.insertions == 2
+        assert counts.deletions == 0
+        assert counts.gaps == 2
+        assert counts.aligned == 162
+        assert counts.identities == 108
+        assert counts.mismatches == 54
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 103072)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3012076 : 3012076 + 365],
-            "AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGCACTCCCAACAGCAAGACACTAAGTTCACTCATCCTTGGTGGATGGGATTTTGCTCCTGGAGTGTCACCAAATTAAATAACCAGTGAGCAGAGTTGTGACGAGCATCAGGCTCTGGATTTAGGTGAGAGACCTTAGTGTATGTCTCCTGTAGGTCGCAGCTCCCTATGGATGAGTCAAGTGAAGGTCCTGAGACAACAAGTCCTCGGCTATGTGGGGGTGAGGGATGCAGCTGGAACCTCAGGGATCTCTGTAAGCAGTGGCATAAATGCTTGGCGGGAGAGAGCATGTTAGAGCTCACACGACATAGGAAGCCACTGAGACACTG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGC-----ACTCCCAACAGCAAGACACTAAGTT---------CACTCATCCTTGGTGGATGGGATTTTGCTCCTGGAGTGTCAC-----CAAATTAAATAACCAGTGAGCAGAGTTG--TGACGAGCATCAGGCTCTGGATTTAGGTGAGAGACCTTAGTGTATGTCTCCTGTAGGTCGCAGCTCCCTATGGAT--------------------------GAGTCAAGTGAAGGTCCTGAGACAA-------------------CAAGTCCTC----GGCTATGTGGGGGTGAGGG-------------ATGC----AG--------CTGGAACCTCAGGGA-TCTCTGT-AAGCAGTGGCATAAATGCTTGGCGG--GAGAGAGCATGTTAGAGCTCACACGACATAGGAAGCCACTGA--GACACTG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[1].seq[158049785 : 158049785 + 443],
-            "GAACACAAGTCCATGGCCTTTTCAACCACGTTAGGCGTTGGAGGCCACGTCAGCCCCCACAGATCCACTCTACAACTTTAGAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTACGCTGTCAGGGAGTCTACAGCAGCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTAAATACTGCTTGCTCACTTCATAAGTACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTGGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCCAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTACTTATGAAGTGAGCAAGCAGTATTTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGA-----------TAGGGCTGCTGTAGACTCCCTGACAGCGTAGGAACT--------AGAACTCTGAAGCAAGCCACTGGTGCCTAACAAATTCTTTCTAAAGTTGTAGAGTGGATCTGTGGGGGCTGACGTGGCCTCCAACGCCTAACGTGGTTGAAAAGGCCATGGACTTGTGTTC",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157529165 : 157529165 + 443],
-            "GAACACAAGTCCATGGCCTTTTCAACCATGTTAGGCGTTGGAGGCCACGTCAGCCCCCACAGATCCACTCTACAACTTTATAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTATGCTGTCAGGGAGTCTACAGCATCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTACATACTGCTTGCTCACTTCACAAATACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTAGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTATTTGTGAAGTGAGCAAGCAGTATGTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGA-----------TAGGGATGCTGTAGACTCCCTGACAGCATAGGAACTAGAACTCTGAAGC----AAGCCA----CTGGTGCCTAACAAATTCTTTATAAAGTTGTAGAGTGGATCTGTGGGGGCTGACGTGGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155039093 : 155039093 + 443],
-            "GAACACAAGTCCATGGCCTTTTCAACCATGTTAGGCGTTGGAGGCCACGTCAGCCCCCATGGATCCACTCTACAACTTTATAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTATGCTGTCAGGGAGTCTACAGCATCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTACATACTGCTTGCTCACTTCACAAATACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTAGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT",
-        )
-        self.assertEqual(
-            alignment[3],
-            "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTATTTGTGAAGTGAGCAAGCAGTATGTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGATAGGGATGCTGTAGACTCCCT---GACAGCATAGGAAC-TAGAACTCTGAAGC---AAGC----CA--------CTGGTGCCTAACAAATTCTTTATAAAGTTGTAGAGTGGATCCATGGGGGCTGACGTGGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertNotIn("empty", alignment.annotations)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 103072
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3012076 : 3012076 + 365] == "AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGCACTCCCAACAGCAAGACACTAAGTTCACTCATCCTTGGTGGATGGGATTTTGCTCCTGGAGTGTCACCAAATTAAATAACCAGTGAGCAGAGTTGTGACGAGCATCAGGCTCTGGATTTAGGTGAGAGACCTTAGTGTATGTCTCCTGTAGGTCGCAGCTCCCTATGGATGAGTCAAGTGAAGGTCCTGAGACAACAAGTCCTCGGCTATGTGGGGGTGAGGGATGCAGCTGGAACCTCAGGGATCTCTGTAAGCAGTGGCATAAATGCTTGGCGGGAGAGAGCATGTTAGAGCTCACACGACATAGGAAGCCACTGAGACACTG"
+        assert alignment[0] == "AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGC-----ACTCCCAACAGCAAGACACTAAGTT---------CACTCATCCTTGGTGGATGGGATTTTGCTCCTGGAGTGTCAC-----CAAATTAAATAACCAGTGAGCAGAGTTG--TGACGAGCATCAGGCTCTGGATTTAGGTGAGAGACCTTAGTGTATGTCTCCTGTAGGTCGCAGCTCCCTATGGAT--------------------------GAGTCAAGTGAAGGTCCTGAGACAA-------------------CAAGTCCTC----GGCTATGTGGGGGTGAGGG-------------ATGC----AG--------CTGGAACCTCAGGGA-TCTCTGT-AAGCAGTGGCATAAATGCTTGGCGG--GAGAGAGCATGTTAGAGCTCACACGACATAGGAAGCCACTGA--GACACTG"
+        assert alignment.sequences[1].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[1].seq) == 174210431
+        assert alignment.sequences[1].seq[158049785 : 158049785 + 443] == "GAACACAAGTCCATGGCCTTTTCAACCACGTTAGGCGTTGGAGGCCACGTCAGCCCCCACAGATCCACTCTACAACTTTAGAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTACGCTGTCAGGGAGTCTACAGCAGCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTAAATACTGCTTGCTCACTTCATAAGTACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTGGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT"
+        assert alignment[1] == "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCCAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTACTTATGAAGTGAGCAAGCAGTATTTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGA-----------TAGGGCTGCTGTAGACTCCCTGACAGCGTAGGAACT--------AGAACTCTGAAGCAAGCCACTGGTGCCTAACAAATTCTTTCTAAAGTTGTAGAGTGGATCTGTGGGGGCTGACGTGGCCTCCAACGCCTAACGTGGTTGAAAAGGCCATGGACTTGTGTTC"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157529165 : 157529165 + 443] == "GAACACAAGTCCATGGCCTTTTCAACCATGTTAGGCGTTGGAGGCCACGTCAGCCCCCACAGATCCACTCTACAACTTTATAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTATGCTGTCAGGGAGTCTACAGCATCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTACATACTGCTTGCTCACTTCACAAATACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTAGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT"
+        assert alignment[2] == "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTATTTGTGAAGTGAGCAAGCAGTATGTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGA-----------TAGGGATGCTGTAGACTCCCTGACAGCATAGGAACTAGAACTCTGAAGC----AAGCCA----CTGGTGCCTAACAAATTCTTTATAAAGTTGTAGAGTGGATCTGTGGGGGCTGACGTGGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "N"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155039093 : 155039093 + 443] == "GAACACAAGTCCATGGCCTTTTCAACCATGTTAGGCGTTGGAGGCCACGTCAGCCCCCATGGATCCACTCTACAACTTTATAAAGAATTTGTTAGGCACCAGTGGCTTGCTTCAGAGTTCTAGTTCCTATGCTGTCAGGGAGTCTACAGCATCCCTATCCACAACTTACCTCCAGGATTTTGCTTAATTTCTGTGGAAAGCGATCTCAACTTCCCAGTTCACACACAGATGCAACCAGCATGAGACATTCCTAGAAATCAACAACCTTTGGTGACTGGTCTATCTCATGCTATTCTACATACTGCTTGCTCACTTCACAAATACGACATTCCAAGAGCACAAGGCTATCTGGTAAGGATGAGTATGGAGATAAATATTAACATCTTTTTACTGTGATGATTTAGCTGGAATAATTAAAACTTATATTTCCACTTATGAAGACT"
+        assert alignment[3] == "AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTATTTGTGAAGTGAGCAAGCAGTATGTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGATAGGGATGCTGTAGACTCCCT---GACAGCATAGGAAC-TAGAACTCTGAAGC---AAGC----CA--------CTGGTGCCTAACAAATTCTTTATAAAGTTGTAGAGTGGATCCATGGGGGCTGACGTGGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC"
+        assert alignment.sequences[3].annotations["leftStatus"] == "N"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert len(alignment.sequences) == 4
+        assert "empty" not in alignment.annotations
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -435,10 +338,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3012076 AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGC-----ACTCCCAACAGCAAG
 ponAbe2.c 158050228 AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCCAAATCATCACAGTAAAAAG
 panTro2.c 157529608 AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAG
@@ -478,11 +378,8 @@ mm9.chr10   3012397 AGCATGTTAGAGCTCACACGACATAGGAAGCCACTGA--GACACTG   3012441
 ponAbe2.c 158049831 GGCCTCCAACGCCTAACGTGGTTGAAAAGGCCATGGACTTGTGTTC 158049785
 panTro2.c 157529211 GGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC 157529165
 hg18.chr6 155039139 GGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC 155039093
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=103072.000000
 s mm9.chr10     3012076 365 + 129993255 AGTCTTTCCAATGGGACCTGTGAGTCCTAACTATGCCAGC-----ACTCCCAACAGCAAGACACTAAGTT---------CACTCATCCTTGGTGGATGGGATTTTGCTCCTGGAGTGTCAC-----CAAATTAAATAACCAGTGAGCAGAGTTG--TGACGAGCATCAGGCTCTGGATTTAGGTGAGAGACCTTAGTGTATGTCTCCTGTAGGTCGCAGCTCCCTATGGAT--------------------------GAGTCAAGTGAAGGTCCTGAGACAA-------------------CAAGTCCTC----GGCTATGTGGGGGTGAGGG-------------ATGC----AG--------CTGGAACCTCAGGGA-TCTCTGT-AAGCAGTGGCATAAATGCTTGGCGG--GAGAGAGCATGTTAGAGCTCACACGACATAGGAAGCCACTGA--GACACTG
 s ponAbe2.chr6 16160203 443 - 174210431 AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCCAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTACTTATGAAGTGAGCAAGCAGTATTTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGA-----------TAGGGCTGCTGTAGACTCCCTGACAGCGTAGGAACT--------AGAACTCTGAAGCAAGCCACTGGTGCCTAACAAATTCTTTCTAAAGTTGTAGAGTGGATCTGTGGGGGCTGACGTGGCCTCCAACGCCTAACGTGGTTGAAAAGGCCATGGACTTGTGTTC
@@ -493,17 +390,11 @@ i panTro2.chr6 N 0 C 0
 s hg18.chr6    15860456 443 - 170899992 AGTCTTCATAAGTGGAAATATAAGTTTTAATTATTCCAGCTAAATCATCACAGTAAAAAGATGTTAATATTTATCTCCATACTCATCCTTACCAGATAGCCTTGTGCTCTTGGAATGTCGTATTTGTGAAGTGAGCAAGCAGTATGTAGAATAGCATGAGATAGACCAGTCACCAA----AGGTTGTTGATTTCTAGGAATGTCTCATGCTGGTTGCATCTGTGTGTGAACTGGGAAGTTGAGATCGCTTTCCACAGAAATTAAGCAAAATCCTGGAGGTAAGTTGTGGATAGGGATGCTGTAGACTCCCT---GACAGCATAGGAAC-TAGAACTCTGAAGC---AAGC----CA--------CTGGTGCCTAACAAATTCTTTATAAAGTTGTAGAGTGGATCCATGGGGGCTGACGTGGCCTCCAACGCCTAACATGGTTGAAAAGGCCATGGACTTGTGTTC
 i hg18.chr6    N 0 C 0
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (2375 aligned letters; 1828 identities; 547 mismatches; 332 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (2375 aligned letters; 1828 identities; 547 mismatches; 332 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 2375:
         identities = 1828,
@@ -530,103 +421,65 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 283)
-        self.assertEqual(counts.internal_deletions, 49)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 332)
-        self.assertEqual(counts.insertions, 283)
-        self.assertEqual(counts.deletions, 49)
-        self.assertEqual(counts.gaps, 332)
-        self.assertEqual(counts.aligned, 2375)
-        self.assertEqual(counts.identities, 1828)
-        self.assertEqual(counts.mismatches, 547)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 283
+        assert counts.internal_deletions == 49
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 332
+        assert counts.insertions == 283
+        assert counts.deletions == 49
+        assert counts.gaps == 332
+        assert counts.aligned == 2375
+        assert counts.identities == 1828
+        assert counts.mismatches == 547
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 49128)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3012441 : 3012441 + 125],
-            "TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACCTGAATTGAATTGGGAGGAGAGAAAGAAGCCAGTTTCCCAGAGAGGGAAAAGGAAAAGCTCGACAC",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACCTGAATTG--AATTGGGAGGAGAGAAAGAAGCCAGTTTCCCAGAGAGGGAAAAGGAAAAGCTCGACAC",
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155038979 : 155038979 + 114],
-            "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAGCGGTCAAGAGAGGTGGTCAATACACACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTCTTGACCGCTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157529051 : 157529051 + 114],
-            "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAGCGGTCAAGAGAGGTGGTCAATACACACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTCTTGACCGCTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158049671 : 158049671 + 114],
-            "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAACAGTCAAGACAGGTGGTCAATATAGACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA",
-        )
-        self.assertEqual(
-            alignment[3],
-            "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTCTATATTGACCACCTGTCTTGACTGTTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[4].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[4].seq[178838 : 178838 + 101],
-            "GCTTCCCGTGTTTGCTGTTGCCCCTCAGCAAAGGGCTCCCCAAGTTTGGTGGTCAGTGTAAACCCGGGTGAGTGAGGACTTGGCCAGGTCAGGGGGGCCCA",
-        )
-        self.assertEqual(
-            alignment[4],
-            "TGGGCCCCCCTGACCTGGCCAAG--TCCTCACTCACCCGGGTTTACACTGACCACC-------------AAACTTGGGGAG----------CCCTTTGCT-GAGGGGCAACAGCAAACACGGGAAGC",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999979999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertNotIn("empty", alignment.annotations)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 49128
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3012441 : 3012441 + 125] == "TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACCTGAATTGAATTGGGAGGAGAGAAAGAAGCCAGTTTCCCAGAGAGGGAAAAGGAAAAGCTCGACAC"
+        assert alignment[0] == "TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACCTGAATTG--AATTGGGAGGAGAGAAAGAAGCCAGTTTCCCAGAGAGGGAAAAGGAAAAGCTCGACAC"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155038979 : 155038979 + 114] == "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAGCGGTCAAGAGAGGTGGTCAATACACACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA"
+        assert alignment[1] == "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTCTTGACCGCTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157529051 : 157529051 + 114] == "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAGCGGTCAAGAGAGGTGGTCAATACACACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA"
+        assert alignment[2] == "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTCTTGACCGCTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC"
+        assert alignment.sequences[2].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158049671 : 158049671 + 114] == "GCTTCCAGCATTTTCCATTGGCCCTCAGCAAGGTGCTCCCCAAGATCAACAGTCAAGACAGGTGGTCAATATAGACCAGGTTACGTGAGGACTTGGTTATTCTAGAGGAACCCA"
+        assert alignment[3] == "TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTCTATATTGACCACCTGTCTTGACTGTTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[4].seq) == 359464
+        assert alignment.sequences[4].seq[178838 : 178838 + 101] == "GCTTCCCGTGTTTGCTGTTGCCCCTCAGCAAAGGGCTCCCCAAGTTTGGTGGTCAGTGTAAACCCGGGTGAGTGAGGACTTGGCCAGGTCAGGGGGGCCCA"
+        assert alignment[4] == "TGGGCCCCCCTGACCTGGCCAAG--TCCTCACTCACCCGGGTTTACACTGACCACC-------------AAACTTGGGGAG----------CCCTTTGCT-GAGGGGCAACAGCAAACACGGGAAGC"
+        assert alignment.sequences[4].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999979999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "N"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert len(alignment.sequences) == 5
+        assert "empty" not in alignment.annotations
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -644,10 +497,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3012441 TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACC
 hg18.chr6 155039093 TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTC
 panTro2.c 157529165 TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTC
@@ -665,11 +515,8 @@ hg18.chr6 155038986 TGGAAGC 155038979
 panTro2.c 157529058 TGGAAGC 157529051
 ponAbe2.c 158049678 TGGAAGC 158049671
 otoGar1.s    178845 GGGAAGC    178838
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=49128.000000
 s mm9.chr10                      3012441 125 + 129993255 TGGGTCCCCTTGGCACATCCAGATCTCCCCAGTTAACCTGTCCTGCTTAGACCACTTACCTGAATTG--AATTGGGAGGAGAGAAAGAAGCCAGTTTCCCAGAGAGGGAAAAGGAAAAGCTCGACAC
 s hg18.chr6                     15860899 114 - 170899992 TGGGTTCCTCTAGAATAACCAAG--TCCTCACGTAACCTGGTGTGTATTGACCACCTCTCTTGACCGCTGATCTTGGGGAG----------CACCTTGCT-GAGGGCCAATGGAAAATGCTGGAAGC
@@ -683,10 +530,8 @@ s otoGar1.scaffold_334.1-359464   180525 101 -    359464 TGGGCCCCCCTGACCTGGCCAAG
 q otoGar1.scaffold_334.1-359464                          99999999999999999999999--9999999999999999999999999999999-------------999999999999----------999999999-99999979999999999999999999
 i otoGar1.scaffold_334.1-359464 N 0 C 0
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'G', 'G', 'G', 'T', 'C', 'C', 'C', 'C', 'T', 'T', 'G', 'G',
@@ -741,16 +586,10 @@ np.array([['T', 'G', 'G', 'G', 'T', 'C', 'C', 'C', 'C', 'T', 'T', 'G', 'G',
            'C', 'A', 'C', 'G', 'G', 'G', 'A', 'A', 'G', 'C']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1082 aligned letters; 817 identities; 265 mismatches; 108 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1082 aligned letters; 817 identities; 265 mismatches; 108 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1082:
         identities = 817,
@@ -777,121 +616,74 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 102)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 108)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 102)
-        self.assertEqual(counts.gaps, 108)
-        self.assertEqual(counts.aligned, 1082)
-        self.assertEqual(counts.identities, 817)
-        self.assertEqual(counts.mismatches, 265)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 102
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 108
+        assert counts.insertions == 6
+        assert counts.deletions == 102
+        assert counts.gaps == 108
+        assert counts.aligned == 1082
+        assert counts.identities == 817
+        assert counts.mismatches == 265
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 117109)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3012566 : 3012566 + 262],
-            "TGTGGGCTCCTCACTTTCCTGTCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTACAGGAAAGAGGGTGAAAACTCAGTCTGAGCTGTCATTCTTGCCAGCTATGTTGCTTTCCTGTCCTCTTTAGCTTATCTCAGGCAACCTATCTTATTTTGTTTGCTTTCAGAAGGCAAGCGAtgtgtgtgtgtgtgtgtgtgtgtgtgtgtgtatgtgtgtgtgcgtgCGCGCGCGCGAGCACATGTGCATGCATGCGCACTCGTG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "--TGTGGGCTCCTCACTTTCCTG-TCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTACAGGAAAGAGGGTGAAAACTCAGTCTGAGCTGTCATTCTTGCCAGCTATGTTGCTTTCCTGTCCTCTTTAGC-------TTATCTCAGGCAACCTATCTTATTTTGTT-TGCTTTC--AGAAGGCAAG---CGAtgtgtgtgtgtgtgtgtgtgtgtgtgtgtgtatgtgtgtgtgcgtgCGCGCGCGCGAGCACATGTGCATGCATGCGCACTCGTG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155038780 : 155038780 + 199],
-            "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAGAATAAGTAAGATGTGTTGCTAGAAATAAGGTAGTGAAGGAAAAAAATAAGAGGATTGATTGACAGGAATGAAAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTTTCATTCCTGTCAATCAATCCTCTTATTTTTTTCCTTCACTACC----TTATTTCTAGCAACACATCTTAC-TTATTCTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157528852 : 157528852 + 199],
-            "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAAAATAAGTAAGATGTGTTGCTAGAAATAAGGTAGTGAAGGAAAAAAATAAGAGGATTGATTGACAGGAATGAAAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG",
-        )
-        self.assertEqual(
-            alignment[2],
-            "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTTTCATTCCTGTCAATCAATCCTCTTATTTTTTTCCTTCACTACC----TTATTTCTAGCAACACATCTTAC-TTATTTTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158049472 : 158049472 + 199],
-            "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAAAATAAGTAAGATATGTTGCTAGAAATAAGGTAATGAAGGAAAAAAACAAGAGGATTGATTGACAGGAATGACAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTGTCATTCCTGTCAATCAATCCTCTTGTTTTTTTCCTTCATTACC----TTATTTCTAGCAACATATCTTAC-TTATTTTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[4].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[4].seq[178634 : 178634 + 204],
-            "TCAAAACTCATACACAAGTCACCACTTGTCTTCTGGGAAAACAAAACAAAGTAAGCTATGTCACCTGAAATAACAAGGCAACCTAAAAATAAGGGACTGATTGCCAGCAATGACCACAGAGACTGGGTTTTCAGGTGGTTTTCTGGACAGCTTTCCCCAGAAACCAGGGCTACGCCTAAGACAGAGACACGATGAGTGCATGTG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "CACATGCACTCATCGTGTCTCTG-TCTTAGGCGTAGCCCTGGTTTCTGGGGAAAGCTGTCCAGAAAACCACCTGAAAACCCAGTCTCTGTGGTCATTGCTGGCAATCAGTCC-CTTATTTTTAGGTTGCCTTG------TTATTTCAGGTGACATAGCTTACTTTGTTTTGTTTTCCCAGAAGACAAGTGGTGACTTGTGTATGAGTTTTGA------------------------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "cavPor2.scaffold_290371")
-        self.assertEqual(len(alignment.sequences[5].seq), 39932)
-        self.assertEqual(
-            alignment.sequences[5].seq[39417 : 39417 + 205],
-            "CTCAAACtcacacaaaattcatttatcttccaggaaaacagaacaaaataagatATGTTTTGCAATAACGAGGTCACTATGGGGTAAAAACAAGAGGATTGGCAGGAGGGAATAACAATTTAGACTAGGTTTTGAAGTTCTTTTCTGGATGGCTTTCACCAAAAACCACAGCCACACCTCGGATCAGGATCGCAAGGGATACGCA",
-        )
-        self.assertEqual(
-            alignment[5],
-            "--TGCGTATCCCTTGCGATCCTGATCCGAGGTGTGGCTGTGGTTTTTGGTGAAAGCCATCCAGAAAAGAACTTCAAAACCTAGTCTAAATTGTTATTCCCTCCTGCCAATCCTCTTGTTTTTACCCCATAGTGACCTCGTTATTGCAA--AACATatcttattttgttctgttttcctggaagataaa---tgaattttgtgtgaGTTTGAG------------------------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(len(alignment.sequences), 6)
-        self.assertNotIn("empty", alignment.annotations)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 117109
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3012566 : 3012566 + 262] == "TGTGGGCTCCTCACTTTCCTGTCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTACAGGAAAGAGGGTGAAAACTCAGTCTGAGCTGTCATTCTTGCCAGCTATGTTGCTTTCCTGTCCTCTTTAGCTTATCTCAGGCAACCTATCTTATTTTGTTTGCTTTCAGAAGGCAAGCGAtgtgtgtgtgtgtgtgtgtgtgtgtgtgtgtatgtgtgtgtgcgtgCGCGCGCGCGAGCACATGTGCATGCATGCGCACTCGTG"
+        assert alignment[0] == "--TGTGGGCTCCTCACTTTCCTG-TCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTACAGGAAAGAGGGTGAAAACTCAGTCTGAGCTGTCATTCTTGCCAGCTATGTTGCTTTCCTGTCCTCTTTAGC-------TTATCTCAGGCAACCTATCTTATTTTGTT-TGCTTTC--AGAAGGCAAG---CGAtgtgtgtgtgtgtgtgtgtgtgtgtgtgtgtatgtgtgtgtgcgtgCGCGCGCGCGAGCACATGTGCATGCATGCGCACTCGTG"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155038780 : 155038780 + 199] == "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAGAATAAGTAAGATGTGTTGCTAGAAATAAGGTAGTGAAGGAAAAAAATAAGAGGATTGATTGACAGGAATGAAAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG"
+        assert alignment[1] == "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTTTCATTCCTGTCAATCAATCCTCTTATTTTTTTCCTTCACTACC----TTATTTCTAGCAACACATCTTAC-TTATTCTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157528852 : 157528852 + 199] == "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAAAATAAGTAAGATGTGTTGCTAGAAATAAGGTAGTGAAGGAAAAAAATAAGAGGATTGATTGACAGGAATGAAAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG"
+        assert alignment[2] == "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTTTCATTCCTGTCAATCAATCCTCTTATTTTTTTCCTTCACTACC----TTATTTCTAGCAACACATCTTAC-TTATTTTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158049472 : 158049472 + 199] == "CCAAAACTCATACACAACTCATCTTCTGGGAAAACAAAATAAGTAAGATATGTTGCTAGAAATAAGGTAATGAAGGAAAAAAACAAGAGGATTGATTGACAGGAATGACAACTCAGACTGGATTTTGAGGCTGTTTCTGGATGGCTTCCACCAAAAACCATAGACCCATCTAAGATCAGGGATACAAGGAGGGCTCATG"
+        assert alignment[3] == "CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTGTCATTCCTGTCAATCAATCCTCTTGTTTTTTTCCTTCATTACC----TTATTTCTAGCAACATATCTTAC-TTATTTTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[4].seq) == 359464
+        assert alignment.sequences[4].seq[178634 : 178634 + 204] == "TCAAAACTCATACACAAGTCACCACTTGTCTTCTGGGAAAACAAAACAAAGTAAGCTATGTCACCTGAAATAACAAGGCAACCTAAAAATAAGGGACTGATTGCCAGCAATGACCACAGAGACTGGGTTTTCAGGTGGTTTTCTGGACAGCTTTCCCCAGAAACCAGGGCTACGCCTAAGACAGAGACACGATGAGTGCATGTG"
+        assert alignment[4] == "CACATGCACTCATCGTGTCTCTG-TCTTAGGCGTAGCCCTGGTTTCTGGGGAAAGCTGTCCAGAAAACCACCTGAAAACCCAGTCTCTGTGGTCATTGCTGGCAATCAGTCC-CTTATTTTTAGGTTGCCTTG------TTATTTCAGGTGACATAGCTTACTTTGTTTTGTTTTCCCAGAAGACAAGTGGTGACTTGTGTATGAGTTTTGA------------------------------------------------------------------"
+        assert alignment.sequences[4].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "cavPor2.scaffold_290371"
+        assert len(alignment.sequences[5].seq) == 39932
+        assert alignment.sequences[5].seq[39417 : 39417 + 205] == "CTCAAACtcacacaaaattcatttatcttccaggaaaacagaacaaaataagatATGTTTTGCAATAACGAGGTCACTATGGGGTAAAAACAAGAGGATTGGCAGGAGGGAATAACAATTTAGACTAGGTTTTGAAGTTCTTTTCTGGATGGCTTTCACCAAAAACCACAGCCACACCTCGGATCAGGATCGCAAGGGATACGCA"
+        assert alignment[5] == "--TGCGTATCCCTTGCGATCCTGATCCGAGGTGTGGCTGTGGTTTTTGGTGAAAGCCATCCAGAAAAGAACTTCAAAACCTAGTCTAAATTGTTATTCCCTCCTGCCAATCCTCTTGTTTTTACCCCATAGTGACCTCGTTATTGCAA--AACATatcttattttgttctgttttcctggaagataaa---tgaattttgtgtgaGTTTGAG------------------------------------------------------------------"
+        assert alignment.sequences[5].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "N"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert len(alignment.sequences) == 6
+        assert "empty" not in alignment.annotations
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -929,10 +721,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3012566 --TGTGGGCTCCTCACTTTCCTG-TCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTA
 hg18.chr6 155038979 CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATC
 panTro2.c 157529051 CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATC
@@ -967,11 +756,8 @@ panTro2.c 157528852 -------------------------------------- 157528852
 ponAbe2.c 158049472 -------------------------------------- 158049472
 otoGar1.s    178634 --------------------------------------    178634
 cavPor2.s     39417 --------------------------------------     39417
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=117109.000000
 s mm9.chr10                      3012566 262 + 129993255 --TGTGGGCTCCTCACTTTCCTG-TCTCAGGTGTGTCTGTGAGTTTCGGTGAGTGTCGTACAGGAAAGAGGGTGAAAACTCAGTCTGAGCTGTCATTCTTGCCAGCTATGTTGCTTTCCTGTCCTCTTTAGC-------TTATCTCAGGCAACCTATCTTATTTTGTT-TGCTTTC--AGAAGGCAAG---CGAtgtgtgtgtgtgtgtgtgtgtgtgtgtgtgtatgtgtgtgtgcgtgCGCGCGCGCGAGCACATGTGCATGCATGCGCACTCGTG
 s hg18.chr6                     15861013 199 - 170899992 CATGAGCCCTCCTTGTATCCCTGATCTTAGATGGGTCTATGGTTTTTGGTGGAAGCCATCCAG-AAACAGCCTCAAAATCCAGTCTGAGTTTTCATTCCTGTCAATCAATCCTCTTATTTTTTTCCTTCACTACC----TTATTTCTAGCAACACATCTTAC-TTATTCTGTTTTCCCAGAAGA-------TGAGTTGTGTATGAGTTTTGG------------------------------------------------------------------
@@ -988,17 +774,11 @@ s cavPor2.scaffold_290371            310 205 -     39932 --TGCGTATCCCTTGCGATCCTG
 q cavPor2.scaffold_290371                                --99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999997999999999999999999999999999999999999999--99999999999999999999999999999999999999---999999999999999999999------------------------------------------------------------------
 i cavPor2.scaffold_290371       N 0 C 0
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (2923 aligned letters; 1996 identities; 927 mismatches; 494 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (2923 aligned letters; 1996 identities; 927 mismatches; 494 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 2923:
         identities = 1996,
@@ -1025,139 +805,83 @@ AlignmentCounts object with
             right_deletions = 330:
                 open_right_deletions = 5,
                 extend_right_deletions = 325.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 8)
-        self.assertEqual(counts.left_deletions, 8)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 330)
-        self.assertEqual(counts.internal_insertions, 104)
-        self.assertEqual(counts.internal_deletions, 44)
-        self.assertEqual(counts.left_gaps, 16)
-        self.assertEqual(counts.right_gaps, 330)
-        self.assertEqual(counts.internal_gaps, 148)
-        self.assertEqual(counts.insertions, 112)
-        self.assertEqual(counts.deletions, 382)
-        self.assertEqual(counts.gaps, 494)
-        self.assertEqual(counts.aligned, 2923)
-        self.assertEqual(counts.identities, 1996)
-        self.assertEqual(counts.mismatches, 927)
+"""
+        assert counts.left_insertions == 8
+        assert counts.left_deletions == 8
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 330
+        assert counts.internal_insertions == 104
+        assert counts.internal_deletions == 44
+        assert counts.left_gaps == 16
+        assert counts.right_gaps == 330
+        assert counts.internal_gaps == 148
+        assert counts.insertions == 112
+        assert counts.deletions == 382
+        assert counts.gaps == 494
+        assert counts.aligned == 2923
+        assert counts.identities == 1996
+        assert counts.mismatches == 927
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 128047)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3012828 : 3012828 + 168],
-            "TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATGCACTTAGCACAGCCTGCCCTGAGGGATGAACACTATTGTTAAAGAACTATTCCGCTAAGGCAGCAACCTCTGGATCTTCAGCATTCTGGCGCCATCTGCTGGTCATAT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATGCACTTAGCACAGCCTGCCCTGAGGGAT----GAACACT--ATTGTTAA-AGAACTATTCCGCTAAGGCAGCAACCTCTGGATCTTCAGCATTCTGGCGCCATCTGCTGGTCATAT",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_290371")
-        self.assertEqual(len(alignment.sequences[1].seq), 39932)
-        self.assertEqual(
-            alignment.sequences[1].seq[39251 : 39251 + 166],
-            "ATATGACCAGCAGATGGCACTAGAATCCCACGGAACCTGAAGTTGCCTCCTGCTAAACAGCTTTGCTGACAATAAAGGTCTCAGAGCTACTAGAGCGAACCATGATAACCTCATTATTTTCataaatgcttaaatataagACTATTTAGCTGTCAAGACATCCCAC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-----GTGGGATGTCTTGACAGCTAAATAGTcttatatttaagcatttatGAAAATAATGAGGTTATCATGGTTCGCTCTAGTAGCTCTGAGACCTTT--ATTGTCAGCAAAGCTGTTTAGC--AGGAGGCAACTTCAGGTTCCGTGGGATTCTAGTGCCATCTGCTGGTCATAT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[2].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[2].seq[178473 : 178473 + 161],
-            "CTGTGACCAGCAGATGGCGCTAAAATCCCACAGATCCTGAGGCTGCTGCTCCGCAAAACCGCTTCCCTGACAGTAGCCTCTCACTTCTAAGGGGCTGAGCTAAGTTTATCATTTCAACAAATGTTTAAATAGAACACTATTTGCCTGTCACGAATGTCCAC",
-        )
-        self.assertEqual(
-            alignment[2],
-            "-----GTGGACATTCGTGACAGGCAAATAGTGTTCTATTTAAACATTTGTTGAAATGATAAACTTAGCTCAGCC--CCTT---AGAAGTG-AGAGGCT--ACTGTCAGGGAAGCGGTTTTGCG-GAGCAGCAGCCTCAGGATCTGTGGGATTTTAGCGCCATCTGCTGGTCACAG",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999989996999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158049311 : 158049311 + 161],
-            "ATGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCTTAGCTAAACAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCATAAATGTTTAAATATAACGCTATTTGGTTGTCAGGATAGTCCAC",
-        )
-        self.assertEqual(
-            alignment[3],
-            "-----GTGGACTATCCTGACAACCAAATAGCGTTATATTTAAACATTTATGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGTTTAGCT-AAGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAT",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[4].seq[157528691 : 157528691 + 161],
-            "GTGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCATAGCTAAGCAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCATAAACGTTTAAATATAACGCTATTTGGTTGTCAAGATAGTCCGC",
-        )
-        self.assertEqual(
-            alignment[4],
-            "-----GCGGACTATCTTGACAACCAAATAGCGTTATATTTAAACGTTTATGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGCTTAGCT-ATGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAC",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155038619 : 155038619 + 161],
-            "GTGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCATAGCTAAGCAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCACAAACGTTTAAATATAACGCTATTTGGTTGTCAAGATAGTCCAC",
-        )
-        self.assertEqual(
-            alignment[5],
-            "-----GTGGACTATCTTGACAACCAAATAGCGTTATATTTAAACGTTTGTGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGCTTAGCT-ATGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAC",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[6].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[6].seq[87492 : 87492 + 169],
-            "TTGGGGTGGATGCTCTTGGCAGTCACACAGTGCTCTATTTTAGGATTTACTAGAACAATGAGTTTGTCATAACTGCCTCCTCCCAAGTGGGAAGCTGAAGCACCAAGTACTGACTCAGCAGTCCCTGACCTCACATCCATGGAAATCTAGTGACATCTGCTGGACACAT",
-        )
-        self.assertEqual(
-            alignment[6],
-            "TTGGGGTGGATGCTCTTGGCAGTCACACAGTGCTCTATTTTAGGATTTACTAGAACAATGAGTTTGTCATAACT-GCCTCCTCCCAAGTG-GGAAGCTGAAGCACCAA-GTACTGACTCAGC--AGTCCCTGACCTCA-CATCCATGGAAATCTAGTGACATCTGCTGGACACAT",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "9998999999897966589999999999967689989799789997987889999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 7564)
-        self.assertEqual(len(alignment.sequences), 7)
-        self.assertNotIn("empty", alignment.annotations)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 128047
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3012828 : 3012828 + 168] == "TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATGCACTTAGCACAGCCTGCCCTGAGGGATGAACACTATTGTTAAAGAACTATTCCGCTAAGGCAGCAACCTCTGGATCTTCAGCATTCTGGCGCCATCTGCTGGTCATAT"
+        assert alignment[0] == "TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATGCACTTAGCACAGCCTGCCCTGAGGGAT----GAACACT--ATTGTTAA-AGAACTATTCCGCTAAGGCAGCAACCTCTGGATCTTCAGCATTCTGGCGCCATCTGCTGGTCATAT"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_290371"
+        assert len(alignment.sequences[1].seq) == 39932
+        assert alignment.sequences[1].seq[39251 : 39251 + 166] == "ATATGACCAGCAGATGGCACTAGAATCCCACGGAACCTGAAGTTGCCTCCTGCTAAACAGCTTTGCTGACAATAAAGGTCTCAGAGCTACTAGAGCGAACCATGATAACCTCATTATTTTCataaatgcttaaatataagACTATTTAGCTGTCAAGACATCCCAC"
+        assert alignment[1] == "-----GTGGGATGTCTTGACAGCTAAATAGTcttatatttaagcatttatGAAAATAATGAGGTTATCATGGTTCGCTCTAGTAGCTCTGAGACCTTT--ATTGTCAGCAAAGCTGTTTAGC--AGGAGGCAACTTCAGGTTCCGTGGGATTCTAGTGCCATCTGCTGGTCATAT"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[2].seq) == 359464
+        assert alignment.sequences[2].seq[178473 : 178473 + 161] == "CTGTGACCAGCAGATGGCGCTAAAATCCCACAGATCCTGAGGCTGCTGCTCCGCAAAACCGCTTCCCTGACAGTAGCCTCTCACTTCTAAGGGGCTGAGCTAAGTTTATCATTTCAACAAATGTTTAAATAGAACACTATTTGCCTGTCACGAATGTCCAC"
+        assert alignment[2] == "-----GTGGACATTCGTGACAGGCAAATAGTGTTCTATTTAAACATTTGTTGAAATGATAAACTTAGCTCAGCC--CCTT---AGAAGTG-AGAGGCT--ACTGTCAGGGAAGCGGTTTTGCG-GAGCAGCAGCCTCAGGATCTGTGGGATTTTAGCGCCATCTGCTGGTCACAG"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999989996999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158049311 : 158049311 + 161] == "ATGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCTTAGCTAAACAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCATAAATGTTTAAATATAACGCTATTTGGTTGTCAGGATAGTCCAC"
+        assert alignment[3] == "-----GTGGACTATCCTGACAACCAAATAGCGTTATATTTAAACATTTATGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGTTTAGCT-AAGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "panTro2.chr6"
+        assert len(alignment.sequences[4].seq) == 173908612
+        assert alignment.sequences[4].seq[157528691 : 157528691 + 161] == "GTGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCATAGCTAAGCAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCATAAACGTTTAAATATAACGCTATTTGGTTGTCAAGATAGTCCGC"
+        assert alignment[4] == "-----GCGGACTATCTTGACAACCAAATAGCGTTATATTTAAACGTTTATGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGCTTAGCT-ATGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAC"
+        assert alignment.sequences[4].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155038619 : 155038619 + 161] == "GTGTGACCAGCAGATGGCATTAGAGTCCCACAGATCCTGAGATTGAGCCATAGCTAAGCAACTTCACTAGGCATACCACATCTGTCAAGGCAGGTTATGCTAAGCTTATTATTTTCACAAACGTTTAAATATAACGCTATTTGGTTGTCAAGATAGTCCAC"
+        assert alignment[5] == "-----GTGGACTATCTTGACAACCAAATAGCGTTATATTTAAACGTTTGTGAAAATAATAAGCTTAGCATAACCTGCCTTGACAGATGTG-GTATGC-------CTAGTGAAGTTGCTTAGCT-ATGGCTCAATCTCAGGATCTGTGGGACTCTAATGCCATCTGCTGGTCACAC"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[6].seq) == 100002
+        assert alignment.sequences[6].seq[87492 : 87492 + 169] == "TTGGGGTGGATGCTCTTGGCAGTCACACAGTGCTCTATTTTAGGATTTACTAGAACAATGAGTTTGTCATAACTGCCTCCTCCCAAGTGGGAAGCTGAAGCACCAAGTACTGACTCAGCAGTCCCTGACCTCACATCCATGGAAATCTAGTGACATCTGCTGGACACAT"
+        assert alignment[6] == "TTGGGGTGGATGCTCTTGGCAGTCACACAGTGCTCTATTTTAGGATTTACTAGAACAATGAGTTTGTCATAACT-GCCTCCTCCCAAGTG-GGAAGCTGAAGCACCAA-GTACTGACTCAGC--AGTCCCTGACCTCA-CATCCATGGAAATCTAGTGACATCTGCTGGACACAT"
+        assert alignment.sequences[6].annotations["quality"] == "9998999999897966589999999999967689989799789997987889999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "N"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 7564
+        assert len(alignment.sequences) == 7
+        assert "empty" not in alignment.annotations
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -1193,10 +917,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3012828 TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATG
 cavPor2.s     39417 -----GTGGGATGTCTTGACAGCTAAATAGTcttatatttaagcatttatGAAAATAATG
 otoGar1.s    178634 -----GTGGACATTCGTGACAGGCAAATAGTGTTCTATTTAAACATTTGTTGAAATGATA
@@ -1228,11 +949,8 @@ ponAbe2.c 158049311
 panTro2.c 157528691
 hg18.chr6 155038619
 echTel1.s     87661
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=128047.000000
 s mm9.chr10                      3012828 168 + 129993255 TTTGCATAGACTCTCTTGGCAACAAAATAACGTTATATTTAAACATCCATTAAAATAATGCACTTAGCACAGCCTGCCCTGAGGGAT----GAACACT--ATTGTTAA-AGAACTATTCCGCTAAGGCAGCAACCTCTGGATCTTCAGCATTCTGGCGCCATCTGCTGGTCATAT
 s cavPor2.scaffold_290371            515 166 -     39932 -----GTGGGATGTCTTGACAGCTAAATAGTcttatatttaagcatttatGAAAATAATGAGGTTATCATGGTTCGCTCTAGTAGCTCTGAGACCTTT--ATTGTCAGCAAAGCTGTTTAGC--AGGAGGCAACTTCAGGTTCCGTGGGATTCTAGTGCCATCTGCTGGTCATAT
@@ -1252,17 +970,11 @@ s echTel1.scaffold_288249          87492 169 +    100002 TTGGGGTGGATGCTCTTGGCAGT
 q echTel1.scaffold_288249                                99989999998979665899999999999676899897997899979878899999999999999999999999-999999999999999-99999999999999999-9999999999999--99999999999999-999999999999999999999999999999999999
 i echTel1.scaffold_288249       N 0 I 7564
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (3335 aligned letters; 2310 identities; 1025 mismatches; 212 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (3335 aligned letters; 2310 identities; 1025 mismatches; 212 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 3335:
         identities = 2310,
@@ -1289,145 +1001,89 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 25)
-        self.assertEqual(counts.left_deletions, 25)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 74)
-        self.assertEqual(counts.internal_deletions, 88)
-        self.assertEqual(counts.left_gaps, 50)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 162)
-        self.assertEqual(counts.insertions, 99)
-        self.assertEqual(counts.deletions, 113)
-        self.assertEqual(counts.gaps, 212)
-        self.assertEqual(counts.aligned, 3335)
-        self.assertEqual(counts.identities, 2310)
-        self.assertEqual(counts.mismatches, 1025)
+"""
+        assert counts.left_insertions == 25
+        assert counts.left_deletions == 25
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 74
+        assert counts.internal_deletions == 88
+        assert counts.left_gaps == 50
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 162
+        assert counts.insertions == 99
+        assert counts.deletions == 113
+        assert counts.gaps == 212
+        assert counts.aligned == 3335
+        assert counts.identities == 2310
+        assert counts.mismatches == 1025
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 98097)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3012996 : 3012996 + 222],
-            "AGATGTCTGCTGTGGAGACCTGGCCAACTTTGCTTTCTTCAAAAAGGCAACAGAAGGTAATCAGTTGAATGCCCACCATTAGGAAGGCGACCTCTAGTGCACAAACCTTGACATTTTCCCTTTTAATGGAATTTAACAGAAGTTCAGGATGTTCTTTGGGTAATTTACAATTAGGGGGCAAAAATCAAAAGTATTTCGAGCATATCAAAACTGTTAGCTATG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "AGATGTCTGCTGTGGAGA-------CCTGGCCAACTTTG----CTT--TCTTC-----AAAAAGGCAACAGAAGGTAATCAGTTGAATGCCCACCA-----TTAGGAAGGCGACCTCTAGTGCACAAACCTTGAC-ATTTTCCCTTTTAATGGAA-TTTAACAGAAGTTCAGGATGTTCTTTGGGTAATTTACAATT---A----GGGGGCAAAAATCAAAAGTATTTCGAGCATATCAAAACTGTTAGCTATG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_290371")
-        self.assertEqual(len(alignment.sequences[1].seq), 39932)
-        self.assertEqual(
-            alignment.sequences[1].seq[39074 : 39074 + 177],
-            "AAATGcctctgcttttccttttctagctgtAAATTGTTTAAATGGAATTCTGAACCTGACAGAGTcgaagaaaaaaattgcaaagctTTTCCGCTAGAGGTCACTCTCCCCACTATGTGGTGTGGTCGGCTTTAGCGCGGAAGACTGGAGTTAGCCAGCCCGTGGCTGCAGACGTCA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TGACGTCTGCAGCCACGG-------GCTGGCTAACTCCA--GTCTT--CCGCG-----CTAAAGCCGAC--------------------CACACCACATAGTGGGGAGAGTGACCTCTAGCGGAAAagctttgca-atttttttcttc----gAC-TCTGTCAG--GTTCAGAATTCCATTTAAACAATTTacagct---a----gaaaaggaaaagcagaggCATTT--------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999997999999999995699999999999336991774687",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[2].seq[155038435 : 155038435 + 184],
-            "ATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTCAATTAAAAAGAAAAATGCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACTATGGGGTCCTGTTAGTCTTATAGAGTAAGACAGCAGAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTCTGCTGTCTT--ACTCT-----ATAAGACTAAC--------------------AGGACCCCATAGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGC-ATTTTTCTTTTTAATTGAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTAT----------------------------------",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 14)
-        self.assertEqual(alignment.sequences[3].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[3].seq[157528507 : 157528507 + 184],
-            "ATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTTAATTAAAAAGAAAAATTCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACCATGGGGTCCTGTTAGTCTTATAGAATAAGACAGCAGAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA",
-        )
-        self.assertEqual(
-            alignment[3],
-            "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTCTGCTGTCTT--ATTCT-----ATAAGACTAAC--------------------AGGACCCCATGGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGA-ATTTTTCTTTTTAATTAAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTAT----------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 14)
-        self.assertEqual(alignment.sequences[4].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[4].seq[158049094 : 158049094 + 217],
-            "CATCATTGACAGGTTTGAATACATTCAATATTTATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTCAATTAAAAAGAAAAATTCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACTATGGGGTCCTGTTAGTCTTATAGAGTAAGACGGCCTAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA",
-        )
-        self.assertEqual(
-            alignment[4],
-            "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTAGGCCGTCTT--ACTCT-----ATAAGACTAAC--------------------AGGACCCCATAGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGA-ATTTTTCTTTTTAATTGAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTATAAATATTGAATGTAT-TCAAACCTGTCAATGATG",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 2)
-        self.assertEqual(alignment.sequences[5].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[5].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[5].seq[178247 : 178247 + 226],
-            "TAACAAGGCTGAATGCCAGCAATATTTGCACTCTCAGGTCCCCACACATACACTATGAATTGTCTAACTTGCATTTTGAGCCGTTGTAAAATTCAATTAAAAAGAAAAAAATCCAAGGCTTGTTCACCAGAGGTCGCTCTAGTAACTGCAGGGTCCGATTTTTCTTTTGTTGCAGAATTTAAGACGGTGGAGTTGGCAGGGAAAGCGGTGGTGGCGGCGGCCGTCC",
-        )
-        self.assertEqual(
-            alignment[5],
-            "GGACGGCCGCCGCCACCACCGCTTTCCCTGCCAACTCCACCGTCTTAAATTCTGCAACAAAAGAAAAAT--------------------CGGACCCTGCAGTTACTAGAGCGACCTCTGGTGAACAAGCCTTGGATTTTTTTCTTTTTAATTGAATTTTACAAC-GGCTCAAAATGCAAGTTAGACAATTCATAGTGTATGTGTGGGGACCTGAGAGTGCAAATATTGCTGGCAT-TCAGCCTTGTTA------",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999989999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999699999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 2931)
-        self.assertEqual(alignment.sequences[6].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[6].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[6].seq[331078 : 331078 + 159],
-            "TAATTATAAGTTGTCTAAATGGCATTTGAACCTTTATAAATTCTGTTTTAAAGAAAAATTCCAAGGTTTGCTCACTAGAGGTCTCCTCTCCCGGAGGATCCAGTTTGTCTTTCGTTGAGAGAGCTGAGTGGTCCAAGAAAGTGACAGCTGTAGCCATCA",
-        )
-        self.assertEqual(
-            alignment[6],
-            "TGATGGCTACAGCTGTCA---CTTTCTTGGACCACTCAGCTCTCTC--AAC-------GAAAGACAAAC--------------------TGGATCCTCCGG---GAGAGGAGACCTCTAGTGAGCAAACCTTGGA-ATTTTTCTTTAAAACAGAA-TTTATAAA-GGTTCA-AATGCCATTTAGACAACTTATAATT---A-----------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "234233433332122232158211222021213444332433213323732111754365002326236241111233524253535324593652222413766453735782535545832457354545484445655854554657999679999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 4145)
+        assert alignment.score == 98097
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3012996 : 3012996 + 222] == "AGATGTCTGCTGTGGAGACCTGGCCAACTTTGCTTTCTTCAAAAAGGCAACAGAAGGTAATCAGTTGAATGCCCACCATTAGGAAGGCGACCTCTAGTGCACAAACCTTGACATTTTCCCTTTTAATGGAATTTAACAGAAGTTCAGGATGTTCTTTGGGTAATTTACAATTAGGGGGCAAAAATCAAAAGTATTTCGAGCATATCAAAACTGTTAGCTATG"
+        assert alignment[0] == "AGATGTCTGCTGTGGAGA-------CCTGGCCAACTTTG----CTT--TCTTC-----AAAAAGGCAACAGAAGGTAATCAGTTGAATGCCCACCA-----TTAGGAAGGCGACCTCTAGTGCACAAACCTTGAC-ATTTTCCCTTTTAATGGAA-TTTAACAGAAGTTCAGGATGTTCTTTGGGTAATTTACAATT---A----GGGGGCAAAAATCAAAAGTATTTCGAGCATATCAAAACTGTTAGCTATG"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_290371"
+        assert len(alignment.sequences[1].seq) == 39932
+        assert alignment.sequences[1].seq[39074 : 39074 + 177] == "AAATGcctctgcttttccttttctagctgtAAATTGTTTAAATGGAATTCTGAACCTGACAGAGTcgaagaaaaaaattgcaaagctTTTCCGCTAGAGGTCACTCTCCCCACTATGTGGTGTGGTCGGCTTTAGCGCGGAAGACTGGAGTTAGCCAGCCCGTGGCTGCAGACGTCA"
+        assert alignment[1] == "TGACGTCTGCAGCCACGG-------GCTGGCTAACTCCA--GTCTT--CCGCG-----CTAAAGCCGAC--------------------CACACCACATAGTGGGGAGAGTGACCTCTAGCGGAAAagctttgca-atttttttcttc----gAC-TCTGTCAG--GTTCAGAATTCCATTTAAACAATTTacagct---a----gaaaaggaaaagcagaggCATTT--------------------------"
+        assert alignment.sequences[1].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999997999999999995699999999999336991774687"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "hg18.chr6"
+        assert len(alignment.sequences[2].seq) == 170899992
+        assert alignment.sequences[2].seq[155038435 : 155038435 + 184] == "ATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTCAATTAAAAAGAAAAATGCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACTATGGGGTCCTGTTAGTCTTATAGAGTAAGACAGCAGAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA"
+        assert alignment[2] == "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTCTGCTGTCTT--ACTCT-----ATAAGACTAAC--------------------AGGACCCCATAGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGC-ATTTTTCTTTTTAATTGAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTAT----------------------------------"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 14
+        assert alignment.sequences[3].id == "panTro2.chr6"
+        assert len(alignment.sequences[3].seq) == 173908612
+        assert alignment.sequences[3].seq[157528507 : 157528507 + 184] == "ATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTTAATTAAAAAGAAAAATTCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACCATGGGGTCCTGTTAGTCTTATAGAATAAGACAGCAGAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA"
+        assert alignment[3] == "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTCTGCTGTCTT--ATTCT-----ATAAGACTAAC--------------------AGGACCCCATGGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGA-ATTTTTCTTTTTAATTAAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTAT----------------------------------"
+        assert alignment.sequences[3].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 14
+        assert alignment.sequences[4].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[4].seq) == 174210431
+        assert alignment.sequences[4].seq[158049094 : 158049094 + 217] == "CATCATTGACAGGTTTGAATACATTCAATATTTATACTCTTACCTCCCCCCACCATTACAAATTGTCTAAATGGCATTCTAAGCCTTTATGAATTCAATTAAAAAGAAAAATTCCAAGGCCTGCTCGCTAGAGGTCGCTCTCCTAACTATGGGGTCCTGTTAGTCTTATAGAGTAAGACGGCCTAGTAGGCCAAGAAAGTGATGGCAGCAGCCATCA"
+        assert alignment[4] == "TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTAGGCCGTCTT--ACTCT-----ATAAGACTAAC--------------------AGGACCCCATAGTTAGGAGAGCGACCTCTAGCGAGCAGGCCTTGGA-ATTTTTCTTTTTAATTGAA-TTCATAAA-GGCTTAGAATGCCATTTAGACAATTTGTAATG---GTGGGGGGAGGTAAGAGTATAAATATTGAATGTAT-TCAAACCTGTCAATGATG"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 2
+        assert alignment.sequences[5].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[5].seq) == 359464
+        assert alignment.sequences[5].seq[178247 : 178247 + 226] == "TAACAAGGCTGAATGCCAGCAATATTTGCACTCTCAGGTCCCCACACATACACTATGAATTGTCTAACTTGCATTTTGAGCCGTTGTAAAATTCAATTAAAAAGAAAAAAATCCAAGGCTTGTTCACCAGAGGTCGCTCTAGTAACTGCAGGGTCCGATTTTTCTTTTGTTGCAGAATTTAAGACGGTGGAGTTGGCAGGGAAAGCGGTGGTGGCGGCGGCCGTCC"
+        assert alignment[5] == "GGACGGCCGCCGCCACCACCGCTTTCCCTGCCAACTCCACCGTCTTAAATTCTGCAACAAAAGAAAAAT--------------------CGGACCCTGCAGTTACTAGAGCGACCTCTGGTGAACAAGCCTTGGATTTTTTTCTTTTTAATTGAATTTTACAAC-GGCTCAAAATGCAAGTTAGACAATTCATAGTGTATGTGTGGGGACCTGAGAGTGCAAATATTGCTGGCAT-TCAGCCTTGTTA------"
+        assert alignment.sequences[5].annotations["quality"] == "9999989999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999699999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 2931
+        assert alignment.sequences[6].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[6].seq) == 498454
+        assert alignment.sequences[6].seq[331078 : 331078 + 159] == "TAATTATAAGTTGTCTAAATGGCATTTGAACCTTTATAAATTCTGTTTTAAAGAAAAATTCCAAGGTTTGCTCACTAGAGGTCTCCTCTCCCGGAGGATCCAGTTTGTCTTTCGTTGAGAGAGCTGAGTGGTCCAAGAAAGTGACAGCTGTAGCCATCA"
+        assert alignment[6] == "TGATGGCTACAGCTGTCA---CTTTCTTGGACCACTCAGCTCTCTC--AAC-------GAAAGACAAAC--------------------TGGATCCTCCGG---GAGAGGAGACCTCTAGTGAGCAAACCTTGGA-ATTTTTCTTTAAAACAGAA-TTTATAAA-GGTTCA-AATGCCATTTAGACAACTTATAATT---A-----------------------------------------------------"
+        assert alignment.sequences[6].annotations["quality"] == "234233433332122232158211222021213444332433213323732111754365002326236241111233524253535324593652222413766453735782535545832457354545484445655854554657999679999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "N"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 4145
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 7)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
+        assert len(alignment.sequences) == 7
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -1484,10 +1140,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3012996 AGATGTCTGCTGTGGAGA-------CCTGGCCAACTTTG----CTT--TCTTC-----AA
 cavPor2.s     39251 TGACGTCTGCAGCCACGG-------GCTGGCTAACTCCA--GTCTT--CCGCG-----CT
 hg18.chr6 155038619 TGATGGCTGCTGCCATCA---CTTTCTTGGCCTACTCTGCTGTCTT--ACTCT-----AT
@@ -1527,11 +1180,8 @@ panTro2.c 157528507 -------------- 157528507
 ponAbe2.c 158049108 ACCTGTCAATGATG 158049094
 otoGar1.s    178255 CCTTGTTA------    178247
 tupBel1.s    331078 --------------    331078
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=98097.000000
 s mm9.chr10                         3012996  222 + 129993255 AGATGTCTGCTGTGGAGA-------CCTGGCCAACTTTG----CTT--TCTTC-----AAAAAGGCAACAGAAGGTAATCAGTTGAATGCCCACCA-----TTAGGAAGGCGACCTCTAGTGCACAAACCTTGAC-ATTTTCCCTTTTAATGGAA-TTTAACAGAAGTTCAGGATGTTCTTTGGGTAATTTACAATT---A----GGGGGCAAAAATCAAAAGTATTTCGAGCATATCAAAACTGTTAGCTATG
 s cavPor2.scaffold_290371               681  177 -     39932 TGACGTCTGCAGCCACGG-------GCTGGCTAACTCCA--GTCTT--CCGCG-----CTAAAGCCGAC--------------------CACACCACATAGTGGGGAGAGTGACCTCTAGCGGAAAagctttgca-atttttttcttc----gAC-TCTGTCAG--GTTCAGAATTCCATTTAAACAATTTacagct---a----gaaaaggaaaagcagaggCATTT--------------------------
@@ -1552,17 +1202,11 @@ q tupBel1.scaffold_114895.1-498454                           234233433332122232-
 i tupBel1.scaffold_114895.1-498454 N 0 I 4145
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (3651 aligned letters; 2474 identities; 1177 mismatches; 912 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (3651 aligned letters; 2474 identities; 1177 mismatches; 912 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 3651:
         identities = 2474,
@@ -1589,79 +1233,68 @@ AlignmentCounts object with
             right_deletions = 330:
                 open_right_deletions = 13,
                 extend_right_deletions = 317.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 164)
-        self.assertEqual(counts.right_deletions, 330)
-        self.assertEqual(counts.internal_insertions, 234)
-        self.assertEqual(counts.internal_deletions, 184)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 494)
-        self.assertEqual(counts.internal_gaps, 418)
-        self.assertEqual(counts.insertions, 398)
-        self.assertEqual(counts.deletions, 514)
-        self.assertEqual(counts.gaps, 912)
-        self.assertEqual(counts.aligned, 3651)
-        self.assertEqual(counts.identities, 2474)
-        self.assertEqual(counts.mismatches, 1177)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 164
+        assert counts.right_deletions == 330
+        assert counts.internal_insertions == 234
+        assert counts.internal_deletions == 184
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 494
+        assert counts.internal_gaps == 418
+        assert counts.insertions == 398
+        assert counts.deletions == 514
+        assert counts.gaps == 912
+        assert counts.aligned == 3651
+        assert counts.identities == 2474
+        assert counts.mismatches == 1177
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3013218 : 3013218 + 219],
-            "agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggatctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacacagaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAAAAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggatctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacacagaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAAAAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3013218 : 3013218 + 219] == "agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggatctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacacagaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAAAAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT"
+        assert alignment[0] == "agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggatctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacacagaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAAAAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (178247, 175316))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (178247, 175316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155038435, 155038421))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155038435, 155038421)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157528507, 157528493))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157528507, 157528493)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158049094, 158049092))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3013218, 3013437]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158049094, 158049092)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(alignment.coordinates, np.array([[3013218, 3013437]]))
+        assert str(alignment) == """\
 mm9.chr10   3013218 agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggat
 
 mm9.chr10   3013278 ctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacaca
@@ -1669,11 +1302,8 @@ mm9.chr10   3013278 ctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacaca
 mm9.chr10   3013338 gaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAA
 
 mm9.chr10   3013398 AAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT 3013437
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3013218  219 + 129993255 agccaggcgtggtggcacacacctttactcccagcatttggggggcagaggcaggtggatctgtgagtttgaggccagcctggtctacagagggagtctcaggacagccagagctacacagaaataacctgcctagaaaaacaaaacaaaacaaaacatcaaaactcaaaacaaaTAAAAAAAATAAAAAACCCAACCTAAACCAAATAACAAAACACT
 e tupBel1.scaffold_114895.1-498454   167376 4145 -    498454 I
@@ -1683,10 +1313,8 @@ e hg18.chr6                        15861557   14 - 170899992 I
 e panTro2.chr6                     16380105   14 - 173908612 I
 e ponAbe2.chr6                     16161337    2 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['a', 'g', 'c', 'c', 'a', 'g', 'g', 'c', 'g', 't', 'g', 'g', 't',
@@ -1709,16 +1337,10 @@ np.array([['a', 'g', 'c', 'c', 'a', 'g', 'g', 'c', 'g', 't', 'g', 'g', 't',
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -1745,103 +1367,74 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 40604)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3013437 : 3013437 + 166],
-            "TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAAGAGAGCTAGCCTGTTGGTGGCAGCCAAGCCTGATGGTGGCAGACTAGATTGATGGTGCCAGACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAAGAGAGCTAGCCTGTTGGTGGCAGCCAAGCCTGATGGTGGCAGACTAGATTGATGGTGCCAGACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[1].seq[157528363 : 157528363 + 130],
-            "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTGAACATCATTGACAGGTTTGAA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999099999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 14)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 9106)
-        self.assertEqual(alignment.sequences[2].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[2].seq[155038291 : 155038291 + 130],
-            "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTGAACATCATTGACAGGTTTGAA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 14)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 9085)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158048983 : 158048983 + 109],
-            "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "---------------------CAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 2)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 8044)
+        assert alignment.score == 40604
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3013437 : 3013437 + 166] == "TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAAGAGAGCTAGCCTGTTGGTGGCAGCCAAGCCTGATGGTGGCAGACTAGATTGATGGTGCCAGACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA"
+        assert alignment[0] == "TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAAGAGAGCTAGCCTGTTGGTGGCAGCCAAGCCTGATGGTGGCAGACTAGATTGATGGTGCCAGACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA"
+        assert alignment.sequences[1].id == "panTro2.chr6"
+        assert len(alignment.sequences[1].seq) == 173908612
+        assert alignment.sequences[1].seq[157528363 : 157528363 + 130] == "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTGAACATCATTGACAGGTTTGAA"
+        assert alignment[1] == "TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999099999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 14
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 9106
+        assert alignment.sequences[2].id == "hg18.chr6"
+        assert len(alignment.sequences[2].seq) == 170899992
+        assert alignment.sequences[2].seq[155038291 : 155038291 + 130] == "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTGAACATCATTGACAGGTTTGAA"
+        assert alignment[2] == "TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 14
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 9085
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158048983 : 158048983 + 109] == "TATCAAACAGCCCATGAATGCAAAACGATACACCCATAAAATAGGATGTAATCGCCAAAATCTAATTCTATTGCATCTAGAAGATCTTTATCCACAGTGAAAAGAGTTG"
+        assert alignment[3] == "---------------------CAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 2
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 8044
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (178247, 175316))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertEqual(len(alignment.annotations["empty"]), 3)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (178247, 175316)
+        assert status == "I"
+        assert len(alignment.sequences) == 4
+        assert len(alignment.annotations["empty"]) == 3
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -1853,10 +1446,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3013437 TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAA
 panTro2.c 157528493 TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAA
 hg18.chr6 155038421 TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAA
@@ -1871,11 +1461,8 @@ mm9.chr10   3013557 GACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA   3013603
 panTro2.c 157528409 TCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA 157528363
 hg18.chr6 155038337 TCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA 155038291
 ponAbe2.c 158049029 TCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA 158048983
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=40604.000000
 s mm9.chr10                         3013437  166 + 129993255 TCCAAAATGGTTAGCTATGCCCAACTCCTTTCACTCCAAGAAAATATCCTAACCATGTAAGAGAGCTAGCCTGTTGGTGGCAGCCAAGCCTGATGGTGGCAGACTAGATTGATGGTGCCAGACTACTTTATGGCTGTATCATTTTCCATTCATGTGTTGTGTTATA
 s panTro2.chr6                     16380119  130 - 173908612 TTCAAACCTGTCAATGATGTTCAACTCTTTTCACTGTGGATAAAGATCTTCTAGATGCAATAGAATTAGATT------------------------------------TTGGCGATTACATCCTATTTTATGGGTGTATCGTTTTGCATTCATGGGCTGTTTGATA
@@ -1889,10 +1476,8 @@ e tupBel1.scaffold_114895.1-498454   167376 4145 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e otoGar1.scaffold_334.1-359464      181217 2931 -    359464 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'C', 'C', 'A', 'A', 'A', 'A', 'T', 'G', 'G', 'T', 'T', 'A',
@@ -1949,16 +1534,10 @@ np.array([['T', 'C', 'C', 'A', 'A', 'A', 'A', 'T', 'G', 'G', 'T', 'T', 'A',
            'C', 'T', 'G', 'T', 'T', 'T', 'G', 'A', 'T', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (717 aligned letters; 595 identities; 122 mismatches; 171 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (717 aligned letters; 595 identities; 122 mismatches; 171 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 717:
         identities = 595,
@@ -1985,79 +1564,68 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 63)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 108)
-        self.assertEqual(counts.left_gaps, 63)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 108)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 171)
-        self.assertEqual(counts.gaps, 171)
-        self.assertEqual(counts.aligned, 717)
-        self.assertEqual(counts.identities, 595)
-        self.assertEqual(counts.mismatches, 122)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 63
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 108
+        assert counts.left_gaps == 63
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 108
+        assert counts.insertions == 0
+        assert counts.deletions == 171
+        assert counts.gaps == 171
+        assert counts.aligned == 717
+        assert counts.identities == 595
+        assert counts.mismatches == 122
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3013603 : 3013603 + 1041],
-            "CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgctgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacccgtaactctaagatggtacacacctttaatcccaggagacagaggcaatcagatctgagttcaagattcagcctgagacagagcatgttccaaattcaggcatggtgggtcatacctttaatatgggacataccttctgctggaggcctacctaaggacaacggagaaaggaagtattcgttcttctcctgcttgcacttacttgccagcgcatctactggaacccacttcttcaggattccagcttatacaggagaccagctgaaatatccagcctctcgggactgaacaagtactagagtctcagacttcccattcacagctgcccattgttggttggttgtactacagactgtaagtcattgtaataatttcccttaatatatagagacattatataagttctgtgactctagagaaccctgactagtacaCGTGGCTAACTAGAAAGctctggtatgtgcttacttaatgctgaggttttaggcatggccacggtgctctgcttcttatgtgggtgctgggaatgcagactcaggtcctcatgtgtatgcagcaaacacttcatacactcagctgcttccctaacccTATGCTTGTGTCTTATTACTAACTTGTGAAAAGCTTTGAGTTTATTTTCTATGTTTTCAACCACTTTCTTGAGTATGCTCAGCTCGTGGCTTTAAACTGGATTTCCCCCTAATATGTAATGACTATAAGTATTCCTTAAATAGGACACACTTTTGTTATACTTTTTGTTATCatataaaatatttcaaaaaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGATTTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCTTGTTTGTTTTGGTCAATGCAG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgctgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacccgtaactctaagatggtacacacctttaatcccaggagacagaggcaatcagatctgagttcaagattcagcctgagacagagcatgttccaaattcaggcatggtgggtcatacctttaatatgggacataccttctgctggaggcctacctaaggacaacggagaaaggaagtattcgttcttctcctgcttgcacttacttgccagcgcatctactggaacccacttcttcaggattccagcttatacaggagaccagctgaaatatccagcctctcgggactgaacaagtactagagtctcagacttcccattcacagctgcccattgttggttggttgtactacagactgtaagtcattgtaataatttcccttaatatatagagacattatataagttctgtgactctagagaaccctgactagtacaCGTGGCTAACTAGAAAGctctggtatgtgcttacttaatgctgaggttttaggcatggccacggtgctctgcttcttatgtgggtgctgggaatgcagactcaggtcctcatgtgtatgcagcaaacacttcatacactcagctgcttccctaacccTATGCTTGTGTCTTATTACTAACTTGTGAAAAGCTTTGAGTTTATTTTCTATGTTTTCAACCACTTTCTTGAGTATGCTCAGCTCGTGGCTTTAAACTGGATTTCCCCCTAATATGTAATGACTATAAGTATTCCTTAAATAGGACACACTTTTGTTATACTTTTTGTTATCatataaaatatttcaaaaaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGATTTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCTTGTTTGTTTTGGTCAATGCAG",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3013603 : 3013603 + 1041] == "CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgctgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacccgtaactctaagatggtacacacctttaatcccaggagacagaggcaatcagatctgagttcaagattcagcctgagacagagcatgttccaaattcaggcatggtgggtcatacctttaatatgggacataccttctgctggaggcctacctaaggacaacggagaaaggaagtattcgttcttctcctgcttgcacttacttgccagcgcatctactggaacccacttcttcaggattccagcttatacaggagaccagctgaaatatccagcctctcgggactgaacaagtactagagtctcagacttcccattcacagctgcccattgttggttggttgtactacagactgtaagtcattgtaataatttcccttaatatatagagacattatataagttctgtgactctagagaaccctgactagtacaCGTGGCTAACTAGAAAGctctggtatgtgcttacttaatgctgaggttttaggcatggccacggtgctctgcttcttatgtgggtgctgggaatgcagactcaggtcctcatgtgtatgcagcaaacacttcatacactcagctgcttccctaacccTATGCTTGTGTCTTATTACTAACTTGTGAAAAGCTTTGAGTTTATTTTCTATGTTTTCAACCACTTTCTTGAGTATGCTCAGCTCGTGGCTTTAAACTGGATTTCCCCCTAATATGTAATGACTATAAGTATTCCTTAAATAGGACACACTTTTGTTATACTTTTTGTTATCatataaaatatttcaaaaaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGATTTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCTTGTTTGTTTTGGTCAATGCAG"
+        assert alignment[0] == "CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgctgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacccgtaactctaagatggtacacacctttaatcccaggagacagaggcaatcagatctgagttcaagattcagcctgagacagagcatgttccaaattcaggcatggtgggtcatacctttaatatgggacataccttctgctggaggcctacctaaggacaacggagaaaggaagtattcgttcttctcctgcttgcacttacttgccagcgcatctactggaacccacttcttcaggattccagcttatacaggagaccagctgaaatatccagcctctcgggactgaacaagtactagagtctcagacttcccattcacagctgcccattgttggttggttgtactacagactgtaagtcattgtaataatttcccttaatatatagagacattatataagttctgtgactctagagaaccctgactagtacaCGTGGCTAACTAGAAAGctctggtatgtgcttacttaatgctgaggttttaggcatggccacggtgctctgcttcttatgtgggtgctgggaatgcagactcaggtcctcatgtgtatgcagcaaacacttcatacactcagctgcttccctaacccTATGCTTGTGTCTTATTACTAACTTGTGAAAAGCTTTGAGTTTATTTTCTATGTTTTCAACCACTTTCTTGAGTATGCTCAGCTCGTGGCTTTAAACTGGATTTCCCCCTAATATGTAATGACTATAAGTATTCCTTAAATAGGACACACTTTTGTTATACTTTTTGTTATCatataaaatatttcaaaaaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGATTTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCTTGTTTGTTTTGGTCAATGCAG"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (178247, 175316))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (178247, 175316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155038291, 155029206))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155038291, 155029206)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157528363, 157519257))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157528363, 157519257)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158048983, 158040939))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3013603, 3014644]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158048983, 158040939)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(alignment.coordinates, np.array([[3013603, 3014644]]))
+        assert str(alignment) == """\
 mm9.chr10   3013603 CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgc
 
 mm9.chr10   3013663 tgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacc
@@ -2093,11 +1661,8 @@ mm9.chr10   3014503 aaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGAT
 mm9.chr10   3014563 TTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCT
 
 mm9.chr10   3014623 TGTTTGTTTTGGTCAATGCAG 3014644
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3013603 1041 + 129993255 CCTTCTTAAGAACACTAGACTCAggactggggagatggctcagcagttaagaatcggtgctgttaagagtgggagacaagtttggttcccagctcccacattggtcagctcacagccacccgtaactctaagatggtacacacctttaatcccaggagacagaggcaatcagatctgagttcaagattcagcctgagacagagcatgttccaaattcaggcatggtgggtcatacctttaatatgggacataccttctgctggaggcctacctaaggacaacggagaaaggaagtattcgttcttctcctgcttgcacttacttgccagcgcatctactggaacccacttcttcaggattccagcttatacaggagaccagctgaaatatccagcctctcgggactgaacaagtactagagtctcagacttcccattcacagctgcccattgttggttggttgtactacagactgtaagtcattgtaataatttcccttaatatatagagacattatataagttctgtgactctagagaaccctgactagtacaCGTGGCTAACTAGAAAGctctggtatgtgcttacttaatgctgaggttttaggcatggccacggtgctctgcttcttatgtgggtgctgggaatgcagactcaggtcctcatgtgtatgcagcaaacacttcatacactcagctgcttccctaacccTATGCTTGTGTCTTATTACTAACTTGTGAAAAGCTTTGAGTTTATTTTCTATGTTTTCAACCACTTTCTTGAGTATGCTCAGCTCGTGGCTTTAAACTGGATTTCCCCCTAATATGTAATGACTATAAGTATTCCTTAAATAGGACACACTTTTGTTATACTTTTTGTTATCatataaaatatttcaaaaaaatttttttGCTATTTTTATCTTTGAGCCATTGGTCATTTTGACGTGTATCTCTTGATTTTTATAGATGGTAATATTTTATGTATTGCTAGCCAATCTCGTTTTCTTGTTTGCTTGCTTGTTTGTTTTGGTCAATGCAG
 e tupBel1.scaffold_114895.1-498454   167376 4145 -    498454 I
@@ -2107,17 +1672,11 @@ e hg18.chr6                        15861701 9085 - 170899992 I
 e panTro2.chr6                     16380249 9106 - 173908612 I
 e ponAbe2.chr6                     16161448 8044 - 174210431 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -2144,122 +1703,89 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 19159)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014644 : 3014644 + 45],
-            "CCTGTACCCTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG",
-        )
-        self.assertEqual(
-            alignment[0], "CCTGTACC---CTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG"
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155029160 : 155029160 + 46],
-            "AAAAGTTTAGGATTAAAACAAAATTCTCATAAAAGAAAGGTATAGG",
-        )
-        self.assertEqual(
-            alignment[1], "CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT"
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 9085)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157519211 : 157519211 + 46],
-            "AAAAGTTTAGGATTAAAACAAAATTCTCATAAAAGAAAGGTATAGG",
-        )
-        self.assertEqual(
-            alignment[2], "CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT"
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 9106)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[3].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[3].seq[6182 : 6182 + 46],
-            "CCTATACCTTTCTTTCATGAGAATTTTGTTTGAATCCTAAACTTTT",
-        )
-        self.assertEqual(
-            alignment[3], "CCTATACCTTTCTTTCATGAGAA-TTTTGTTTGAATCCTAAAC-TTTT"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[4].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[4].seq[9373 : 9373 + 34],
-            "GGAAGTTTTGAATTAAAGCATAATTCTAACCAAA",
-        )
-        self.assertEqual(
-            alignment[4], "------------TTTGGTTAGAA-TTATGCTTTAATTCAAAAC-TTCC"
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "9999969989999999999999998699989997",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
+        assert alignment.score == 19159
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014644 : 3014644 + 45] == "CCTGTACCCTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG"
+        assert alignment[0] == "CCTGTACC---CTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155029160 : 155029160 + 46] == "AAAAGTTTAGGATTAAAACAAAATTCTCATAAAAGAAAGGTATAGG"
+        assert alignment[1] == "CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 9085
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157519211 : 157519211 + 46] == "AAAAGTTTAGGATTAAAACAAAATTCTCATAAAAGAAAGGTATAGG"
+        assert alignment[2] == "CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 9106
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[3].seq) == 133105
+        assert alignment.sequences[3].seq[6182 : 6182 + 46] == "CCTATACCTTTCTTTCATGAGAATTTTGTTTGAATCCTAAACTTTT"
+        assert alignment[3] == "CCTATACCTTTCTTTCATGAGAA-TTTTGTTTGAATCCTAAAC-TTTT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "N"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[4].seq) == 10574
+        assert alignment.sequences[4].seq[9373 : 9373 + 34] == "GGAAGTTTTGAATTAAAGCATAATTCTAACCAAA"
+        assert alignment[4] == "------------TTTGGTTAGAA-TTATGCTTTAATTCAAAAC-TTCC"
+        assert alignment.sequences[4].annotations["quality"] == "9999969989999999999999998699989997"
+        assert alignment.sequences[4].annotations["leftStatus"] == "N"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (178247, 175316))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (178247, 175316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158048983, 158040939))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertEqual(len(alignment.annotations["empty"]), 4)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158048983, 158040939)
+        assert status == "I"
+        assert len(alignment.sequences) == 5
+        assert len(alignment.annotations["empty"]) == 4
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -2277,20 +1803,14 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3014644 CCTGTACC---CTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG   3014689
 hg18.chr6 155029206 CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT 155029160
 panTro2.c 157519257 CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT 157519211
 calJac1.C      6182 CCTATACCTTTCTTTCATGAGAA-TTTTGTTTGAATCCTAAAC-TTTT      6228
 loxAfr1.s      9407 ------------TTTGGTTAGAA-TTATGCTTTAATTCAAAAC-TTCC      9373
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=19159.000000
 s mm9.chr10                         3014644   45 + 129993255 CCTGTACC---CTTTGGTGAGAATTTTTGTTTCAGTGTTAAAAGTTTG
 s hg18.chr6                        15870786   46 - 170899992 CCTATACCTTTCTTTTATGAGAA-TTTTGTTTTAATCCTAAAC-TTTT
@@ -2308,10 +1828,8 @@ e echTel1.scaffold_288249             87661 7564 +    100002 I
 e otoGar1.scaffold_334.1-359464      181217 2931 -    359464 I
 e ponAbe2.chr6                     16161448 8044 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'C', 'T', 'G', 'T', 'A', 'C', 'C', '-', '-', '-', 'C', 'T',
@@ -2336,16 +1854,10 @@ np.array([['C', 'C', 'T', 'G', 'T', 'A', 'C', 'C', '-', '-', '-', 'C', 'T',
            'A', 'A', 'A', 'C', '-', 'T', 'T', 'C', 'C']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (403 aligned letters; 333 identities; 70 mismatches; 62 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (403 aligned letters; 333 identities; 70 mismatches; 62 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 403:
         identities = 333,
@@ -2372,133 +1884,92 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 45)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 9)
-        self.assertEqual(counts.internal_deletions, 8)
-        self.assertEqual(counts.left_gaps, 45)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 17)
-        self.assertEqual(counts.insertions, 9)
-        self.assertEqual(counts.deletions, 53)
-        self.assertEqual(counts.gaps, 62)
-        self.assertEqual(counts.aligned, 403)
-        self.assertEqual(counts.identities, 333)
-        self.assertEqual(counts.mismatches, 70)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 45
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 9
+        assert counts.internal_deletions == 8
+        assert counts.left_gaps == 45
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 17
+        assert counts.insertions == 9
+        assert counts.deletions == 53
+        assert counts.gaps == 62
+        assert counts.aligned == 403
+        assert counts.identities == 333
+        assert counts.mismatches == 70
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 40840)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014689 : 3014689 + 53],
-            "GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCTTTGGAAAGAGTTG",
-        )
-        self.assertEqual(
-            alignment[0], "GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCT-TTGGAAAGAGTTG"
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155029107 : 155029107 + 53],
-            "CCACTATTTCCCAAAAGATTAGATATTTCACAGATTAAATGGTTTATGATCCC",
-        )
-        self.assertEqual(
-            alignment[1], "GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG"
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 401)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157519158 : 157519158 + 53],
-            "CCACTATTTCCCAAAAGATTAGATATTTCACAGATTAAATGGTTTATGATCCC",
-        )
-        self.assertEqual(
-            alignment[2], "GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG"
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 400)
-        self.assertEqual(alignment.sequences[3].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[3].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[3].seq[6228 : 6228 + 53],
-            "GGGATCATAAGCCATTTAATCTGTGAAATGTGAAATCTTTTGGGAAACAGTGG",
-        )
-        self.assertEqual(
-            alignment[3], "GGGATCATAAGCCATTTAATCTGTGAAATGTGAAATCTTT-TGGGAAACAGTGG"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 2)
-        self.assertEqual(alignment.sequences[4].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[4].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[4].seq[175264 : 175264 + 52],
-            "CAGCTATTGCCCAAGTGATTTGATATTTCATAGATTAAAAGTTTATGCTTCC",
-        )
-        self.assertEqual(
-            alignment[4], "GGAAGCATAAACT-TTTAATCTATGAAATATCAAATCACT-TGGGCAATAGCTG"
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "7455455669566996656997698955556899975999984787795599",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 2931)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 2)
-        self.assertEqual(alignment.sequences[5].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[5].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[5].seq[9319 : 9319 + 54],
-            "CAGCTTTTTCCCCTGAAGATTTGGCATTTCGCAGACTAAATGGTTTATACTCCC",
-        )
-        self.assertEqual(
-            alignment[5], "GGGAGTATAAACCATTTAGTCTGCGAAATGCCAAATCTTCAGGGGAAAAAGCTG"
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "899989799999979999999999999999797999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 2)
+        assert alignment.score == 40840
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014689 : 3014689 + 53] == "GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCTTTGGAAAGAGTTG"
+        assert alignment[0] == "GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCT-TTGGAAAGAGTTG"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155029107 : 155029107 + 53] == "CCACTATTTCCCAAAAGATTAGATATTTCACAGATTAAATGGTTTATGATCCC"
+        assert alignment[1] == "GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 401
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157519158 : 157519158 + 53] == "CCACTATTTCCCAAAAGATTAGATATTTCACAGATTAAATGGTTTATGATCCC"
+        assert alignment[2] == "GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 400
+        assert alignment.sequences[3].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[3].seq) == 133105
+        assert alignment.sequences[3].seq[6228 : 6228 + 53] == "GGGATCATAAGCCATTTAATCTGTGAAATGTGAAATCTTTTGGGAAACAGTGG"
+        assert alignment[3] == "GGGATCATAAGCCATTTAATCTGTGAAATGTGAAATCTTT-TGGGAAACAGTGG"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 2
+        assert alignment.sequences[4].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[4].seq) == 359464
+        assert alignment.sequences[4].seq[175264 : 175264 + 52] == "CAGCTATTGCCCAAGTGATTTGATATTTCATAGATTAAAAGTTTATGCTTCC"
+        assert alignment[4] == "GGAAGCATAAACT-TTTAATCTATGAAATATCAAATCACT-TGGGCAATAGCTG"
+        assert alignment.sequences[4].annotations["quality"] == "7455455669566996656997698955556899975999984787795599"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 2931
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 2
+        assert alignment.sequences[5].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[5].seq) == 10574
+        assert alignment.sequences[5].seq[9319 : 9319 + 54] == "CAGCTTTTTCCCCTGAAGATTTGGCATTTCGCAGACTAAATGGTTTATACTCCC"
+        assert alignment[5] == "GGGAGTATAAACCATTTAGTCTGCGAAATGCCAAATCTTCAGGGGAAAAAGCTG"
+        assert alignment.sequences[5].annotations["quality"] == "899989799999979999999999999999797999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 2
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158048983, 158040939))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 6)
-        self.assertEqual(len(alignment.annotations["empty"]), 3)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158048983, 158040939)
+        assert status == "I"
+        assert len(alignment.sequences) == 6
+        assert len(alignment.annotations["empty"]) == 3
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -2512,10 +1983,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3014689 GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCT-TTGGAAAGAGTTG
 hg18.chr6 155029160 GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG
 panTro2.c 157519211 GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG
@@ -2529,11 +1997,8 @@ panTro2.c 157519158
 calJac1.C      6281
 otoGar1.s    175264
 loxAfr1.s      9319
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=40840.000000
 s mm9.chr10                         3014689   53 + 129993255 GGGAGCATAAAACTCTAAATCTGCTAAATGTCTTGTCCCT-TTGGAAAGAGTTG
 s hg18.chr6                        15870832   53 - 170899992 GGGATCATAAACCATTTAATCTGTGAAATATCTAATCTTT-TGGGAAATAGTGG
@@ -2553,10 +2018,8 @@ e tupBel1.scaffold_114895.1-498454   167376 4145 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e ponAbe2.chr6                     16161448 8044 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['G', 'G', 'G', 'A', 'G', 'C', 'A', 'T', 'A', 'A', 'A', 'A', 'C',
@@ -2591,16 +2054,10 @@ np.array([['G', 'G', 'G', 'A', 'G', 'C', 'A', 'T', 'A', 'A', 'A', 'A', 'C',
            'T', 'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (790 aligned letters; 615 identities; 175 mismatches; 10 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (790 aligned letters; 615 identities; 175 mismatches; 10 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 790:
         identities = 615,
@@ -2627,104 +2084,87 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 4)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 10)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 4)
-        self.assertEqual(counts.gaps, 10)
-        self.assertEqual(counts.aligned, 790)
-        self.assertEqual(counts.identities, 615)
-        self.assertEqual(counts.mismatches, 175)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 4
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 10
+        assert counts.insertions == 6
+        assert counts.deletions == 4
+        assert counts.gaps == 10
+        assert counts.aligned == 790
+        assert counts.identities == 615
+        assert counts.mismatches == 175
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 411)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014742 : 3014742 + 36],
-            "AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA",
-        )
-        self.assertEqual(alignment[0], "AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA")
-        self.assertEqual(alignment.sequences[1].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[1].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[1].seq[6283 : 6283 + 28], "AAATGTATGATCTCCCCATCCTGCCCTG"
-        )
-        self.assertEqual(alignment[1], "AAATGTA-----TGATCTCCCCATCCTGCCCTG---")
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 2)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 54)
-        self.assertEqual(alignment.sequences[2].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[2].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[2].seq[175231 : 175231 + 31],
-            "TGCACGGAGGGGGTGAGGGCATCAGAAATCT",
-        )
-        self.assertEqual(alignment[2], "AGATTTC-----TGATGCCCTCACCCCCTCCGTGCA")
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9996999965974999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 2)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 24)
-        self.assertEqual(alignment.sequences[3].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[3].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[3].seq[9290 : 9290 + 27], "TGTGGGGGTGGGGGGTGGCATAAGCCT"
-        )
-        self.assertEqual(alignment[3], "AGGCTTA-----TG----CCACCCCCCACCCCCACA")
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"], "999999999997999999999999999"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 2)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 25)
+        assert alignment.score == 411
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014742 : 3014742 + 36] == "AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA"
+        assert alignment[0] == "AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA"
+        assert alignment.sequences[1].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[1].seq) == 133105
+        assert alignment.sequences[1].seq[6283 : 6283 + 28] == "AAATGTATGATCTCCCCATCCTGCCCTG"
+        assert alignment[1] == "AAATGTA-----TGATCTCCCCATCCTGCCCTG---"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 2
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 54
+        assert alignment.sequences[2].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[2].seq) == 359464
+        assert alignment.sequences[2].seq[175231 : 175231 + 31] == "TGCACGGAGGGGGTGAGGGCATCAGAAATCT"
+        assert alignment[2] == "AGATTTC-----TGATGCCCTCACCCCCTCCGTGCA"
+        assert alignment.sequences[2].annotations["quality"] == "9996999965974999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 2
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 24
+        assert alignment.sequences[3].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[3].seq) == 10574
+        assert alignment.sequences[3].seq[9290 : 9290 + 27] == "TGTGGGGGTGGGGGGTGGCATAAGCCT"
+        assert alignment[3] == "AGGCTTA-----TG----CCACCCCCCACCCCCACA"
+        assert alignment.sequences[3].annotations["quality"] == "999999999997999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 2
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 25
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155029107, 155028706))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155029107, 155028706)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157519158, 157518758))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157519158, 157518758)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158048983, 158040939))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertEqual(len(alignment.annotations["empty"]), 5)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158048983, 158040939)
+        assert status == "I"
+        assert len(alignment.sequences) == 4
+        assert len(alignment.annotations["empty"]) == 5
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -2736,19 +2176,13 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3014742 AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA 3014778
 calJac1.C      6283 AAATGTA-----TGATCTCCCCATCCTGCCCTG---    6311
 otoGar1.s    175262 AGATTTC-----TGATGCCCTCACCCCCTCCGTGCA  175231
 loxAfr1.s      9317 AGGCTTA-----TG----CCACCCCCCACCCCCACA    9290
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=411.000000
 s mm9.chr10                         3014742   36 + 129993255 AAGTTCCCTCCATAATTCCTTCCTCCCACCCCCACA
 s calJac1.Contig6394                   6283   28 +    133105 AAATGTA-----TGATCTCCCCATCCTGCCCTG---
@@ -2765,10 +2199,8 @@ e hg18.chr6                        15870885  401 - 170899992 I
 e panTro2.chr6                     16389454  400 - 173908612 I
 e ponAbe2.chr6                     16161448 8044 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'A', 'G', 'T', 'T', 'C', 'C', 'C', 'T', 'C', 'C', 'A', 'T',
@@ -2785,16 +2217,10 @@ np.array([['A', 'A', 'G', 'T', 'T', 'C', 'C', 'C', 'T', 'C', 'C', 'A', 'T',
            'C', 'A', 'C', 'C', 'C', 'C', 'C', 'A', 'C', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (165 aligned letters; 97 identities; 68 mismatches; 36 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (165 aligned letters; 97 identities; 68 mismatches; 36 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 165:
         identities = 97,
@@ -2821,93 +2247,83 @@ AlignmentCounts object with
             right_deletions = 3:
                 open_right_deletions = 1,
                 extend_right_deletions = 2.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 6)
-        self.assertEqual(counts.right_deletions, 3)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 27)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 9)
-        self.assertEqual(counts.internal_gaps, 27)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 30)
-        self.assertEqual(counts.gaps, 36)
-        self.assertEqual(counts.aligned, 165)
-        self.assertEqual(counts.identities, 97)
-        self.assertEqual(counts.mismatches, 68)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 6
+        assert counts.right_deletions == 3
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 27
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 9
+        assert counts.internal_gaps == 27
+        assert counts.insertions == 6
+        assert counts.deletions == 30
+        assert counts.gaps == 36
+        assert counts.aligned == 165
+        assert counts.identities == 97
+        assert counts.mismatches == 68
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014778 : 3014778 + 17], "TCCCATGTCCACCCTGA"
-        )
-        self.assertEqual(alignment[0], "TCCCATGTCCACCCTGA")
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014778 : 3014778 + 17] == "TCCCATGTCCACCCTGA"
+        assert alignment[0] == "TCCCATGTCCACCCTGA"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(record.seq), 10574)
-        self.assertEqual(segment, (9290, 9265))
-        self.assertEqual(status, "I")
+        assert record.id == "loxAfr1.scaffold_75566"
+        assert len(record.seq) == 10574
+        assert segment == (9290, 9265)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6311, 6365))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6311, 6365)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (331078, 326933))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (331078, 326933)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (175231, 175207))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (175231, 175207)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155029107, 155028706))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155029107, 155028706)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157519158, 157518758))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157519158, 157518758)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158048983, 158040939))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 8)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3014778, 3014795]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158048983, 158040939)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 8
+        assert np.array_equal(alignment.coordinates, np.array([[3014778, 3014795]]))
+        assert str(alignment) == """\
 mm9.chr10   3014778 TCCCATGTCCACCCTGA 3014795
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3014778   17 + 129993255 TCCCATGTCCACCCTGA
 e loxAfr1.scaffold_75566               1284   25 -     10574 I
@@ -2919,26 +2335,18 @@ e hg18.chr6                        15870885  401 - 170899992 I
 e panTro2.chr6                     16389454  400 - 173908612 I
 e ponAbe2.chr6                     16161448 8044 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'C', 'C', 'C', 'A', 'T', 'G', 'T', 'C', 'C', 'A', 'C', 'C',
            'C', 'T', 'G', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -2965,173 +2373,106 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, -12243)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014795 : 3014795 + 47],
-            "GTTTCAGGGGCAGCTCGCTGTTAGCAGCTAAGGCATGGTGTCTCTCA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "GTTTCAGGGGCAGCTCGCTG----------------TTAGCAG-CTAAGGCATGGTGTCTCTCA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[1].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[1].seq[175147 : 175147 + 60],
-            "AGAAATACACCCCACCTAAACCATCTAAACCAAATATCCATGACTGCAACTTGTTCCCGA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "---TCGGGAACAAGTTGCAGTCATGGATAT-TTGGTTTAGATGGTTTAGGTGGGGTGTATTTCT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "899999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 24)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[2].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[2].seq[6365 : 6365 + 39],
-            "GCCATGAATATTTTAGACATGCAGGTGTGGCGTGTTTCT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "-------------------GCCATGAATAT-----TTTAGAC-ATGCAGGTGTGGCGTGTTTCT",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 54)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155028686 : 155028686 + 20],
-            "AGAAACATGCCACACCTGCt",
-        )
-        self.assertEqual(
-            alignment[3],
-            "--------------------------------------------aGCAGGTGTGGCATGTTTCT",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 401)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[4].seq[157518738 : 157518738 + 20],
-            "AGAAACATGCCACACCTGCt",
-        )
-        self.assertEqual(
-            alignment[4],
-            "--------------------------------------------aGCAGGTGTGGCATGTTTCT",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"], "99999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 400)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[5].seq[158040919 : 158040919 + 20],
-            "AGAAACATGCCACACCTGCt",
-        )
-        self.assertEqual(
-            alignment[5],
-            "--------------------------------------------aGCAGGTGTGGCATGTTTCT",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 8044)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[6].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[6].seq[326906 : 326906 + 27],
-            "AGCGATGCGCCACACCCACATTTCTAA",
-        )
-        self.assertEqual(
-            alignment[6],
-            "------------------------------------TTAGAAA-TGTGGGTGTGGCGCATCGCT",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"], "999999999999989998899999699"
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 4145)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[7].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[7].seq[2184 : 2184 + 26], "GAACCATGCCACACCTAAATTTCTAA"
-        )
-        self.assertEqual(
-            alignment[7],
-            "------------------------------------TTAGAAA-TTTAGGTGTGGCATGGTTC-",
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"], "42558311324566557465575854"
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[8].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[8].seq[9203 : 9203 + 62],
-            "aGAGATACAGCAAACCTCAATTTCTGAAACAACGTATTGATGTCCTAAACTTGCTCTCAAAC",
-        )
-        self.assertEqual(
-            alignment[8],
-            "GTT-TGAGAGCAAGTTTAGGACATCAATACGTTGTTTCAGAAA-TTGAGGTTTGCTGTATCTCt",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 25)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
+        assert alignment.score == -12243
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014795 : 3014795 + 47] == "GTTTCAGGGGCAGCTCGCTGTTAGCAGCTAAGGCATGGTGTCTCTCA"
+        assert alignment[0] == "GTTTCAGGGGCAGCTCGCTG----------------TTAGCAG-CTAAGGCATGGTGTCTCTCA"
+        assert alignment.sequences[1].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[1].seq) == 359464
+        assert alignment.sequences[1].seq[175147 : 175147 + 60] == "AGAAATACACCCCACCTAAACCATCTAAACCAAATATCCATGACTGCAACTTGTTCCCGA"
+        assert alignment[1] == "---TCGGGAACAAGTTGCAGTCATGGATAT-TTGGTTTAGATGGTTTAGGTGGGGTGTATTTCT"
+        assert alignment.sequences[1].annotations["quality"] == "899999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 24
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[2].seq) == 133105
+        assert alignment.sequences[2].seq[6365 : 6365 + 39] == "GCCATGAATATTTTAGACATGCAGGTGTGGCGTGTTTCT"
+        assert alignment[2] == "-------------------GCCATGAATAT-----TTTAGAC-ATGCAGGTGTGGCGTGTTTCT"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 54
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155028686 : 155028686 + 20] == "AGAAACATGCCACACCTGCt"
+        assert alignment[3] == "--------------------------------------------aGCAGGTGTGGCATGTTTCT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 401
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "panTro2.chr6"
+        assert len(alignment.sequences[4].seq) == 173908612
+        assert alignment.sequences[4].seq[157518738 : 157518738 + 20] == "AGAAACATGCCACACCTGCt"
+        assert alignment[4] == "--------------------------------------------aGCAGGTGTGGCATGTTTCT"
+        assert alignment.sequences[4].annotations["quality"] == "99999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 400
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[5].seq) == 174210431
+        assert alignment.sequences[5].seq[158040919 : 158040919 + 20] == "AGAAACATGCCACACCTGCt"
+        assert alignment[5] == "--------------------------------------------aGCAGGTGTGGCATGTTTCT"
+        assert alignment.sequences[5].annotations["leftStatus"] == "I"
+        assert alignment.sequences[5].annotations["leftCount"] == 8044
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[6].seq) == 498454
+        assert alignment.sequences[6].seq[326906 : 326906 + 27] == "AGCGATGCGCCACACCCACATTTCTAA"
+        assert alignment[6] == "------------------------------------TTAGAAA-TGTGGGTGTGGCGCATCGCT"
+        assert alignment.sequences[6].annotations["quality"] == "999999999999989998899999699"
+        assert alignment.sequences[6].annotations["leftStatus"] == "I"
+        assert alignment.sequences[6].annotations["leftCount"] == 4145
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[7].seq) == 10026
+        assert alignment.sequences[7].seq[2184 : 2184 + 26] == "GAACCATGCCACACCTAAATTTCTAA"
+        assert alignment[7] == "------------------------------------TTAGAAA-TTTAGGTGTGGCATGGTTC-"
+        assert alignment.sequences[7].annotations["quality"] == "42558311324566557465575854"
+        assert alignment.sequences[7].annotations["leftStatus"] == "N"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[8].seq) == 10574
+        assert alignment.sequences[8].seq[9203 : 9203 + 62] == "aGAGATACAGCAAACCTCAATTTCTGAAACAACGTATTGATGTCCTAAACTTGCTCTCAAAC"
+        assert alignment[8] == "GTT-TGAGAGCAAGTTTAGGACATCAATACGTTGTTTCAGAAA-TTGAGGTTTGCTGTATCTCt"
+        assert alignment.sequences[8].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "I"
+        assert alignment.sequences[8].annotations["leftCount"] == 25
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 9)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
+        assert len(alignment.sequences) == 9
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -3166,10 +2507,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3014795 GTTTCAGGGGCAGCTCGCTG----------------TTAGCAG-CTAAGGCATGGTGTCT
 otoGar1.s    175207 ---TCGGGAACAAGTTGCAGTCATGGATAT-TTGGTTTAGATGGTTTAGGTGGGGTGTAT
 calJac1.C      6365 -------------------GCCATGAATAT-----TTTAGAC-ATGCAGGTGTGGCGTGT
@@ -3189,11 +2527,8 @@ ponAbe2.c 158040923 TTCT 158040919
 tupBel1.s    326910 CGCT    326906
 cavPor2.s      2187 TTC-      2184
 loxAfr1.s      9207 CTCt      9203
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=-12243.000000
 s mm9.chr10                         3014795   47 + 129993255 GTTTCAGGGGCAGCTCGCTG----------------TTAGCAG-CTAAGGCATGGTGTCTCTCA
 s otoGar1.scaffold_334.1-359464      184257   60 -    359464 ---TCGGGAACAAGTTGCAGTCATGGATAT-TTGGTTTAGATGGTTTAGGTGGGGTGTATTTCT
@@ -3219,10 +2554,8 @@ q loxAfr1.scaffold_75566                                     999-999999999999999
 i loxAfr1.scaffold_75566           I 25 C 0
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['G', 'T', 'T', 'T', 'C', 'A', 'G', 'G', 'G', 'G', 'C', 'A', 'G',
@@ -3273,16 +2606,10 @@ np.array([['G', 'T', 'T', 'T', 'C', 'A', 'G', 'G', 'G', 'G', 'C', 'A', 'G',
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (905 aligned letters; 613 identities; 292 mismatches; 758 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (905 aligned letters; 613 identities; 292 mismatches; 758 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 905:
         identities = 613,
@@ -3309,191 +2636,114 @@ AlignmentCounts object with
             right_deletions = 7:
                 open_right_deletions = 7,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 259)
-        self.assertEqual(counts.left_deletions, 424)
-        self.assertEqual(counts.right_insertions, 1)
-        self.assertEqual(counts.right_deletions, 7)
-        self.assertEqual(counts.internal_insertions, 53)
-        self.assertEqual(counts.internal_deletions, 14)
-        self.assertEqual(counts.left_gaps, 683)
-        self.assertEqual(counts.right_gaps, 8)
-        self.assertEqual(counts.internal_gaps, 67)
-        self.assertEqual(counts.insertions, 313)
-        self.assertEqual(counts.deletions, 445)
-        self.assertEqual(counts.gaps, 758)
-        self.assertEqual(counts.aligned, 905)
-        self.assertEqual(counts.identities, 613)
-        self.assertEqual(counts.mismatches, 292)
+"""
+        assert counts.left_insertions == 259
+        assert counts.left_deletions == 424
+        assert counts.right_insertions == 1
+        assert counts.right_deletions == 7
+        assert counts.internal_insertions == 53
+        assert counts.internal_deletions == 14
+        assert counts.left_gaps == 683
+        assert counts.right_gaps == 8
+        assert counts.internal_gaps == 67
+        assert counts.insertions == 313
+        assert counts.deletions == 445
+        assert counts.gaps == 758
+        assert counts.aligned == 905
+        assert counts.identities == 613
+        assert counts.mismatches == 292
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 320596)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3014842 : 3014842 + 186],
-            "CTTGGGATGCTTTATAGTGGAAATGGAAAGCAATTTATTTAGATCTTAAATCATTTTGAAGGTTAATAAAATGACCATATTAATATTCCCATGAACAAAGCCTTCATTTTTAAAATATTGCATCCTATAATACACATAAATCTTGTTCTCGtttttatttttttatttatttatttttttttcttt",
-        )
-        self.assertEqual(
-            alignment[0],
-            "C--TTGGGA---------TGCTTTATAGTGGAAATGGAAAGCA----A-TTTATTTAGATCTTAAATCATTTT-GAAGGTTAATAAAATGACCATATTAATATTCCCATGAACAAAGCCTTCATTT----TTAAAATATTGCATCCTATAATACACATAA-ATCTTGT-----TCTCGtttttatttttt----tatt-tat-----------------------ttattttttttt------------cttt",
-        )
-        self.assertEqual(alignment.sequences[1].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[1].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[1].seq[8958 : 8958 + 245],
-            "AGATTTGGCCAAAGTCAATGAAAAAAGAGAGAGAGAGTGAACTTGCTAAGACACCTGCTTAAAAAGGGAATGAGATTTTGAAAAGATGCTGTGTGTGGTATAAAACCCAATTTTTTTTTTTAAATGAGGGTATTGTTCACAGGAATATTAAAGTGAAAATTTCATTATACTTCAAAGGGATTTATGGCCAAAAGAAACAGTGTGACTTTCACTTCAGCtttaaaaaaaaaaaaaaatcaaaaata",
-        )
-        self.assertEqual(
-            alignment[1],
-            "tatttttgatttttttttttttttaaaGCTGAAGTGAAAGTCACACTG-TTTCTTTTGGCCATAAATCCCTTT-GAAGTATAATGAAATTTTCACTTTAATATTCCTGTGAACAATACCCTCATTT-AAAAAAAAAAATTGGGTTTTATACCACACACAGCATCTTTTCAAAATCTCATTCCC-TTTTTAAGCAGGTG-TCT---TAGCAAGTTCACTCTCTCTCTCTTTTTTCATTGACTTTGGCCAAATCT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[2].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[2].seq[1986 : 1986 + 198],
-            "agagaaagagagactaaTAAACCTGCCAGAAGAAGGAAATGAGATGTTGGAAATATGCTGTATGTGGTACAAAATCCAAACTTTTTTAAATGAGGGCATTGTTAGTAGGAATATTAATGTGATCATTTTATTATACTTCAAAAGGATTTAAGTCCTAAAGAAACAGGGTGCCTTTCATTCCAACTGTGAATATCCAAA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "---TTTGGA---------TA-TTCACAGTTGGAATGAAAGGCACCCTG-TTTCTTTAGGACTTAAATCCTTTT-GAAGTATAATAAAATGATCACATTAATATTCCTACTAACAATGCCCTCATTT----AAAAAAGTTTGGATTTTGTACCACATACAGCATATTTCCAACATCTCATTTCCTTCTTCTGGCAGGTT-TAt-----------------------tagtctctcttt------------ctct",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "610137772001955312362668764253688587789879568878689568989568988778987788768588885664786777656586678636299978766899797899369899566878676899958889788869976598977898999989967788999979899987999997779899",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[3].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[3].seq[326691 : 326691 + 215],
-            "AAGTCAATAGACAAAAAGGGAACTTGCTAATAAACCTGCCAAAAAAGGAAATGAGATTTTGGAAATATGCTGTACGTGGTATAAAATCCCAGATTTTGTAAAATGAGGGCATTGTTCACAGGAATAGTAAAGTGATCATTTTATTATACTTCAAAAGGATTTAAGACCTACAGACACAGTGTGCTTTTTATTTCAGCTGTAAAAAATCCAAAAGG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "CCTTTTGGA---------TTTTTTACAGCTGAAATAAAAAGCACACTG-TGTCTGTAGGTCTTAAATCCTTTT-GAAGTATAATAAAATGATCACTTTACTATTCCTGTGAACAATGCCCTCATTT---TACAAAATCTGGGATTTTATACCACGTACAGCATATTTCCAAAATCTCATTTCC-TTTTTTGGCAGGTT-TAT---TAGCAAGTTCCCT-------TTTTGTCTATTG------------ACTT",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "98999999989999999899999999999999999999999999999999999999999999999999989999999999999999999999999998999999999999999999988999999999739999999989999999999999999799999999999999999999769984999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[4].seq[158040700 : 158040700 + 219],
-            "AAGTAAATAAGAGAGAGAGATAACTTGCTATAAATAAACCTGCCAAGAAAGGAAATGAGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTAAAAGAGGACATTGCTCACAGGAGTATTAAAGTGATCGTTTTATTATACTTCAAAAGTATTTAAGACCTAAAGAAACAGTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACACTG-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAATAAAACGATCACTTTAATACTCCTGTGAGCAATGTCCTCTTTT---AAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCTCATTTCC-TTTCTTGGCAGGTT-TATTTATAGCAAGTTATCTC------TCTCTCTTATTT------------ACTT",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[5].seq[157518570 : 157518570 + 168],
-            "AAATGGGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTAAAAAGAGGGCATTGTTCACAGGAGTATTAAAGTGATCATTTTTTTATACTTCAAAAGTATTTAAGACCTAAAGAAATATTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG",
-        )
-        self.assertEqual(
-            alignment[5],
-            "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACAATA-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAAAAAAATGATCACTTTAATACTCCTGTGAACAATGCCCTCTTTTT--AAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCCCATTT------------------------------------------------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[6].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[6].seq[155028517 : 155028517 + 169],
-            "AAATGAGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTTAAAAAGAGGGCATTGTTCACAGGAGTATTAAAGTGATCATTTTTTTATACTTCAAAAGTATTTAAGACCTAAAGAAATATTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG",
-        )
-        self.assertEqual(
-            alignment[6],
-            "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACAATA-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAAAAAAATGATCACTTTAATACTCCTGTGAACAATGCCCTCTTTTT-AAAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCTCATTT------------------------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[7].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[7].seq[6404 : 6404 + 223],
-            "TCTTTTGTATTTTTTTATAGCTGAAAAGGAAGGCACACTGTCTCTTTAGGTCTTAAATACGTTTGAAGCATAATAAAATGATCACTTTCATACTCCTGTGAATAATGCCCTCCTTTTAAAAAGAAATCTTGGATTTTATATCACACGCAGCATATTTCTGAAATCTCATTTCCTTTCCTGGCAGGTTTATTAATAGCAAGTTCTCTCTCTTATTTATTTATTT",
-        )
-        self.assertEqual(
-            alignment[7],
-            "TCTTTTGTA--------TTTTTTTATAGCTGAAAAGGAAGGCACACTG-TCTCTTTAGGTCTTAAATACGTTT-GAAGCATAATAAAATGATCACTTTCATACTCCTGTGAATAATGCCCTCCTTTTAAAAAGAAATCTTGGATTTTATATCACACGCAGCATATTTCTGAAATCTCATTTCC-TTTCCTGGCAGGTT-TATTAATAGCAAGTTCTCTC------TCTTATTTATTT------------ATTT",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[8].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[8].seq[174925 : 174925 + 222],
-            "GAGAAAAAGAAGAAGAAAGCCGGAGAGAACTTGCTAACAAACCCGCCAAAAAGGAAATGAGATTTTGGAAATATGCTGGATCTGGTATAAAATCCAAGATTTTTTTAAATGAGGGCATTGTTCACAGGAACAGTAAAGTAATCGTTTTATTATACTTCAAAAGGATTTAAGTCCTAAAAAAACAGTGTGCCTTTCATTTCACCCATAAAAAAGCCCAAAATA",
-        )
-        self.assertEqual(
-            alignment[8],
-            "TATTTTGGG--------CTTTTTTATGGGTGAAATGAAAGGCACACTG-TTTTTTTAGGACTTAAATCCTTTT-GAAGTATAATAAAACGATTACTTTACTGTTCCTGTGAACAATGCCCTCATTT---AAAAAAATCTTGGATTTTATACCAGATCCAGCATATTTCCAAAATCTCATTT-C-CTTTTTGGCGGGTT-TGT---TAGCAAGTTCTCTCCGGCTTTCTTCTTCTTTT------------TCTC",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "999999999999999999999999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "ornAna1.chr2")
-        self.assertEqual(len(alignment.sequences[9].seq), 54797317)
-        self.assertEqual(
-            alignment.sequences[9].seq[40046122 : 40046122 + 201],
-            "AAAGAGAGAACGGTTAATACAATGCACCCAAAAAGGAACTAAGATTTTGGAAATGGGCTGTATGTCGTTAAAATACAAAGATATTTTAATGAGGGCTTTGTTAGCGGGGAAATGAAGATCATAATTACAATACACTTTTAAAAAGGCTTAAGATAGAAAGAAAACAATGAGCCTTTCACTTTTGCAGTAACATTTCCAAGG",
-        )
-        self.assertEqual(
-            alignment[9],
-            "--CCTTGGA---------AATGTTACTGCAAAAGTGAAAGGCTCATTGTTTTCTTTCTATCTTAAGCCTTTTTAAAAGTGTATTGTAATTATGATCTTCATTTCCCCGCTAACAAAGCCCTCATTA----AAATATCTTTGTATTTTA-ACGACATACAGCCCATTTCCAAAATCTTAGTTCC-TTTTTGGGTGCATTGTAT---TAAC----------------CGTTCTCTCTTT----------------",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 5690)
+        assert alignment.score == 320596
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3014842 : 3014842 + 186] == "CTTGGGATGCTTTATAGTGGAAATGGAAAGCAATTTATTTAGATCTTAAATCATTTTGAAGGTTAATAAAATGACCATATTAATATTCCCATGAACAAAGCCTTCATTTTTAAAATATTGCATCCTATAATACACATAAATCTTGTTCTCGtttttatttttttatttatttatttttttttcttt"
+        assert alignment[0] == "C--TTGGGA---------TGCTTTATAGTGGAAATGGAAAGCA----A-TTTATTTAGATCTTAAATCATTTT-GAAGGTTAATAAAATGACCATATTAATATTCCCATGAACAAAGCCTTCATTT----TTAAAATATTGCATCCTATAATACACATAA-ATCTTGT-----TCTCGtttttatttttt----tatt-tat-----------------------ttattttttttt------------cttt"
+        assert alignment.sequences[1].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[1].seq) == 10574
+        assert alignment.sequences[1].seq[8958 : 8958 + 245] == "AGATTTGGCCAAAGTCAATGAAAAAAGAGAGAGAGAGTGAACTTGCTAAGACACCTGCTTAAAAAGGGAATGAGATTTTGAAAAGATGCTGTGTGTGGTATAAAACCCAATTTTTTTTTTTAAATGAGGGTATTGTTCACAGGAATATTAAAGTGAAAATTTCATTATACTTCAAAGGGATTTATGGCCAAAAGAAACAGTGTGACTTTCACTTCAGCtttaaaaaaaaaaaaaaatcaaaaata"
+        assert alignment[1] == "tatttttgatttttttttttttttaaaGCTGAAGTGAAAGTCACACTG-TTTCTTTTGGCCATAAATCCCTTT-GAAGTATAATGAAATTTTCACTTTAATATTCCTGTGAACAATACCCTCATTT-AAAAAAAAAAATTGGGTTTTATACCACACACAGCATCTTTTCAAAATCTCATTCCC-TTTTTAAGCAGGTG-TCT---TAGCAAGTTCACTCTCTCTCTCTTTTTTCATTGACTTTGGCCAAATCT"
+        assert alignment.sequences[1].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[2].seq) == 10026
+        assert alignment.sequences[2].seq[1986 : 1986 + 198] == "agagaaagagagactaaTAAACCTGCCAGAAGAAGGAAATGAGATGTTGGAAATATGCTGTATGTGGTACAAAATCCAAACTTTTTTAAATGAGGGCATTGTTAGTAGGAATATTAATGTGATCATTTTATTATACTTCAAAAGGATTTAAGTCCTAAAGAAACAGGGTGCCTTTCATTCCAACTGTGAATATCCAAA"
+        assert alignment[2] == "---TTTGGA---------TA-TTCACAGTTGGAATGAAAGGCACCCTG-TTTCTTTAGGACTTAAATCCTTTT-GAAGTATAATAAAATGATCACATTAATATTCCTACTAACAATGCCCTCATTT----AAAAAAGTTTGGATTTTGTACCACATACAGCATATTTCCAACATCTCATTTCCTTCTTCTGGCAGGTT-TAt-----------------------tagtctctcttt------------ctct"
+        assert alignment.sequences[2].annotations["quality"] == "610137772001955312362668764253688587789879568878689568989568988778987788768588885664786777656586678636299978766899797899369899566878676899958889788869976598977898999989967788999979899987999997779899"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[3].seq) == 498454
+        assert alignment.sequences[3].seq[326691 : 326691 + 215] == "AAGTCAATAGACAAAAAGGGAACTTGCTAATAAACCTGCCAAAAAAGGAAATGAGATTTTGGAAATATGCTGTACGTGGTATAAAATCCCAGATTTTGTAAAATGAGGGCATTGTTCACAGGAATAGTAAAGTGATCATTTTATTATACTTCAAAAGGATTTAAGACCTACAGACACAGTGTGCTTTTTATTTCAGCTGTAAAAAATCCAAAAGG"
+        assert alignment[3] == "CCTTTTGGA---------TTTTTTACAGCTGAAATAAAAAGCACACTG-TGTCTGTAGGTCTTAAATCCTTTT-GAAGTATAATAAAATGATCACTTTACTATTCCTGTGAACAATGCCCTCATTT---TACAAAATCTGGGATTTTATACCACGTACAGCATATTTCCAAAATCTCATTTCC-TTTTTTGGCAGGTT-TAT---TAGCAAGTTCCCT-------TTTTGTCTATTG------------ACTT"
+        assert alignment.sequences[3].annotations["quality"] == "98999999989999999899999999999999999999999999999999999999999999999999989999999999999999999999999998999999999999999999988999999999739999999989999999999999999799999999999999999999769984999999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[4].seq) == 174210431
+        assert alignment.sequences[4].seq[158040700 : 158040700 + 219] == "AAGTAAATAAGAGAGAGAGATAACTTGCTATAAATAAACCTGCCAAGAAAGGAAATGAGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTAAAAGAGGACATTGCTCACAGGAGTATTAAAGTGATCGTTTTATTATACTTCAAAAGTATTTAAGACCTAAAGAAACAGTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG"
+        assert alignment[4] == "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACACTG-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAATAAAACGATCACTTTAATACTCCTGTGAGCAATGTCCTCTTTT---AAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCTCATTTCC-TTTCTTGGCAGGTT-TATTTATAGCAAGTTATCTC------TCTCTCTTATTT------------ACTT"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "panTro2.chr6"
+        assert len(alignment.sequences[5].seq) == 173908612
+        assert alignment.sequences[5].seq[157518570 : 157518570 + 168] == "AAATGGGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTAAAAAGAGGGCATTGTTCACAGGAGTATTAAAGTGATCATTTTTTTATACTTCAAAAGTATTTAAGACCTAAAGAAATATTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG"
+        assert alignment[5] == "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACAATA-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAAAAAAATGATCACTTTAATACTCCTGTGAACAATGCCCTCTTTTT--AAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCCCATTT------------------------------------------------------------------------"
+        assert alignment.sequences[5].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "hg18.chr6"
+        assert len(alignment.sequences[6].seq) == 170899992
+        assert alignment.sequences[6].seq[155028517 : 155028517 + 169] == "AAATGAGATTTCAGAAATATGCTGCATGTGGTATAAAATCCAGGATTTTTTTTAAAAAGAGGGCATTGTTCACAGGAGTATTAAAGTGATCATTTTTTTATACTTCAAAAGTATTTAAGACCTAAAGAAATATTGTGCCTTCCATTTCAGCTATAAAAAGTCCAAAAGG"
+        assert alignment[6] == "CCTTTTGGA---------CTTTTTATAGCTGAAATGGAAGGCACAATA-TTTCTTTAGGTCTTAAATACTTTT-GAAGTATAAAAAAATGATCACTTTAATACTCCTGTGAACAATGCCCTCTTTTT-AAAAAAAATCCTGGATTTTATACCACATGCAGCATATTTCTGAAATCTCATTT------------------------------------------------------------------------"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[7].seq) == 133105
+        assert alignment.sequences[7].seq[6404 : 6404 + 223] == "TCTTTTGTATTTTTTTATAGCTGAAAAGGAAGGCACACTGTCTCTTTAGGTCTTAAATACGTTTGAAGCATAATAAAATGATCACTTTCATACTCCTGTGAATAATGCCCTCCTTTTAAAAAGAAATCTTGGATTTTATATCACACGCAGCATATTTCTGAAATCTCATTTCCTTTCCTGGCAGGTTTATTAATAGCAAGTTCTCTCTCTTATTTATTTATTT"
+        assert alignment[7] == "TCTTTTGTA--------TTTTTTTATAGCTGAAAAGGAAGGCACACTG-TCTCTTTAGGTCTTAAATACGTTT-GAAGCATAATAAAATGATCACTTTCATACTCCTGTGAATAATGCCCTCCTTTTAAAAAGAAATCTTGGATTTTATATCACACGCAGCATATTTCTGAAATCTCATTTCC-TTTCCTGGCAGGTT-TATTAATAGCAAGTTCTCTC------TCTTATTTATTT------------ATTT"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[8].seq) == 359464
+        assert alignment.sequences[8].seq[174925 : 174925 + 222] == "GAGAAAAAGAAGAAGAAAGCCGGAGAGAACTTGCTAACAAACCCGCCAAAAAGGAAATGAGATTTTGGAAATATGCTGGATCTGGTATAAAATCCAAGATTTTTTTAAATGAGGGCATTGTTCACAGGAACAGTAAAGTAATCGTTTTATTATACTTCAAAAGGATTTAAGTCCTAAAAAAACAGTGTGCCTTTCATTTCACCCATAAAAAAGCCCAAAATA"
+        assert alignment[8] == "TATTTTGGG--------CTTTTTTATGGGTGAAATGAAAGGCACACTG-TTTTTTTAGGACTTAAATCCTTTT-GAAGTATAATAAAACGATTACTTTACTGTTCCTGTGAACAATGCCCTCATTT---AAAAAAATCTTGGATTTTATACCAGATCCAGCATATTTCCAAAATCTCATTT-C-CTTTTTGGCGGGTT-TGT---TAGCAAGTTCTCTCCGGCTTTCTTCTTCTTTT------------TCTC"
+        assert alignment.sequences[8].annotations["quality"] == "999999999999999999999999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "ornAna1.chr2"
+        assert len(alignment.sequences[9].seq) == 54797317
+        assert alignment.sequences[9].seq[40046122 : 40046122 + 201] == "AAAGAGAGAACGGTTAATACAATGCACCCAAAAAGGAACTAAGATTTTGGAAATGGGCTGTATGTCGTTAAAATACAAAGATATTTTAATGAGGGCTTTGTTAGCGGGGAAATGAAGATCATAATTACAATACACTTTTAAAAAGGCTTAAGATAGAAAGAAAACAATGAGCCTTTCACTTTTGCAGTAACATTTCCAAGG"
+        assert alignment[9] == "--CCTTGGA---------AATGTTACTGCAAAAGTGAAAGGCTCATTGTTTTCTTTCTATCTTAAGCCTTTTTAAAAGTGTATTGTAATTATGATCTTCATTTCCCCGCTAACAAAGCCCTCATTA----AAATATCTTTGTATTTTA-ACGACATACAGCCCATTTCCAAAATCTTAGTTCC-TTTTTGGGTGCATTGTAT---TAAC----------------CGTTCTCTCTTT----------------"
+        assert alignment.sequences[9].annotations["leftStatus"] == "N"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "I"
+        assert alignment.sequences[9].annotations["rightCount"] == 5690
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 10)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
+        assert len(alignment.sequences) == 10
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -3581,10 +2831,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3014842 C--TTGGGA---------TGCTTTATAGTGGAAATGGAAAGCA----A-TTTATTTAGAT
 loxAfr1.s      9203 tatttttgatttttttttttttttaaaGCTGAAGTGAAAGTCACACTG-TTTCTTTTGGC
 cavPor2.s      2184 ---TTTGGA---------TA-TTCACAGTTGGAATGAAAGGCACCCTG-TTTCTTTAGGA
@@ -3639,11 +2886,8 @@ hg18.chr6 155028517 ------------- 155028517
 calJac1.C      6623 ---------ATTT      6627
 otoGar1.s    174929 ---------TCTC    174925
 ornAna1.c  40046122 -------------  40046122
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=320596.000000
 s mm9.chr10                         3014842  186 + 129993255 C--TTGGGA---------TGCTTTATAGTGGAAATGGAAAGCA----A-TTTATTTAGATCTTAAATCATTTT-GAAGGTTAATAAAATGACCATATTAATATTCCCATGAACAAAGCCTTCATTT----TTAAAATATTGCATCCTATAATACACATAA-ATCTTGT-----TCTCGtttttatttttt----tatt-tat-----------------------ttattttttttt------------cttt
 s loxAfr1.scaffold_75566               1371  245 -     10574 tatttttgatttttttttttttttaaaGCTGAAGTGAAAGTCACACTG-TTTCTTTTGGCCATAAATCCCTTT-GAAGTATAATGAAATTTTCACTTTAATATTCCTGTGAACAATACCCTCATTT-AAAAAAAAAAATTGGGTTTTATACCACACACAGCATCTTTTCAAAATCTCATTCCC-TTTTTAAGCAGGTG-TCT---TAGCAAGTTCACTCTCTCTCTCTTTTTTCATTGACTTTGGCCAAATCT
@@ -3671,17 +2915,11 @@ s ornAna1.chr2                     14750994  201 -  54797317 --CCTTGGA---------A
 i ornAna1.chr2                     N 0 I 5690
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (8418 aligned letters; 6279 identities; 2139 mismatches; 1578 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (8418 aligned letters; 6279 identities; 2139 mismatches; 1578 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 8418:
         identities = 6279,
@@ -3708,149 +2946,107 @@ AlignmentCounts object with
             right_deletions = 510:
                 open_right_deletions = 17,
                 extend_right_deletions = 493.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 19)
-        self.assertEqual(counts.left_deletions, 19)
-        self.assertEqual(counts.right_insertions, 284)
-        self.assertEqual(counts.right_deletions, 510)
-        self.assertEqual(counts.internal_insertions, 441)
-        self.assertEqual(counts.internal_deletions, 305)
-        self.assertEqual(counts.left_gaps, 38)
-        self.assertEqual(counts.right_gaps, 794)
-        self.assertEqual(counts.internal_gaps, 746)
-        self.assertEqual(counts.insertions, 744)
-        self.assertEqual(counts.deletions, 834)
-        self.assertEqual(counts.gaps, 1578)
-        self.assertEqual(counts.aligned, 8418)
-        self.assertEqual(counts.identities, 6279)
-        self.assertEqual(counts.mismatches, 2139)
+"""
+        assert counts.left_insertions == 19
+        assert counts.left_deletions == 19
+        assert counts.right_insertions == 284
+        assert counts.right_deletions == 510
+        assert counts.internal_insertions == 441
+        assert counts.internal_deletions == 305
+        assert counts.left_gaps == 38
+        assert counts.right_gaps == 794
+        assert counts.internal_gaps == 746
+        assert counts.insertions == 744
+        assert counts.deletions == 834
+        assert counts.gaps == 1578
+        assert counts.aligned == 8418
+        assert counts.identities == 6279
+        assert counts.mismatches == 2139
         alignment = next(alignments)
-        self.assertEqual(alignment.score, -36127)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3015028 : 3015028 + 58],
-            "ccattttttattaggtatttagctcatttacatttccaatgctataccaaaagtcccc",
-        )
-        self.assertEqual(
-            alignment[0],
-            "ccatttt----------ttattaggtatttagctcatttacatttccaatgctatac----caaaagtcccc",
-        )
-        self.assertEqual(alignment.sequences[1].id, "loxAfr1.scaffold_75566")
-        self.assertEqual(len(alignment.sequences[1].seq), 10574)
-        self.assertEqual(
-            alignment.sequences[1].seq[8925 : 8925 + 33],
-            "GAGAACTTTTGTAAGGAATGGAGGTAGAAGTGA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TCACTTCTA---------------------------------------CCTCCATTCCTTACAAAAGTTCTC",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[2].seq), 10026)
-        self.assertEqual(alignment.sequences[2].seq[1978 : 1978 + 8], "agacacag")
-        self.assertEqual(
-            alignment[2],
-            "ctgtgtc----------t------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["quality"], "67889899")
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 1372)
-        self.assertEqual(alignment.sequences[3].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[3].seq), 498454)
-        self.assertEqual(alignment.sequences[3].seq[326690 : 326690 + 1], "A")
-        self.assertEqual(
-            alignment[3],
-            "T-----------------------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["quality"], "9")
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 2374)
-        self.assertEqual(alignment.sequences[4].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[4].seq[158040688 : 158040688 + 12], "GAAAAGGCAAAA"
-        )
-        self.assertEqual(
-            alignment[4],
-            "TTTTGCCTTTTC------------------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 75)
-        self.assertEqual(alignment.sequences[5].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[5].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[5].seq[6627 : 6627 + 22], "TGCTTTTTCTCAAATCTCCACT"
-        )
-        self.assertEqual(
-            alignment[5],
-            "TGCTTTTTCTCAAATCTCCACT--------------------------------------------------",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 3479)
-        self.assertEqual(alignment.sequences[6].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[6].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[6].seq[174889 : 174889 + 36],
-            "TGGAAGTGAATATTTGGCAAAAGTCAATAGAAAAAA",
-        )
-        self.assertEqual(
-            alignment[6],
-            "TTTTTTCTATT------------GACTTTTGCCAAATATTCACTTCCA------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 137)
+        assert alignment.score == -36127
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3015028 : 3015028 + 58] == "ccattttttattaggtatttagctcatttacatttccaatgctataccaaaagtcccc"
+        assert alignment[0] == "ccatttt----------ttattaggtatttagctcatttacatttccaatgctatac----caaaagtcccc"
+        assert alignment.sequences[1].id == "loxAfr1.scaffold_75566"
+        assert len(alignment.sequences[1].seq) == 10574
+        assert alignment.sequences[1].seq[8925 : 8925 + 33] == "GAGAACTTTTGTAAGGAATGGAGGTAGAAGTGA"
+        assert alignment[1] == "TCACTTCTA---------------------------------------CCTCCATTCCTTACAAAAGTTCTC"
+        assert alignment.sequences[1].annotations["quality"] == "999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[2].seq) == 10026
+        assert alignment.sequences[2].seq[1978 : 1978 + 8] == "agacacag"
+        assert alignment[2] == "ctgtgtc----------t------------------------------------------------------"
+        assert alignment.sequences[2].annotations["quality"] == "67889899"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 1372
+        assert alignment.sequences[3].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[3].seq) == 498454
+        assert alignment.sequences[3].seq[326690 : 326690 + 1] == "A"
+        assert alignment[3] == "T-----------------------------------------------------------------------"
+        assert alignment.sequences[3].annotations["quality"] == "9"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 2374
+        assert alignment.sequences[4].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[4].seq) == 174210431
+        assert alignment.sequences[4].seq[158040688 : 158040688 + 12] == "GAAAAGGCAAAA"
+        assert alignment[4] == "TTTTGCCTTTTC------------------------------------------------------------"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 75
+        assert alignment.sequences[5].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[5].seq) == 133105
+        assert alignment.sequences[5].seq[6627 : 6627 + 22] == "TGCTTTTTCTCAAATCTCCACT"
+        assert alignment[5] == "TGCTTTTTCTCAAATCTCCACT--------------------------------------------------"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 3479
+        assert alignment.sequences[6].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[6].seq) == 359464
+        assert alignment.sequences[6].seq[174889 : 174889 + 36] == "TGGAAGTGAATATTTGGCAAAAGTCAATAGAAAAAA"
+        assert alignment[6] == "TTTTTTCTATT------------GACTTTTGCCAAATATTCACTTCCA------------------------"
+        assert alignment.sequences[6].annotations["quality"] == "999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 137
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028517, 155028517))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028517, 155028517)
+        assert status == "C"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518570, 157518570))
-        self.assertEqual(status, "C")
-        self.assertEqual(len(alignment.sequences), 7)
-        self.assertEqual(len(alignment.annotations["empty"]), 4)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518570, 157518570)
+        assert status == "C"
+        assert len(alignment.sequences) == 7
+        assert len(alignment.annotations["empty"]) == 4
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -3879,10 +3075,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3015028 ccatttt----------ttattaggtatttagctcatttacatttccaatgctatac---
 loxAfr1.s      8958 TCACTTCTA---------------------------------------CCTCCATTCCTT
 cavPor2.s      1986 ctgtgtc----------t------------------------------------------
@@ -3898,11 +3091,8 @@ tupBel1.s    326690 ------------    326690
 ponAbe2.c 158040688 ------------ 158040688
 calJac1.C      6649 ------------      6649
 otoGar1.s    174889 ------------    174889
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=-36127.000000
 s mm9.chr10                          3015028   58 + 129993255 ccatttt----------ttattaggtatttagctcatttacatttccaatgctatac----caaaagtcccc
 s loxAfr1.scaffold_75566                1616   33 -     10574 TCACTTCTA---------------------------------------CCTCCATTCCTTACAAAAGTTCTC
@@ -3926,10 +3116,8 @@ e echTel1.scaffold_288249              87661 7564 +    100002 I
 e hg18.chr6                        155028517    0 + 170899992 C
 e panTro2.chr6                     157518570    0 + 173908612 C
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['c', 'c', 'a', 't', 't', 't', 't', '-', '-', '-', '-', '-', '-',
@@ -3976,16 +3164,10 @@ np.array([['c', 'c', 'a', 't', 't', 't', 't', '-', '-', '-', '-', '-', '-',
            '-', '-', '-', '-', '-', '-', '-']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (182 aligned letters; 39 identities; 143 mismatches; 656 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (182 aligned letters; 39 identities; 143 mismatches; 656 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 182:
         identities = 39,
@@ -4012,97 +3194,86 @@ AlignmentCounts object with
             right_deletions = 360:
                 open_right_deletions = 12,
                 extend_right_deletions = 348.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 156)
-        self.assertEqual(counts.right_deletions, 360)
-        self.assertEqual(counts.internal_insertions, 88)
-        self.assertEqual(counts.internal_deletions, 52)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 516)
-        self.assertEqual(counts.internal_gaps, 140)
-        self.assertEqual(counts.insertions, 244)
-        self.assertEqual(counts.deletions, 412)
-        self.assertEqual(counts.gaps, 656)
-        self.assertEqual(counts.aligned, 182)
-        self.assertEqual(counts.identities, 39)
-        self.assertEqual(counts.mismatches, 143)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 156
+        assert counts.right_deletions == 360
+        assert counts.internal_insertions == 88
+        assert counts.internal_deletions == 52
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 516
+        assert counts.internal_gaps == 140
+        assert counts.insertions == 244
+        assert counts.deletions == 412
+        assert counts.gaps == 656
+        assert counts.aligned == 182
+        assert counts.identities == 39
+        assert counts.mismatches == 143
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3015086 : 3015086 + 2572],
-            "catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcccctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccgactaggccatcttttgatacatatgcagctagagtcaagagctccggggtactggttagttcataatgttgatccacctatagggttgcagatccctttagctccttgggtactttctctagctcccccattgggagccctgtgatccatccattagctgactgtgggcatccacttctgtgtttgctaggccccggcatagtctcacaagagacagctacatctgggtcctttcgataagatcttgctagtgtatgcaatggtgtcagcgtttggatgctgattatggggtagatccctggataaggcagtctctacatggtccatcctttcatctcagctccaaactttgtctctgtaactccttccaagggtgttttgttcccacttctaaggaggggcatagtgtccacacttcagtcttcatttttcttgagtttcatgtgtttaggaaattgtatcttatatcttgggtatcctaggttttgggctaatatccacttatcagtgagtacatattgtgtgagttcctttgtgaatgtgttacctcactcaggatgatgccctccaggtccatccatttggctaggaatttcataaattaattctttttaatagctgagtagtactccattgtgtagatgtaccacattttctgtatccattcctctgttgaggggcatctgggttctttccagcttctggctattataaataaggctgctatgaacatagtggagcatgtgtccttcttaccagttggggcatcttttggatatatgcccaggagaggtattgctggatcctccggtagtactatgtccaattttctgaggaaccgccagacggatttccagagtggttgtacaagcctgcaatcccaccaacaatggaggagtgttcctctttctccacatcctcgccagcatctgctgtcacctgaatttttgatcttagccattctgactggtgtgaggtggaatctcagggttgttttgatttgcatttctctgatgattaaggatgttgaacatgttttcaggtgcttctctgccattcggtattcctcaggtgagaattctttgttcagttctgagccccattttttaatggggttatttgattttctgaagtccaccttcttgagttctttatatatgttggatattagtcccctatctgatttaggataggtaaagatcctttcccaatctgttggtggtctctttgtgttattgacggtgtcttttgccttgcagaaactttggagtttcattaggtcccatttgtcaattctcgatcttacagcacaagccattgctgttctgttcaggaatttttcccctgtgcccatatcttcaaggcttttccccactttctcctctataagtttcagtgtctctggttttatgtggagttctttgatccatttagatttgaccttagtacaaggagataagtatggatcgattcgcattcttctacatgataacaaccagttgtgccagcaccaattgttgaaaatgctgtctttcttccactggatggttttagctcccttgtcgaagatcaagtgaccataggtgtgtgggttcatttctgggtcttcaattctattccattggtctacttgtctgtctctataccagtaccatgcagtttttaccacaattgctctgtagtaaagctttaggtcaggcatggtgattccaccagaggttcttttatccttgagaagagtttttgctatcctaggttttttgttattccagatgaatttgcaaattgctccttctaattcgttgaagaattgagttggaattgtgatggggattgcattgaatctgtagattgcttttggcaagatagccatttttacaatgttgatcctgccaatccatgagcatgggagagctttccatcttctgagatcttctttaatttctttcttcagagacttgaagtttttatcatacagatctttcacttccttagttagagtcacgccgagatattttatattatttgtgactattgagaagggtgttgtttccctaatttctttctcagcctgtttattctttgtgtagagaaaggccattgacttgtttgagttaattttatatccagctacttcaccgaagctgtttatcaggtttaggagttctctggtggaatttttagggtcacttatatatactatcatatcatctgcaaaaagtgatattttgacttcctcctttccaatttgtatccccttgatctccttttgttgtcgaattgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagccttgtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttggctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcccctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccgactaggccatcttttgatacatatgcagctagagtcaagagctccggggtactggttagttcataatgttgatccacctatagggttgcagatccctttagctccttgggtactttctctagctcccccattgggagccctgtgatccatccattagctgactgtgggcatccacttctgtgtttgctaggccccggcatagtctcacaagagacagctacatctgggtcctttcgataagatcttgctagtgtatgcaatggtgtcagcgtttggatgctgattatggggtagatccctggataaggcagtctctacatggtccatcctttcatctcagctccaaactttgtctctgtaactccttccaagggtgttttgttcccacttctaaggaggggcatagtgtccacacttcagtcttcatttttcttgagtttcatgtgtttaggaaattgtatcttatatcttgggtatcctaggttttgggctaatatccacttatcagtgagtacatattgtgtgagttcctttgtgaatgtgttacctcactcaggatgatgccctccaggtccatccatttggctaggaatttcataaattaattctttttaatagctgagtagtactccattgtgtagatgtaccacattttctgtatccattcctctgttgaggggcatctgggttctttccagcttctggctattataaataaggctgctatgaacatagtggagcatgtgtccttcttaccagttggggcatcttttggatatatgcccaggagaggtattgctggatcctccggtagtactatgtccaattttctgaggaaccgccagacggatttccagagtggttgtacaagcctgcaatcccaccaacaatggaggagtgttcctctttctccacatcctcgccagcatctgctgtcacctgaatttttgatcttagccattctgactggtgtgaggtggaatctcagggttgttttgatttgcatttctctgatgattaaggatgttgaacatgttttcaggtgcttctctgccattcggtattcctcaggtgagaattctttgttcagttctgagccccattttttaatggggttatttgattttctgaagtccaccttcttgagttctttatatatgttggatattagtcccctatctgatttaggataggtaaagatcctttcccaatctgttggtggtctctttgtgttattgacggtgtcttttgccttgcagaaactttggagtttcattaggtcccatttgtcaattctcgatcttacagcacaagccattgctgttctgttcaggaatttttcccctgtgcccatatcttcaaggcttttccccactttctcctctataagtttcagtgtctctggttttatgtggagttctttgatccatttagatttgaccttagtacaaggagataagtatggatcgattcgcattcttctacatgataacaaccagttgtgccagcaccaattgttgaaaatgctgtctttcttccactggatggttttagctcccttgtcgaagatcaagtgaccataggtgtgtgggttcatttctgggtcttcaattctattccattggtctacttgtctgtctctataccagtaccatgcagtttttaccacaattgctctgtagtaaagctttaggtcaggcatggtgattccaccagaggttcttttatccttgagaagagtttttgctatcctaggttttttgttattccagatgaatttgcaaattgctccttctaattcgttgaagaattgagttggaattgtgatggggattgcattgaatctgtagattgcttttggcaagatagccatttttacaatgttgatcctgccaatccatgagcatgggagagctttccatcttctgagatcttctttaatttctttcttcagagacttgaagtttttatcatacagatctttcacttccttagttagagtcacgccgagatattttatattatttgtgactattgagaagggtgttgtttccctaatttctttctcagcctgtttattctttgtgtagagaaaggccattgacttgtttgagttaattttatatccagctacttcaccgaagctgtttatcaggtttaggagttctctggtggaatttttagggtcacttatatatactatcatatcatctgcaaaaagtgatattttgacttcctcctttccaatttgtatccccttgatctccttttgttgtcgaattgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagccttgtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttggctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3015086 : 3015086 + 2572] == "catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcccctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccgactaggccatcttttgatacatatgcagctagagtcaagagctccggggtactggttagttcataatgttgatccacctatagggttgcagatccctttagctccttgggtactttctctagctcccccattgggagccctgtgatccatccattagctgactgtgggcatccacttctgtgtttgctaggccccggcatagtctcacaagagacagctacatctgggtcctttcgataagatcttgctagtgtatgcaatggtgtcagcgtttggatgctgattatggggtagatccctggataaggcagtctctacatggtccatcctttcatctcagctccaaactttgtctctgtaactccttccaagggtgttttgttcccacttctaaggaggggcatagtgtccacacttcagtcttcatttttcttgagtttcatgtgtttaggaaattgtatcttatatcttgggtatcctaggttttgggctaatatccacttatcagtgagtacatattgtgtgagttcctttgtgaatgtgttacctcactcaggatgatgccctccaggtccatccatttggctaggaatttcataaattaattctttttaatagctgagtagtactccattgtgtagatgtaccacattttctgtatccattcctctgttgaggggcatctgggttctttccagcttctggctattataaataaggctgctatgaacatagtggagcatgtgtccttcttaccagttggggcatcttttggatatatgcccaggagaggtattgctggatcctccggtagtactatgtccaattttctgaggaaccgccagacggatttccagagtggttgtacaagcctgcaatcccaccaacaatggaggagtgttcctctttctccacatcctcgccagcatctgctgtcacctgaatttttgatcttagccattctgactggtgtgaggtggaatctcagggttgttttgatttgcatttctctgatgattaaggatgttgaacatgttttcaggtgcttctctgccattcggtattcctcaggtgagaattctttgttcagttctgagccccattttttaatggggttatttgattttctgaagtccaccttcttgagttctttatatatgttggatattagtcccctatctgatttaggataggtaaagatcctttcccaatctgttggtggtctctttgtgttattgacggtgtcttttgccttgcagaaactttggagtttcattaggtcccatttgtcaattctcgatcttacagcacaagccattgctgttctgttcaggaatttttcccctgtgcccatatcttcaaggcttttccccactttctcctctataagtttcagtgtctctggttttatgtggagttctttgatccatttagatttgaccttagtacaaggagataagtatggatcgattcgcattcttctacatgataacaaccagttgtgccagcaccaattgttgaaaatgctgtctttcttccactggatggttttagctcccttgtcgaagatcaagtgaccataggtgtgtgggttcatttctgggtcttcaattctattccattggtctacttgtctgtctctataccagtaccatgcagtttttaccacaattgctctgtagtaaagctttaggtcaggcatggtgattccaccagaggttcttttatccttgagaagagtttttgctatcctaggttttttgttattccagatgaatttgcaaattgctccttctaattcgttgaagaattgagttggaattgtgatggggattgcattgaatctgtagattgcttttggcaagatagccatttttacaatgttgatcctgccaatccatgagcatgggagagctttccatcttctgagatcttctttaatttctttcttcagagacttgaagtttttatcatacagatctttcacttccttagttagagtcacgccgagatattttatattatttgtgactattgagaagggtgttgtttccctaatttctttctcagcctgtttattctttgtgtagagaaaggccattgacttgtttgagttaattttatatccagctacttcaccgaagctgtttatcaggtttaggagttctctggtggaatttttagggtcacttatatatactatcatatcatctgcaaaaagtgatattttgacttcctcctttccaatttgtatccccttgatctccttttgttgtcgaattgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagccttgtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttggctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG"
+        assert alignment[0] == "catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcccctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccgactaggccatcttttgatacatatgcagctagagtcaagagctccggggtactggttagttcataatgttgatccacctatagggttgcagatccctttagctccttgggtactttctctagctcccccattgggagccctgtgatccatccattagctgactgtgggcatccacttctgtgtttgctaggccccggcatagtctcacaagagacagctacatctgggtcctttcgataagatcttgctagtgtatgcaatggtgtcagcgtttggatgctgattatggggtagatccctggataaggcagtctctacatggtccatcctttcatctcagctccaaactttgtctctgtaactccttccaagggtgttttgttcccacttctaaggaggggcatagtgtccacacttcagtcttcatttttcttgagtttcatgtgtttaggaaattgtatcttatatcttgggtatcctaggttttgggctaatatccacttatcagtgagtacatattgtgtgagttcctttgtgaatgtgttacctcactcaggatgatgccctccaggtccatccatttggctaggaatttcataaattaattctttttaatagctgagtagtactccattgtgtagatgtaccacattttctgtatccattcctctgttgaggggcatctgggttctttccagcttctggctattataaataaggctgctatgaacatagtggagcatgtgtccttcttaccagttggggcatcttttggatatatgcccaggagaggtattgctggatcctccggtagtactatgtccaattttctgaggaaccgccagacggatttccagagtggttgtacaagcctgcaatcccaccaacaatggaggagtgttcctctttctccacatcctcgccagcatctgctgtcacctgaatttttgatcttagccattctgactggtgtgaggtggaatctcagggttgttttgatttgcatttctctgatgattaaggatgttgaacatgttttcaggtgcttctctgccattcggtattcctcaggtgagaattctttgttcagttctgagccccattttttaatggggttatttgattttctgaagtccaccttcttgagttctttatatatgttggatattagtcccctatctgatttaggataggtaaagatcctttcccaatctgttggtggtctctttgtgttattgacggtgtcttttgccttgcagaaactttggagtttcattaggtcccatttgtcaattctcgatcttacagcacaagccattgctgttctgttcaggaatttttcccctgtgcccatatcttcaaggcttttccccactttctcctctataagtttcagtgtctctggttttatgtggagttctttgatccatttagatttgaccttagtacaaggagataagtatggatcgattcgcattcttctacatgataacaaccagttgtgccagcaccaattgttgaaaatgctgtctttcttccactggatggttttagctcccttgtcgaagatcaagtgaccataggtgtgtgggttcatttctgggtcttcaattctattccattggtctacttgtctgtctctataccagtaccatgcagtttttaccacaattgctctgtagtaaagctttaggtcaggcatggtgattccaccagaggttcttttatccttgagaagagtttttgctatcctaggttttttgttattccagatgaatttgcaaattgctccttctaattcgttgaagaattgagttggaattgtgatggggattgcattgaatctgtagattgcttttggcaagatagccatttttacaatgttgatcctgccaatccatgagcatgggagagctttccatcttctgagatcttctttaatttctttcttcagagacttgaagtttttatcatacagatctttcacttccttagttagagtcacgccgagatattttatattatttgtgactattgagaagggtgttgtttccctaatttctttctcagcctgtttattctttgtgtagagaaaggccattgacttgtttgagttaattttatatccagctacttcaccgaagctgtttatcaggtttaggagttctctggtggaatttttagggtcacttatatatactatcatatcatctgcaaaaagtgatattttgacttcctcctttccaatttgtatccccttgatctccttttgttgtcgaattgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagccttgtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttggctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174889, 174752))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174889, 174752)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028517, 155028517))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028517, 155028517)
+        assert status == "C"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518570, 157518570))
-        self.assertEqual(status, "C")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518570, 157518570)
+        assert status == "C"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040688, 158040613))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3015086, 3017658]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040688, 158040613)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(alignment.coordinates, np.array([[3015086, 3017658]]))
+        assert str(alignment) == """\
 mm9.chr10   3015086 catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcc
 
 mm9.chr10   3015146 cctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccg
@@ -4188,11 +3359,8 @@ mm9.chr10   3017486 ttgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagcctt
 mm9.chr10   3017546 gtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttgg
 
 mm9.chr10   3017606 ctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG 3017658
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                          3015086 2572 + 129993255 catacccacccacccccactcccctacccgcccactccccctttttggccctggcgttcccctgttctggggcatataaagtttgtgtgtccaatgggcctctctttccagtgatggccgactaggccatcttttgatacatatgcagctagagtcaagagctccggggtactggttagttcataatgttgatccacctatagggttgcagatccctttagctccttgggtactttctctagctcccccattgggagccctgtgatccatccattagctgactgtgggcatccacttctgtgtttgctaggccccggcatagtctcacaagagacagctacatctgggtcctttcgataagatcttgctagtgtatgcaatggtgtcagcgtttggatgctgattatggggtagatccctggataaggcagtctctacatggtccatcctttcatctcagctccaaactttgtctctgtaactccttccaagggtgttttgttcccacttctaaggaggggcatagtgtccacacttcagtcttcatttttcttgagtttcatgtgtttaggaaattgtatcttatatcttgggtatcctaggttttgggctaatatccacttatcagtgagtacatattgtgtgagttcctttgtgaatgtgttacctcactcaggatgatgccctccaggtccatccatttggctaggaatttcataaattaattctttttaatagctgagtagtactccattgtgtagatgtaccacattttctgtatccattcctctgttgaggggcatctgggttctttccagcttctggctattataaataaggctgctatgaacatagtggagcatgtgtccttcttaccagttggggcatcttttggatatatgcccaggagaggtattgctggatcctccggtagtactatgtccaattttctgaggaaccgccagacggatttccagagtggttgtacaagcctgcaatcccaccaacaatggaggagtgttcctctttctccacatcctcgccagcatctgctgtcacctgaatttttgatcttagccattctgactggtgtgaggtggaatctcagggttgttttgatttgcatttctctgatgattaaggatgttgaacatgttttcaggtgcttctctgccattcggtattcctcaggtgagaattctttgttcagttctgagccccattttttaatggggttatttgattttctgaagtccaccttcttgagttctttatatatgttggatattagtcccctatctgatttaggataggtaaagatcctttcccaatctgttggtggtctctttgtgttattgacggtgtcttttgccttgcagaaactttggagtttcattaggtcccatttgtcaattctcgatcttacagcacaagccattgctgttctgttcaggaatttttcccctgtgcccatatcttcaaggcttttccccactttctcctctataagtttcagtgtctctggttttatgtggagttctttgatccatttagatttgaccttagtacaaggagataagtatggatcgattcgcattcttctacatgataacaaccagttgtgccagcaccaattgttgaaaatgctgtctttcttccactggatggttttagctcccttgtcgaagatcaagtgaccataggtgtgtgggttcatttctgggtcttcaattctattccattggtctacttgtctgtctctataccagtaccatgcagtttttaccacaattgctctgtagtaaagctttaggtcaggcatggtgattccaccagaggttcttttatccttgagaagagtttttgctatcctaggttttttgttattccagatgaatttgcaaattgctccttctaattcgttgaagaattgagttggaattgtgatggggattgcattgaatctgtagattgcttttggcaagatagccatttttacaatgttgatcctgccaatccatgagcatgggagagctttccatcttctgagatcttctttaatttctttcttcagagacttgaagtttttatcatacagatctttcacttccttagttagagtcacgccgagatattttatattatttgtgactattgagaagggtgttgtttccctaatttctttctcagcctgtttattctttgtgtagagaaaggccattgacttgtttgagttaattttatatccagctacttcaccgaagctgtttatcaggtttaggagttctctggtggaatttttagggtcacttatatatactatcatatcatctgcaaaaagtgatattttgacttcctcctttccaatttgtatccccttgatctccttttgttgtcgaattgctctggctaatacttcaagtactatgttgaaaaggtagggagaaagtgggcagccttgtctagtccctgattttagtgagattgcttccagcttctctccatttactttgatgttggctactggtttgctgtagattgcttttatcatgtttaggtatgggTGTTCTCG
 e ornAna1.chr2                      14751195 5690 -  54797317 I
@@ -4205,17 +3373,11 @@ e hg18.chr6                        155028517    0 + 170899992 C
 e panTro2.chr6                     157518570    0 + 173908612 C
 e ponAbe2.chr6                      16169743   75 - 174210431 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -4242,113 +3404,90 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 12170)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3017658 : 3017658 + 85],
-            "TTTTTATTTGCAGGTTTCTTTACAGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTGTTGACCTTTATCAGATTTCTGCTTTAACC",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TTTTTATTTGCAGGTTTCTTTAC----AGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTGTTGACCTTTATCAGATTTCTGCTTTAACC",
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155028434 : 155028434 + 83],
-            "GGTGGAAGTGGAGATTTGGGAAAAGGCAAAAAAATAAATAAGAGAGAGAGATAACTTGCTATAAATAACCCTGCCAAGAAAGG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTTTTGCCTTTTCCCAAATCTCCACTTCCACC",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 53)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157518487 : 157518487 + 83],
-            "GGTGGAAGTGGAGATTTGGGAAAAGGCAAAAAAATAAATAAGAGAGAGAGATAACTTGCTATAAATAACCCTGCCAAGAAAGG",
-        )
-        self.assertEqual(
-            alignment[2],
-            "CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTTTTGCCTTTTCCCAAATCTCCACTTCCACC",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 53)
+        assert alignment.score == 12170
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3017658 : 3017658 + 85] == "TTTTTATTTGCAGGTTTCTTTACAGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTGTTGACCTTTATCAGATTTCTGCTTTAACC"
+        assert alignment[0] == "TTTTTATTTGCAGGTTTCTTTAC----AGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTGTTGACCTTTATCAGATTTCTGCTTTAACC"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155028434 : 155028434 + 83] == "GGTGGAAGTGGAGATTTGGGAAAAGGCAAAAAAATAAATAAGAGAGAGAGATAACTTGCTATAAATAACCCTGCCAAGAAAGG"
+        assert alignment[1] == "CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTTTTGCCTTTTCCCAAATCTCCACTTCCACC"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 53
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157518487 : 157518487 + 83] == "GGTGGAAGTGGAGATTTGGGAAAAGGCAAAAAAATAAATAAGAGAGAGAGATAACTTGCTATAAATAACCCTGCCAAGAAAGG"
+        assert alignment[2] == "CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTTTTGCCTTTTCCCAAATCTCCACTTCCACC"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 53
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174889, 174752))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174889, 174752)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040688, 158040613))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 3)
-        self.assertEqual(len(alignment.annotations["empty"]), 7)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040688, 158040613)
+        assert status == "I"
+        assert len(alignment.sequences) == 3
+        assert len(alignment.annotations["empty"]) == 7
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -4359,10 +3498,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3017658 TTTTTATTTGCAGGTTTCTTTAC----AGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTG
 hg18.chr6 155028517 CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTT
 panTro2.c 157518570 CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTT
@@ -4370,11 +3506,8 @@ panTro2.c 157518570 CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTT
 mm9.chr10   3017714 TTGACCTTTATCAGATTTCTGCTTTAACC   3017743
 hg18.chr6 155028463 TTGCCTTTTCCCAAATCTCCACTTCCACC 155028434
 panTro2.c 157518516 TTGCCTTTTCCCAAATCTCCACTTCCACC 157518487
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=12170.000000
 s mm9.chr10                         3017658   85 + 129993255 TTTTTATTTGCAGGTTTCTTTAC----AGTTCTCTTTCATTCTTCTCCTCTTTTCTTCTGTTGACCTTTATCAGATTTCTGCTTTAACC
 s hg18.chr6                        15871475   83 - 170899992 CCTTTCTTGGCAGGGTTATTTATAGCAAGTTATCTCTCTCTCTTA------TTTATTTTTTTGCCTTTTCCCAAATCTCCACTTCCACC
@@ -4390,10 +3523,8 @@ e cavPor2.scaffold_216473              8048 1372 -     10026 I
 e otoGar1.scaffold_334.1-359464      184575  137 -    359464 I
 e ponAbe2.chr6                     16169743   75 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'T', 'T', 'T', 'T', 'A', 'T', 'T', 'T', 'G', 'C', 'A', 'G',
@@ -4420,16 +3551,10 @@ np.array([['T', 'T', 'T', 'T', 'T', 'A', 'T', 'T', 'T', 'G', 'C', 'A', 'G',
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (241 aligned letters; 191 identities; 50 mismatches; 20 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (241 aligned letters; 191 identities; 50 mismatches; 20 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 241:
         identities = 191,
@@ -4456,97 +3581,86 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 8)
-        self.assertEqual(counts.internal_deletions, 12)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 20)
-        self.assertEqual(counts.insertions, 8)
-        self.assertEqual(counts.deletions, 12)
-        self.assertEqual(counts.gaps, 20)
-        self.assertEqual(counts.aligned, 241)
-        self.assertEqual(counts.identities, 191)
-        self.assertEqual(counts.mismatches, 50)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 8
+        assert counts.internal_deletions == 12
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 20
+        assert counts.insertions == 8
+        assert counts.deletions == 12
+        assert counts.gaps == 20
+        assert counts.aligned == 241
+        assert counts.identities == 191
+        assert counts.mismatches == 50
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3017743 : 3017743 + 418],
-            "ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggctgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaattagatggtgagaaaagaataatgaggccaagacaaatttttctcttatcaaggcccaagagagtttactaagagactatgcttaaaagggggaaggcccatcccccccccccctcgcgccagtctatccttggtgctttgtcaccatgccatcagcacttggtcggcaggtagcagaatctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggagacctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca",
-        )
-        self.assertEqual(
-            alignment[0],
-            "ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggctgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaattagatggtgagaaaagaataatgaggccaagacaaatttttctcttatcaaggcccaagagagtttactaagagactatgcttaaaagggggaaggcccatcccccccccccctcgcgccagtctatccttggtgctttgtcaccatgccatcagcacttggtcggcaggtagcagaatctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggagacctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3017743 : 3017743 + 418] == "ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggctgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaattagatggtgagaaaagaataatgaggccaagacaaatttttctcttatcaaggcccaagagagtttactaagagactatgcttaaaagggggaaggcccatcccccccccccctcgcgccagtctatccttggtgctttgtcaccatgccatcagcacttggtcggcaggtagcagaatctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggagacctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca"
+        assert alignment[0] == "ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggctgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaattagatggtgagaaaagaataatgaggccaagacaaatttttctcttatcaaggcccaagagagtttactaagagactatgcttaaaagggggaaggcccatcccccccccccctcgcgccagtctatccttggtgctttgtcaccatgccatcagcacttggtcggcaggtagcagaatctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggagacctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174889, 174752))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174889, 174752)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028434, 155028381))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028434, 155028381)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518487, 157518434))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518487, 157518434)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040688, 158040613))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3017743, 3018161]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040688, 158040613)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(alignment.coordinates, np.array([[3017743, 3018161]]))
+        assert str(alignment) == """\
 mm9.chr10   3017743 ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggc
 
 mm9.chr10   3017803 tgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaa
@@ -4562,11 +3676,8 @@ mm9.chr10   3018043 ctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggaga
 mm9.chr10   3018103 cctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca
 
 mm9.chr10   3018161
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3017743  418 + 129993255 ACCACAGACCTTCTGTTTAGTCCAAAGGACGCAAATTATGTATCCACTTtagtaggaggctgacccgcagcctacatgaaccaggtatttctggaaggcaggctggggttgaaagagaaattagatggtgagaaaagaataatgaggccaagacaaatttttctcttatcaaggcccaagagagtttactaagagactatgcttaaaagggggaaggcccatcccccccccccctcgcgccagtctatccttggtgctttgtcaccatgccatcagcacttggtcggcaggtagcagaatctcagggcagttgacacttcaaaagaaaccagccaagtcagaaagctgcactgcaggagacctgcactcagtggtgacaaggtctgtaccagcctgcttcaggctgggggaggctaca
 e ornAna1.chr2                     14751195 5690 -  54797317 I
@@ -4579,10 +3690,8 @@ e hg18.chr6                        15871558   53 - 170899992 I
 e panTro2.chr6                     16390125   53 - 173908612 I
 e ponAbe2.chr6                     16169743   75 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'C', 'C', 'A', 'C', 'A', 'G', 'A', 'C', 'C', 'T', 'T', 'C',
@@ -4620,16 +3729,10 @@ np.array([['A', 'C', 'C', 'A', 'C', 'A', 'G', 'A', 'C', 'C', 'T', 'T', 'C',
            'c', 'a']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -4656,121 +3759,92 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 22499)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018161 : 3018161 + 69],
-            "ATCCACAAAAGAGACAAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAATTCCATTTTATTGA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "ATCCACAAAAGAGAC-----AAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAATTCCATTTTATTGA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[1].seq[157518369 : 157518369 + 65],
-            "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTATGGTTAATTGTTTTCCTTTGTAGGT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "ACCTACAAAGG---------AAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 53)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[2].seq[155028316 : 155028316 + 65],
-            "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTGTGGTTAATTGTTTTCCTTTGTAGGT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "ACCTACAAAGG---------AAAACAATTAACCACAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 53)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158040552 : 158040552 + 61],
-            "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTATGGTTAATTGTTTTCCTTTGT",
-        )
-        self.assertEqual(
-            alignment[3],
-            "-------------ACAAAGGAAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 75)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 97)
+        assert alignment.score == 22499
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018161 : 3018161 + 69] == "ATCCACAAAAGAGACAAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAATTCCATTTTATTGA"
+        assert alignment[0] == "ATCCACAAAAGAGAC-----AAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAATTCCATTTTATTGA"
+        assert alignment.sequences[1].id == "panTro2.chr6"
+        assert len(alignment.sequences[1].seq) == 173908612
+        assert alignment.sequences[1].seq[157518369 : 157518369 + 65] == "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTATGGTTAATTGTTTTCCTTTGTAGGT"
+        assert alignment[1] == "ACCTACAAAGG---------AAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA"
+        assert alignment.sequences[1].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 53
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "hg18.chr6"
+        assert len(alignment.sequences[2].seq) == 170899992
+        assert alignment.sequences[2].seq[155028316 : 155028316 + 65] == "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTGTGGTTAATTGTTTTCCTTTGTAGGT"
+        assert alignment[2] == "ACCTACAAAGG---------AAAACAATTAACCACAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 53
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158040552 : 158040552 + 61] == "TCAATAAAATAAAATTGTTTTATGGTACAAACTTTTCTTATGGTTAATTGTTTTCCTTTGT"
+        assert alignment[3] == "-------------ACAAAGGAAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 75
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 97
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174889, 174752))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174889, 174752)
+        assert status == "I"
+        assert len(alignment.sequences) == 4
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -4782,10 +3856,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3018161 ATCCACAAAAGAGAC-----AAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAA
 panTro2.c 157518434 ACCTACAAAGG---------AAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAA
 hg18.chr6 155028381 ACCTACAAAGG---------AAAACAATTAACCACAAGAAAAGTTTGTACCATAAAACAA
@@ -4795,11 +3866,8 @@ mm9.chr10   3018216 TTCCATTTTATTGA   3018230
 panTro2.c 157518383 TTTTATTTTATTGA 157518369
 hg18.chr6 155028330 TTTTATTTTATTGA 155028316
 ponAbe2.c 158040566 TTTTATTTTATTGA 158040552
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=22499.000000
 s mm9.chr10                         3018161   69 + 129993255 ATCCACAAAAGAGAC-----AAAGAAGAAAACCAAAAGAAAAGATTGTAGCTTAAAACAATTCCATTTTATTGA
 s panTro2.chr6                     16390178   65 - 173908612 ACCTACAAAGG---------AAAACAATTAACCATAAGAAAAGTTTGTACCATAAAACAATTTTATTTTATTGA
@@ -4816,10 +3884,8 @@ e echTel1.scaffold_288249             87661 7564 +    100002 I
 e cavPor2.scaffold_216473              8048 1372 -     10026 I
 e otoGar1.scaffold_334.1-359464      184575  137 -    359464 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'T', 'C', 'C', 'A', 'C', 'A', 'A', 'A', 'A', 'G', 'A', 'G',
@@ -4848,16 +3914,10 @@ np.array([['A', 'T', 'C', 'C', 'A', 'C', 'A', 'A', 'A', 'A', 'G', 'A', 'G',
            'T', 'T', 'T', 'T', 'A', 'T', 'T', 'G', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (359 aligned letters; 318 identities; 41 mismatches; 62 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (359 aligned letters; 318 identities; 41 mismatches; 62 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 359:
         identities = 318,
@@ -4884,113 +3944,90 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 35)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 19)
-        self.assertEqual(counts.internal_deletions, 8)
-        self.assertEqual(counts.left_gaps, 35)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 27)
-        self.assertEqual(counts.insertions, 19)
-        self.assertEqual(counts.deletions, 43)
-        self.assertEqual(counts.gaps, 62)
-        self.assertEqual(counts.aligned, 359)
-        self.assertEqual(counts.identities, 318)
-        self.assertEqual(counts.mismatches, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 35
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 19
+        assert counts.internal_deletions == 8
+        assert counts.left_gaps == 35
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 27
+        assert counts.insertions == 19
+        assert counts.deletions == 43
+        assert counts.gaps == 62
+        assert counts.aligned == 359
+        assert counts.identities == 318
+        assert counts.mismatches == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 4781)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018230 : 3018230 + 129],
-            "AGGACAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATGAATGTCCCTCACAATCACTATCAAGGTCCCTATCAAGGCAATCACTCTGTCACCGAGCTACAGCCCCAGC",
-        )
-        self.assertEqual(
-            alignment[0],
-            "AGGA-CAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATGAATGTCCCTCACAATCACTATCAAGGTCCCTATCAAGGCAATCACTCTGTCACCGAGCTA-CAGCCCCAGC",
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155028221 : 155028221 + 95],
-            "CATATACCTAATAAATCTATATATGTGTAAATTCTTTTTCATAATGACTATCAGAACATTGGGAGCCAGGTTCTGATATATATTGATTGGATTAT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG-----TTCTGATAGTCATTATGAA----------AAAGAATTTACACATATATAGATTTATTAGGTATATG",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157518274 : 157518274 + 95],
-            "catatacctaataaatctatatatgtgtaaatTCTTTTTCACAATGACTATCAGAACATTGGGAGCCAGGTTCTGATATATATTGATTGGATTAT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG-----TTCTGATAGTCATTGTGAA----------AAAGAatttacacatatatagatttattaggtatatg",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
+        assert alignment.score == 4781
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018230 : 3018230 + 129] == "AGGACAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATGAATGTCCCTCACAATCACTATCAAGGTCCCTATCAAGGCAATCACTCTGTCACCGAGCTACAGCCCCAGC"
+        assert alignment[0] == "AGGA-CAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATGAATGTCCCTCACAATCACTATCAAGGTCCCTATCAAGGCAATCACTCTGTCACCGAGCTA-CAGCCCCAGC"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155028221 : 155028221 + 95] == "CATATACCTAATAAATCTATATATGTGTAAATTCTTTTTCATAATGACTATCAGAACATTGGGAGCCAGGTTCTGATATATATTGATTGGATTAT"
+        assert alignment[1] == "ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG-----TTCTGATAGTCATTATGAA----------AAAGAATTTACACATATATAGATTTATTAGGTATATG"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157518274 : 157518274 + 95] == "catatacctaataaatctatatatgtgtaaatTCTTTTTCACAATGACTATCAGAACATTGGGAGCCAGGTTCTGATATATATTGATTGGATTAT"
+        assert alignment[2] == "ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG-----TTCTGATAGTCATTGTGAA----------AAAGAatttacacatatatagatttattaggtatatg"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174889, 174752))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174889, 174752)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040552, 158040455))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 3)
-        self.assertEqual(len(alignment.annotations["empty"]), 7)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040552, 158040455)
+        assert status == "I"
+        assert len(alignment.sequences) == 3
+        assert len(alignment.annotations["empty"]) == 7
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -5004,10 +4041,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3018230 AGGA-CAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATG
 hg18.chr6 155028316 ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG
 panTro2.c 157518369 ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG
@@ -5019,11 +4053,8 @@ panTro2.c 157518330 -----TTCTGATAGTCATTGTGAA----------AAAGAatttacacatatatagattta
 mm9.chr10   3018349 -CAGCCCCAGC   3018359
 hg18.chr6 155028232 TTAGGTATATG 155028221
 panTro2.c 157518285 ttaggtatatg 157518274
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=4781.000000
 s mm9.chr10                         3018230  129 + 129993255 AGGA-CAAAATAATACAGAtttttttttttttttttttttGCAGTACTGGAAATGGAATGAATGTCCCTCACAATCACTATCAAGGTCCCTATCAAGGCAATCACTCTGTCACCGAGCTA-CAGCCCCAGC
 s hg18.chr6                        15871676   95 - 170899992 ATAATCCAATCAATATATAT---------------------CAGAACCTGGCTCCCAATG-----TTCTGATAGTCATTATGAA----------AAAGAATTTACACATATATAGATTTATTAGGTATATG
@@ -5039,10 +4070,8 @@ e cavPor2.scaffold_216473              8048 1372 -     10026 I
 e otoGar1.scaffold_334.1-359464      184575  137 -    359464 I
 e ponAbe2.chr6                     16169879   97 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'G', 'G', 'A', '-', 'C', 'A', 'A', 'A', 'A', 'T', 'A', 'A',
@@ -5080,16 +4109,10 @@ np.array([['A', 'G', 'G', 'A', '-', 'C', 'A', 'A', 'A', 'A', 'T', 'A', 'A',
            'g']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (281 aligned letters; 146 identities; 135 mismatches; 76 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (281 aligned letters; 146 identities; 135 mismatches; 76 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 281:
         identities = 146,
@@ -5116,133 +4139,95 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 4)
-        self.assertEqual(counts.internal_deletions, 72)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 76)
-        self.assertEqual(counts.insertions, 4)
-        self.assertEqual(counts.deletions, 72)
-        self.assertEqual(counts.gaps, 76)
-        self.assertEqual(counts.aligned, 281)
-        self.assertEqual(counts.identities, 146)
-        self.assertEqual(counts.mismatches, 135)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 4
+        assert counts.internal_deletions == 72
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 76
+        assert counts.insertions == 4
+        assert counts.deletions == 72
+        assert counts.gaps == 76
+        assert counts.aligned == 281
+        assert counts.identities == 146
+        assert counts.mismatches == 135
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 61520)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018359 : 3018359 + 123],
-            "TTCAAACATGCATACATGCATTCATGTCTCATAATAATTATTAACATTGTCTTAGGCCAGAGGCTCGACTGCCCCAAAGCAATCCACTTAAACTGTCCCTGAGAAAGTCAttcctctccctaa",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TT-CAAACATGCATACATGCATTCATGTCTCATAA-TAATTATTAACA-TTGTCTTAGGCCAGAGGCTCGACTGCCCCAAAGCAATCCACT-------TAAACTGTCCCTGAGAA-AGTCAttcctctccctaa",
-        )
-        self.assertEqual(alignment.sequences[1].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[1].seq[157518143 : 157518143 + 131],
-            "AAAGAAAAGGATGACCCTTCCCGGAGAGAATATAAAATATGGATGGCTTAGTTTGTATCACTCAGGCCACTGACCTAAGATGACTGTTAATAATTATTTATGAGacatacacatatatttgtacatttata",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-tataaatgtacaaatatatgtgtatgtCTCATAAATAATTATTAACAGTCATCTTAGGTCAGTGGCCTGAGTGATACAAACTAAGCCATCCATATTTTATATTCTCTCCGGGAAGGGTCATCCTTTTCTTT--",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 2400)
-        self.assertEqual(alignment.sequences[2].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[2].seq[155028090 : 155028090 + 131],
-            "AAAGAAAAGGATGACCCTTCCCGGAGAGAATATAAAATATGGATGGCTTAGTTTGTATCATTCAGGCCACTGACCTAAGATGACTGTTAATAATTATTTATGAGACATACACATATATTTGTACGTTTATA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "-TATAAACGTACAAATATATGTGTATGTCTCATAAATAATTATTAACAGTCATCTTAGGTCAGTGGCCTGAATGATACAAACTAAGCCATCCATATTTTATATTCTCTCCGGGAAGGGTCATCCTTTTCTTT--",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 2402)
-        self.assertEqual(alignment.sequences[3].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[3].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[3].seq[174625 : 174625 + 127],
-            "TCAGAAGAAAGGATGACCCTTCACACAGGGAGGATAGGATGGGTTAGCTTGTGTCACTCGGGCCTCTAACCTAAGACAAATGTTAATAATTACTTACAGGACCTACATTTACACATACATGTATAAA",
-        )
-        self.assertEqual(
-            alignment[3],
-            "TT-TATACATGTATGTGTAAATGTAGGTCCTGTAAGTAATTATTAACATTTGTCTTAGGTTAGAGGCCCGAGTGACACAAGCTAACCCATCC------TATCCTCCCTGTGTGAAGGGTCATCCTTTCTTCTGA",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999667736999999999999999999999999999995666677755798899998999967967999999999589",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 137)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 2731)
-        self.assertEqual(alignment.sequences[4].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[4].seq[158040326 : 158040326 + 129],
-            "AAAGAAAAGGATGACCCTTCCCAGAGAGAATATAAAATATGGATGGCTTAGTTTCTATCACTCAGGCCACTGACCTAAGATGACTGTTAATAATtatttatgacacatacacatatatttgtacattta",
-        )
-        self.assertEqual(
-            alignment[4],
-            "---taaatgtacaaatatatgtgtatgtgtcataaataATTATTAACAGTCATCTTAGGTCAGTGGCCTGAGTGATAGAAACTAAGCCATCCATATTTTATATTCTCTCTGGGAAGGGTCATCCTTTTCTTT--",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 97)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 2523)
+        assert alignment.score == 61520
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018359 : 3018359 + 123] == "TTCAAACATGCATACATGCATTCATGTCTCATAATAATTATTAACATTGTCTTAGGCCAGAGGCTCGACTGCCCCAAAGCAATCCACTTAAACTGTCCCTGAGAAAGTCAttcctctccctaa"
+        assert alignment[0] == "TT-CAAACATGCATACATGCATTCATGTCTCATAA-TAATTATTAACA-TTGTCTTAGGCCAGAGGCTCGACTGCCCCAAAGCAATCCACT-------TAAACTGTCCCTGAGAA-AGTCAttcctctccctaa"
+        assert alignment.sequences[1].id == "panTro2.chr6"
+        assert len(alignment.sequences[1].seq) == 173908612
+        assert alignment.sequences[1].seq[157518143 : 157518143 + 131] == "AAAGAAAAGGATGACCCTTCCCGGAGAGAATATAAAATATGGATGGCTTAGTTTGTATCACTCAGGCCACTGACCTAAGATGACTGTTAATAATTATTTATGAGacatacacatatatttgtacatttata"
+        assert alignment[1] == "-tataaatgtacaaatatatgtgtatgtCTCATAAATAATTATTAACAGTCATCTTAGGTCAGTGGCCTGAGTGATACAAACTAAGCCATCCATATTTTATATTCTCTCCGGGAAGGGTCATCCTTTTCTTT--"
+        assert alignment.sequences[1].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 2400
+        assert alignment.sequences[2].id == "hg18.chr6"
+        assert len(alignment.sequences[2].seq) == 170899992
+        assert alignment.sequences[2].seq[155028090 : 155028090 + 131] == "AAAGAAAAGGATGACCCTTCCCGGAGAGAATATAAAATATGGATGGCTTAGTTTGTATCATTCAGGCCACTGACCTAAGATGACTGTTAATAATTATTTATGAGACATACACATATATTTGTACGTTTATA"
+        assert alignment[2] == "-TATAAACGTACAAATATATGTGTATGTCTCATAAATAATTATTAACAGTCATCTTAGGTCAGTGGCCTGAATGATACAAACTAAGCCATCCATATTTTATATTCTCTCCGGGAAGGGTCATCCTTTTCTTT--"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 2402
+        assert alignment.sequences[3].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[3].seq) == 359464
+        assert alignment.sequences[3].seq[174625 : 174625 + 127] == "TCAGAAGAAAGGATGACCCTTCACACAGGGAGGATAGGATGGGTTAGCTTGTGTCACTCGGGCCTCTAACCTAAGACAAATGTTAATAATTACTTACAGGACCTACATTTACACATACATGTATAAA"
+        assert alignment[3] == "TT-TATACATGTATGTGTAAATGTAGGTCCTGTAAGTAATTATTAACATTTGTCTTAGGTTAGAGGCCCGAGTGACACAAGCTAACCCATCC------TATCCTCCCTGTGTGAAGGGTCATCCTTTCTTCTGA"
+        assert alignment.sequences[3].annotations["quality"] == "9999999999999999999999999999999999999999999999999999667736999999999999999999999999999995666677755798899998999967967999999999589"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 137
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 2731
+        assert alignment.sequences[4].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[4].seq) == 174210431
+        assert alignment.sequences[4].seq[158040326 : 158040326 + 129] == "AAAGAAAAGGATGACCCTTCCCAGAGAGAATATAAAATATGGATGGCTTAGTTTCTATCACTCAGGCCACTGACCTAAGATGACTGTTAATAATtatttatgacacatacacatatatttgtacattta"
+        assert alignment[4] == "---taaatgtacaaatatatgtgtatgtgtcataaataATTATTAACAGTCATCTTAGGTCAGTGGCCTGAGTGATAGAAACTAAGCCATCCATATTTTATATTCTCTCTGGGAAGGGTCATCCTTTTCTTT--"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 97
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 2523
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertEqual(len(alignment.annotations["empty"]), 5)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
+        assert len(alignment.sequences) == 5
+        assert len(alignment.annotations["empty"]) == 5
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -5265,10 +4250,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3018359 TT-CAAACATGCATACATGCATTCATGTCTCATAA-TAATTATTAACA-TTGTCTTAGGC
 panTro2.c 157518274 -tataaatgtacaaatatatgtgtatgtCTCATAAATAATTATTAACAGTCATCTTAGGT
 hg18.chr6 155028221 -TATAAACGTACAAATATATGTGTATGTCTCATAAATAATTATTAACAGTCATCTTAGGT
@@ -5286,11 +4268,8 @@ panTro2.c 157518155 ATCCTTTTCTTT-- 157518143
 hg18.chr6 155028102 ATCCTTTTCTTT-- 155028090
 otoGar1.s    174639 ATCCTTTCTTCTGA    174625
 ponAbe2.c 158040338 ATCCTTTTCTTT-- 158040326
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=61520.000000
 s mm9.chr10                         3018359  123 + 129993255 TT-CAAACATGCATACATGCATTCATGTCTCATAA-TAATTATTAACA-TTGTCTTAGGCCAGAGGCTCGACTGCCCCAAAGCAATCCACT-------TAAACTGTCCCTGAGAA-AGTCAttcctctccctaa
 s panTro2.chr6                     16390338  131 - 173908612 -tataaatgtacaaatatatgtgtatgtCTCATAAATAATTATTAACAGTCATCTTAGGTCAGTGGCCTGAGTGATACAAACTAAGCCATCCATATTTTATATTCTCTCCGGGAAGGGTCATCCTTTTCTTT--
@@ -5309,10 +4288,8 @@ e tupBel1.scaffold_114895.1-498454   171764 2374 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e cavPor2.scaffold_216473              8048 1372 -     10026 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'T', '-', 'C', 'A', 'A', 'A', 'C', 'A', 'T', 'G', 'C', 'A',
@@ -5372,16 +4349,10 @@ np.array([['T', 'T', '-', 'C', 'A', 'A', 'A', 'C', 'A', 'T', 'G', 'C', 'A',
            'T', 'T', '-', '-']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1242 aligned letters; 814 identities; 428 mismatches; 80 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1242 aligned letters; 814 identities; 428 mismatches; 80 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1242:
         identities = 814,
@@ -5408,107 +4379,93 @@ AlignmentCounts object with
             right_deletions = 8:
                 open_right_deletions = 4,
                 extend_right_deletions = 4.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 2)
-        self.assertEqual(counts.left_deletions, 10)
-        self.assertEqual(counts.right_insertions, 4)
-        self.assertEqual(counts.right_deletions, 8)
-        self.assertEqual(counts.internal_insertions, 42)
-        self.assertEqual(counts.internal_deletions, 14)
-        self.assertEqual(counts.left_gaps, 12)
-        self.assertEqual(counts.right_gaps, 12)
-        self.assertEqual(counts.internal_gaps, 56)
-        self.assertEqual(counts.insertions, 48)
-        self.assertEqual(counts.deletions, 32)
-        self.assertEqual(counts.gaps, 80)
-        self.assertEqual(counts.aligned, 1242)
-        self.assertEqual(counts.identities, 814)
-        self.assertEqual(counts.mismatches, 428)
+"""
+        assert counts.left_insertions == 2
+        assert counts.left_deletions == 10
+        assert counts.right_insertions == 4
+        assert counts.right_deletions == 8
+        assert counts.internal_insertions == 42
+        assert counts.internal_deletions == 14
+        assert counts.left_gaps == 12
+        assert counts.right_gaps == 12
+        assert counts.internal_gaps == 56
+        assert counts.insertions == 48
+        assert counts.deletions == 32
+        assert counts.gaps == 80
+        assert counts.aligned == 1242
+        assert counts.identities == 814
+        assert counts.mismatches == 428
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018482 : 3018482 + 162],
-            "tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtccttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatggggagaggaggaaaggaggagaggggaggagaggaggggagGTAT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtccttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatggggagaggaggaaaggaggagaggggaggagaggaggggagGTAT",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018482 : 3018482 + 162] == "tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtccttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatggggagaggaggaaaggaggagaggggaggagaggaggggagGTAT"
+        assert alignment[0] == "tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtccttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatggggagaggaggaaaggaggagaggggaggagaggaggggagGTAT"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3018482, 3018644]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(alignment.coordinates, np.array([[3018482, 3018644]]))
+        assert str(alignment) == """\
 mm9.chr10   3018482 tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtcc
 
 mm9.chr10   3018542 ttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatgggg
 
 mm9.chr10   3018602 agaggaggaaaggaggagaggggaggagaggaggggagGTAT 3018644
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3018482  162 + 129993255 tcttcatctcctcttttcctccttttttttttctcatttctctttctctttcttttgtccttttccttTATAGCAAGCAAGGCAAGTAGTCTCTATTTAGAAGGCATggagagaatggggagaggaggaaaggaggagaggggaggagaggaggggagGTAT
 e ornAna1.chr2                     14751195 5690 -  54797317 I
@@ -5521,10 +4478,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['t', 'c', 't', 't', 'c', 'a', 't', 'c', 't', 'c', 'c', 't', 'c',
@@ -5542,16 +4497,10 @@ np.array([['t', 'c', 't', 't', 'c', 'a', 't', 'c', 't', 'c', 'c', 't', 'c',
            'a', 'g', 'G', 'T', 'A', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -5578,111 +4527,94 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1520)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018644 : 3018644 + 178],
-            "AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTCTGAGTGTCAGTGATGTTCATGAGATTATCACCAGCAAGGATGGCTGACGGGAACTGCAAGAGGCATAGCCCTGAGTTCTAAAGGAGAGGGAAACGTCACAGAAAGGATGCACTGTTTCAGCATCT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTC---TGAGTGTCAGTGATGTTCA-TGAGATTATCACCAGCAAGGATG--GCTGACGGGAACTG---CAAGAGGCATAGCCCTGAGTTCTAAAGGAGAGGGAAACGTCACAGAAAGGATG--------------------------CACTGTTTCAGCATCT",
-        )
-        self.assertEqual(alignment.sequences[1].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[1].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[1].seq[47545632 : 47545632 + 204],
-            "AAATTCTTCAATAGGGAAATTTTATATTTCATATTACAATTCTATTCTATCCATGATCTTTCCTCTCATTTTAGAGTTCTGGCTGGTGGTATTTGCTTCTGATTCCATCAACCGCATCCTTAGGAGAGGATCTCAGTATCCATCACTTACACGCATGTGAATAAACTCAATGTGCTATCCCTCCCAGGGGCATTTGCCTTTTCT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "AGAAAAGGCAAATGCCCCTGGGAGGGA-----TAGCACATTGA--GTTTATTCACATGCGTGTAAGTGATGGATACTGAGATCCTCTCC--TAAGGATGCGGTTGATGGAATCAGAAGCAAATACCACCAGCCAGAACTCTAAAATGAGAGGAAAGATCATGGATAGAATAGAATTGTAATATGAAATATAAAATTTCCCTATTGAAGAATTT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 160)
+        assert alignment.score == 1520
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018644 : 3018644 + 178] == "AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTCTGAGTGTCAGTGATGTTCATGAGATTATCACCAGCAAGGATGGCTGACGGGAACTGCAAGAGGCATAGCCCTGAGTTCTAAAGGAGAGGGAAACGTCACAGAAAGGATGCACTGTTTCAGCATCT"
+        assert alignment[0] == "AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTC---TGAGTGTCAGTGATGTTCA-TGAGATTATCACCAGCAAGGATG--GCTGACGGGAACTG---CAAGAGGCATAGCCCTGAGTTCTAAAGGAGAGGGAAACGTCACAGAAAGGATG--------------------------CACTGTTTCAGCATCT"
+        assert alignment.sequences[1].id == "canFam2.chr1"
+        assert len(alignment.sequences[1].seq) == 125616256
+        assert alignment.sequences[1].seq[47545632 : 47545632 + 204] == "AAATTCTTCAATAGGGAAATTTTATATTTCATATTACAATTCTATTCTATCCATGATCTTTCCTCTCATTTTAGAGTTCTGGCTGGTGGTATTTGCTTCTGATTCCATCAACCGCATCCTTAGGAGAGGATCTCAGTATCCATCACTTACACGCATGTGAATAAACTCAATGTGCTATCCCTCCCAGGGGCATTTGCCTTTTCT"
+        assert alignment[1] == "AGAAAAGGCAAATGCCCCTGGGAGGGA-----TAGCACATTGA--GTTTATTCACATGCGTGTAAGTGATGGATACTGAGATCCTCTCC--TAAGGATGCGGTTGATGGAATCAGAAGCAAATACCACCAGCCAGAACTCTAAAATGAGAGGAAAGATCATGGATAGAATAGAATTGTAATATGAAATATAAAATTTCCCTATTGAAGAATTT"
+        assert alignment.sequences[1].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 160
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 2
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -5696,10 +4628,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3018644 AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTC---TGAG
                   0 ||...||||.||...||.|||||.|.|-----|.|.|.|.|||--||.|.|||---||.|
 canFam2.c  47545836 AGAAAAGGCAAATGCCCCTGGGAGGGA-----TAGCACATTGA--GTTTATTCACATGCG
@@ -5715,11 +4644,8 @@ canFam2.c  47545725 AATACCACCAGCCAGAACTCTAAAATGAGAGGAAAGATCATGGATAGAATAGAATTGTAA
 mm9.chr10   3018806 -----------------CACTGTTTCAGCATCT  3018822
                 180 -----------------|.||.||..||.||.|      213
 canFam2.c  47545665 TATGAAATATAAAATTTCCCTATTGAAGAATTT 47545632
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=1520.000000
 s mm9.chr10                         3018644  178 + 129993255 AGGGTAGGCCAAGTGCCTTGGGAAGTAGTTGTTGGTAGACTGAAAGTGTGTTC---TGAGTGTCAGTGATGTTCA-TGAGATTATCACCAGCAAGGATG--GCTGACGGGAACTG---CAAGAGGCATAGCCCTGAGTTCTAAAGGAGAGGGAAACGTCACAGAAAGGATG--------------------------CACTGTTTCAGCATCT
 s canFam2.chr1                     78070420  204 - 125616256 AGAAAAGGCAAATGCCCCTGGGAGGGA-----TAGCACATTGA--GTTTATTCACATGCGTGTAAGTGATGGATACTGAGATCCTCTCC--TAAGGATGCGGTTGATGGAATCAGAAGCAAATACCACCAGCCAGAACTCTAAAATGAGAGGAAAGATCATGGATAGAATAGAATTGTAATATGAAATATAAAATTTCCCTATTGAAGAATTT
@@ -5735,10 +4661,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'G', 'G', 'G', 'T', 'A', 'G', 'G', 'C', 'C', 'A', 'A', 'G',
@@ -5777,16 +4701,10 @@ np.array([['A', 'G', 'G', 'G', 'T', 'A', 'G', 'G', 'C', 'C', 'A', 'A', 'G',
            'A', 'A', 'T', 'T', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (169 aligned letters; 109 identities; 60 mismatches; 44 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (169 aligned letters; 109 identities; 60 mismatches; 44 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 169:
         identities = 109,
@@ -5813,111 +4731,94 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 35)
-        self.assertEqual(counts.internal_deletions, 9)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 44)
-        self.assertEqual(counts.insertions, 35)
-        self.assertEqual(counts.deletions, 9)
-        self.assertEqual(counts.gaps, 44)
-        self.assertEqual(counts.aligned, 169)
-        self.assertEqual(counts.identities, 109)
-        self.assertEqual(counts.mismatches, 60)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 35
+        assert counts.internal_deletions == 9
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 44
+        assert counts.insertions == 35
+        assert counts.deletions == 9
+        assert counts.gaps == 44
+        assert counts.aligned == 169
+        assert counts.identities == 109
+        assert counts.mismatches == 60
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 1986)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018822 : 3018822 + 110],
-            "CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACAGAAGAGAACCTAACTTGCTTAGGAGCATATGTACAGTTAATCAAGACAAAAATAAGAATGGAGACt",
-        )
-        self.assertEqual(
-            alignment[0],
-            "CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACA----GAAGAGAACCTAACTTG-CTTAGGAGCATATGTACAGTTAATCAAGAC-----AAAAATAAGAATGGAGACt",
-        )
-        self.assertEqual(alignment.sequences[1].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[1].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[1].seq[47545353 : 47545353 + 119],
-            "ATTTTCCATACTTATTTTTAGTTGATCTTGCTAAATTGTGTGCATCTCTAGAAGTCGATTTGAATTCCCTTTACAATGTGGAGAATTTTAAGTGAGTAATAATGGGCAGGGAAAAAAAG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CTTTTTTTCCCTGCCCATTATTACTCACTTAAAATTCTCC-ACATTGTAAAGGGAATTCAAATCGACTTCTAGAGATGCACACAATTTAGCAAGATCAACTAAAAATAAGTATGGAAAAT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 160)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
+        assert alignment.score == 1986
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018822 : 3018822 + 110] == "CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACAGAAGAGAACCTAACTTGCTTAGGAGCATATGTACAGTTAATCAAGACAAAAATAAGAATGGAGACt"
+        assert alignment[0] == "CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACA----GAAGAGAACCTAACTTG-CTTAGGAGCATATGTACAGTTAATCAAGAC-----AAAAATAAGAATGGAGACt"
+        assert alignment.sequences[1].id == "canFam2.chr1"
+        assert len(alignment.sequences[1].seq) == 125616256
+        assert alignment.sequences[1].seq[47545353 : 47545353 + 119] == "ATTTTCCATACTTATTTTTAGTTGATCTTGCTAAATTGTGTGCATCTCTAGAAGTCGATTTGAATTCCCTTTACAATGTGGAGAATTTTAAGTGAGTAATAATGGGCAGGGAAAAAAAG"
+        assert alignment[1] == "CTTTTTTTCCCTGCCCATTATTACTCACTTAAAATTCTCC-ACATTGTAAAGGGAATTCAAATCGACTTCTAGAGATGCACACAATTTAGCAAGATCAACTAAAAATAAGTATGGAAAAT"
+        assert alignment.sequences[1].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 160
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 2
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -5929,10 +4830,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3018822 CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACA----GAAGAGAACCTA
                   0 ||...||.|..|.|...|||.|..|||||||.||..||||-|||----.|||.|||...|
 canFam2.c  47545472 CTTTTTTTCCCTGCCCATTATTACTCACTTAAAATTCTCC-ACATTGTAAAGGGAATTCA
@@ -5944,11 +4842,8 @@ canFam2.c  47545413 AATCGACTTCTAGAGATGCACACAATTTAGCAAGATCAACTAAAAATAAGTATGGAAAAT
 mm9.chr10   3018932 
                 120 
 canFam2.c  47545353 
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=1986.000000
 s mm9.chr10                         3018822  110 + 129993255 CTGCCTTCCATTACGATTTACTGATCACTTACAACCCTCCCACA----GAAGAGAACCTAACTTG-CTTAGGAGCATATGTACAGTTAATCAAGAC-----AAAAATAAGAATGGAGACt
 s canFam2.chr1                     78070784  119 - 125616256 CTTTTTTTCCCTGCCCATTATTACTCACTTAAAATTCTCC-ACATTGTAAAGGGAATTCAAATCGACTTCTAGAGATGCACACAATTTAGCAAGATCAACTAAAAATAAGTATGGAAAAT
@@ -5964,10 +4859,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'T', 'G', 'C', 'C', 'T', 'T', 'C', 'C', 'A', 'T', 'T', 'A',
@@ -5992,16 +4885,10 @@ np.array([['C', 'T', 'G', 'C', 'C', 'T', 'T', 'C', 'C', 'A', 'T', 'T', 'A',
            'A', 'A', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (109 aligned letters; 68 identities; 41 mismatches; 11 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (109 aligned letters; 68 identities; 41 mismatches; 11 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 109:
         identities = 68,
@@ -6028,103 +4915,92 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 10)
-        self.assertEqual(counts.internal_deletions, 1)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 11)
-        self.assertEqual(counts.insertions, 10)
-        self.assertEqual(counts.deletions, 1)
-        self.assertEqual(counts.gaps, 11)
-        self.assertEqual(counts.aligned, 109)
-        self.assertEqual(counts.identities, 68)
-        self.assertEqual(counts.mismatches, 41)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 10
+        assert counts.internal_deletions == 1
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 11
+        assert counts.insertions == 10
+        assert counts.deletions == 1
+        assert counts.gaps == 11
+        assert counts.aligned == 109
+        assert counts.identities == 68
+        assert counts.mismatches == 41
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3018932 : 3018932 + 339],
-            "gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaaaaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtgggggcatggcagcatccaggcaggcatggtgcaggcagagctgagagttctacatcttcatccaaaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacccacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaatggcaccactcctggtccaagaatatacaaaccatgaca",
-        )
-        self.assertEqual(
-            alignment[0],
-            "gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaaaaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtgggggcatggcagcatccaggcaggcatggtgcaggcagagctgagagttctacatcttcatccaaaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacccacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaatggcaccactcctggtccaagaatatacaaaccatgaca",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3018932 : 3018932 + 339] == "gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaaaaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtgggggcatggcagcatccaggcaggcatggtgcaggcagagctgagagttctacatcttcatccaaaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacccacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaatggcaccactcctggtccaagaatatacaaaccatgaca"
+        assert alignment[0] == "gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaaaaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtgggggcatggcagcatccaggcaggcatggtgcaggcagagctgagagttctacatcttcatccaaaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacccacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaatggcaccactcctggtccaagaatatacaaaccatgaca"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47545353, 47545353))
-        self.assertEqual(status, "C")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47545353, 47545353)
+        assert status == "C"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][9]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 10)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3018932, 3019271]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 10
+        assert np.array_equal(alignment.coordinates, np.array([[3018932, 3019271]]))
+        assert str(alignment) == """\
 mm9.chr10   3018932 gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaa
 
 mm9.chr10   3018992 aaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtggggg
@@ -6136,11 +5012,8 @@ mm9.chr10   3019112 aaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacc
 mm9.chr10   3019172 cacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaa
 
 mm9.chr10   3019232 tggcaccactcctggtccaagaatatacaaaccatgaca 3019271
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3018932  339 + 129993255 gtctgagttagggttttactgctgtgaacagacaccatgaccaaggcatgtcttataaaaaaaatttaattagggctggcttacagattcagaggttcagtgggagcatcaaggtgggggcatggcagcatccaggcaggcatggtgcaggcagagctgagagttctacatcttcatccaaaggcttctagtggaagactgacttccaggcacctagggtgagggtcttaagcccacacccacagtgacacacctattccaaccaggtcacacctattccaacaaggccatacctccaaatggcaccactcctggtccaagaatatacaaaccatgaca
 e canFam2.chr1                     47545353    0 + 125616256 C
@@ -6154,10 +5027,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['g', 't', 'c', 't', 'g', 'a', 'g', 't', 't', 'a', 'g', 'g', 'g',
@@ -6189,16 +5060,10 @@ np.array([['g', 't', 'c', 't', 'g', 'a', 'g', 't', 't', 'a', 'g', 'g', 'g',
            'a']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -6225,111 +5090,94 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 228)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019271 : 3019271 + 106],
-            "GAGACCAAATGTGGCGCTCACGTGAGGCCAGGAGTAAATCGCACACACAGCCCATGCTTTCACCATCTGCTAGGGTGCTCTGGAGCAGGGCAGGCTTCTAACCTGG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "GAGACCAAATG------------TGGCGCTCACG-TGAGGCCAGGAGTAAATCGCACACACAGCCCATGCTTTCACCATCTGCTAGGGTGCTCTGGAGCAGGGCAGGCTTCTAACCTGG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[1].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[1].seq[47545247 : 47545247 + 106],
-            "CCAGGTTTGGGACCTATGTGTGTCAAGTGAATAGAAGCAGGTGGGACAGCATGTGCGTCACACATGGACACAGCCTGGACATCGTGGGGCATTTTCCATTTGCCTC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "GAGGC-AAATGGAAAATGCCCCACGATGTCCAGGCTGTGTCCATGTGTGA--CGCACATGCTGTCC----------CACCTGCTTCTATTCACTTGACACACATAGGTCCCAAACCTGG",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
+        assert alignment.score == 228
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019271 : 3019271 + 106] == "GAGACCAAATGTGGCGCTCACGTGAGGCCAGGAGTAAATCGCACACACAGCCCATGCTTTCACCATCTGCTAGGGTGCTCTGGAGCAGGGCAGGCTTCTAACCTGG"
+        assert alignment[0] == "GAGACCAAATG------------TGGCGCTCACG-TGAGGCCAGGAGTAAATCGCACACACAGCCCATGCTTTCACCATCTGCTAGGGTGCTCTGGAGCAGGGCAGGCTTCTAACCTGG"
+        assert alignment.sequences[1].id == "canFam2.chr1"
+        assert len(alignment.sequences[1].seq) == 125616256
+        assert alignment.sequences[1].seq[47545247 : 47545247 + 106] == "CCAGGTTTGGGACCTATGTGTGTCAAGTGAATAGAAGCAGGTGGGACAGCATGTGCGTCACACATGGACACAGCCTGGACATCGTGGGGCATTTTCCATTTGCCTC"
+        assert alignment[1] == "GAGGC-AAATGGAAAATGCCCCACGATGTCCAGGCTGTGTCCATGTGTGA--CGCACATGCTGTCC----------CACCTGCTTCTATTCACTTGACACACATAGGTCCCAAACCTGG"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 2
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -6341,10 +5189,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019271 GAGACCAAATG------------TGGCGCTCACG-TGAGGCCAGGAGTAAATCGCACACA
                   0 |||.|-|||||------------.|..|..||.|-||.|.|||.|.||.|--||||||..
 canFam2.c  47545353 GAGGC-AAATGGAAAATGCCCCACGATGTCCAGGCTGTGTCCATGTGTGA--CGCACATG
@@ -6356,11 +5201,8 @@ canFam2.c  47545296 CTGTCC----------CACCTGCTTCTATTCACTTGACACACATAGGTCCCAAACCTGG
 mm9.chr10   3019377
                 119
 canFam2.c  47545247
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=228.000000
 s mm9.chr10                         3019271  106 + 129993255 GAGACCAAATG------------TGGCGCTCACG-TGAGGCCAGGAGTAAATCGCACACACAGCCCATGCTTTCACCATCTGCTAGGGTGCTCTGGAGCAGGGCAGGCTTCTAACCTGG
 s canFam2.chr1                     78070903  106 - 125616256 GAGGC-AAATGGAAAATGCCCCACGATGTCCAGGCTGTGTCCATGTGTGA--CGCACATGCTGTCC----------CACCTGCTTCTATTCACTTGACACACATAGGTCCCAAACCTGG
@@ -6376,10 +5218,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['G', 'A', 'G', 'A', 'C', 'C', 'A', 'A', 'A', 'T', 'G', '-', '-',
@@ -6404,16 +5244,10 @@ np.array([['G', 'A', 'G', 'A', 'C', 'C', 'A', 'A', 'A', 'T', 'G', '-', '-',
            'G', 'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (93 aligned letters; 58 identities; 35 mismatches; 26 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (93 aligned letters; 58 identities; 35 mismatches; 26 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 93:
         identities = 58,
@@ -6440,129 +5274,103 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 13)
-        self.assertEqual(counts.internal_deletions, 13)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 26)
-        self.assertEqual(counts.insertions, 13)
-        self.assertEqual(counts.deletions, 13)
-        self.assertEqual(counts.gaps, 26)
-        self.assertEqual(counts.aligned, 93)
-        self.assertEqual(counts.identities, 58)
-        self.assertEqual(counts.mismatches, 35)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 13
+        assert counts.internal_deletions == 13
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 26
+        assert counts.insertions == 13
+        assert counts.deletions == 13
+        assert counts.gaps == 26
+        assert counts.aligned == 93
+        assert counts.identities == 58
+        assert counts.mismatches == 35
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 10938)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019377 : 3019377 + 88],
-            "CCCCAGCATTCTGGCAGACACAGTGAAAAGAGACAGATGGTCACTAATAAAATCTGTATAAATTAGATCTCAGAGGATGGATGGACCA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "CCCCAGCATTCTGGCAGACACAGTG-AAAAGAGACAGATGGTCACTAATAAAATCTGT-ATAAATTAG-ATCTCAGAGGATGGATGGACCA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[1].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[1].seq[46757 : 46757 + 88],
-            "GAGTCCCATCCTCTGAGATTCTAGTTCACCACAAAGCTTACTGGTGGGCACATGCTTCTTTTTCACATTAGCTATCAGAACACTTGGG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CCCAAGTGTTCTGATAGCTAATGTGAAAAAGAAGCATGTGCCCACCAGTAAGCTTTGTGGTGAACTAGAATCTCAGAGGATG---GGACTC",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[2].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[2].seq[47545159 : 47545159 + 88],
-            "gagtcccatcctctgagattctaggtcattgcaaatctTATTAGCGGGCCCATGTTTCTTTTTCACAGAGGCAATCAGAACACTTGGG",
-        )
-        self.assertEqual(
-            alignment[2],
-            "CCCAAGTGTTCTGATTGCCTCTGTGAAAAAGAAACATGGGCCCGCTAATAagatttgcaatgacctagaatctcagaggatg---ggactc",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
+        assert alignment.score == 10938
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019377 : 3019377 + 88] == "CCCCAGCATTCTGGCAGACACAGTGAAAAGAGACAGATGGTCACTAATAAAATCTGTATAAATTAGATCTCAGAGGATGGATGGACCA"
+        assert alignment[0] == "CCCCAGCATTCTGGCAGACACAGTG-AAAAGAGACAGATGGTCACTAATAAAATCTGT-ATAAATTAG-ATCTCAGAGGATGGATGGACCA"
+        assert alignment.sequences[1].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[1].seq) == 119354
+        assert alignment.sequences[1].seq[46757 : 46757 + 88] == "GAGTCCCATCCTCTGAGATTCTAGTTCACCACAAAGCTTACTGGTGGGCACATGCTTCTTTTTCACATTAGCTATCAGAACACTTGGG"
+        assert alignment[1] == "CCCAAGTGTTCTGATAGCTAATGTGAAAAAGAAGCATGTGCCCACCAGTAAGCTTTGTGGTGAACTAGAATCTCAGAGGATG---GGACTC"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "canFam2.chr1"
+        assert len(alignment.sequences[2].seq) == 125616256
+        assert alignment.sequences[2].seq[47545159 : 47545159 + 88] == "gagtcccatcctctgagattctaggtcattgcaaatctTATTAGCGGGCCCATGTTTCTTTTTCACAGAGGCAATCAGAACACTTGGG"
+        assert alignment[2] == "CCCAAGTGTTCTGATTGCCTCTGTGAAAAAGAAACATGGGCCCGCTAATAagatttgcaatgacctagaatctcagaggatg---ggactc"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (6649, 10128))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (6649, 10128)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155028090, 155025688))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155028090, 155025688)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157518143, 157515743))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157518143, 157515743)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 3)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 3
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -6576,10 +5384,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019377 CCCCAGCATTCTGGCAGACACAGTG-AAAAGAGACAGATGGTCACTAATAAAATCTGT-A
 felCat3.s     46845 CCCAAGTGTTCTGATAGCTAATGTGAAAAAGAAGCATGTGCCCACCAGTAAGCTTTGTGG
 canFam2.c  47545247 CCCAAGTGTTCTGATTGCCTCTGTGAAAAAGAAACATGGGCCCGCTAATAagatttgcaa
@@ -6587,11 +5392,8 @@ canFam2.c  47545247 CCCAAGTGTTCTGATTGCCTCTGTGAAAAAGAAACATGGGCCCGCTAATAagatttgcaa
 mm9.chr10   3019435 TAAATTAG-ATCTCAGAGGATGGATGGACCA  3019465
 felCat3.s     46785 TGAACTAGAATCTCAGAGGATG---GGACTC    46757
 canFam2.c  47545187 tgacctagaatctcagaggatg---ggactc 47545159
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=10938.000000
 s mm9.chr10                         3019377   88 + 129993255 CCCCAGCATTCTGGCAGACACAGTG-AAAAGAGACAGATGGTCACTAATAAAATCTGT-ATAAATTAG-ATCTCAGAGGATGGATGGACCA
 s felCat3.scaffold_205680             72509   88 -    119354 CCCAAGTGTTCTGATAGCTAATGTGAAAAAGAAGCATGTGCCCACCAGTAAGCTTTGTGGTGAACTAGAATCTCAGAGGATG---GGACTC
@@ -6610,10 +5412,8 @@ e hg18.chr6                        15871902 2402 - 170899992 I
 e panTro2.chr6                     16390469 2400 - 173908612 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'C', 'C', 'C', 'A', 'G', 'C', 'A', 'T', 'T', 'C', 'T', 'G',
@@ -6640,16 +5440,10 @@ np.array([['C', 'C', 'C', 'C', 'A', 'G', 'C', 'A', 'T', 'T', 'C', 'T', 'G',
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (258 aligned letters; 134 identities; 124 mismatches; 12 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (258 aligned letters; 134 identities; 124 mismatches; 12 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 258:
         identities = 134,
@@ -6676,151 +5470,110 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 12)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 12)
-        self.assertEqual(counts.aligned, 258)
-        self.assertEqual(counts.identities, 134)
-        self.assertEqual(counts.mismatches, 124)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 12
+        assert counts.insertions == 6
+        assert counts.deletions == 6
+        assert counts.gaps == 12
+        assert counts.aligned == 258
+        assert counts.identities == 134
+        assert counts.mismatches == 124
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 36924)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019465 : 3019465 + 47],
-            "AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT",
-        )
-        self.assertEqual(
-            alignment[0], "AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT"
-        )
-        self.assertEqual(alignment.sequences[1].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[1].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[1].seq[10128 : 10128 + 47],
-            "aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC",
-        )
-        self.assertEqual(
-            alignment[1], "aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC"
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 3479)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157515703 : 157515703 + 40],
-            "AAAACAcatcagaataacatgaaaagccatttcaaaatat",
-        )
-        self.assertEqual(
-            alignment[2], "-------atattttgaaatggcttttcatgttattctgatgTGTTTT"
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 2400)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155025648 : 155025648 + 40],
-            "AAAACAcatcagaataacatgaaaagccatttcaaaatat",
-        )
-        self.assertEqual(
-            alignment[3], "-------atattttgaaatggcttttcatgttattctgatgTGTTTT"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 2402)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[4].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[4].seq[47545115 : 47545115 + 44],
-            "aacacacattagaacaacatgaagagctatttttaaatatacct",
-        )
-        self.assertEqual(
-            alignment[4], "---aggtatatttaaaaatagctcttcatgttgttctaatgtgtgtt"
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "99999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[5].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[5].seq[46714 : 46714 + 43],
-            "AACACACATCAGAACAACATGAAAACTATTTTTAAAAACACGT",
-        )
-        self.assertEqual(
-            alignment[5], "---ACGTGTTTTTAAAAATAG-TTTTCATGTTGTTCTGATGTGTGTT"
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 193)
+        assert alignment.score == 36924
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019465 : 3019465 + 47] == "AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT"
+        assert alignment[0] == "AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT"
+        assert alignment.sequences[1].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[1].seq) == 133105
+        assert alignment.sequences[1].seq[10128 : 10128 + 47] == "aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC"
+        assert alignment[1] == "aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 3479
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157515703 : 157515703 + 40] == "AAAACAcatcagaataacatgaaaagccatttcaaaatat"
+        assert alignment[2] == "-------atattttgaaatggcttttcatgttattctgatgTGTTTT"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 2400
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155025648 : 155025648 + 40] == "AAAACAcatcagaataacatgaaaagccatttcaaaatat"
+        assert alignment[3] == "-------atattttgaaatggcttttcatgttattctgatgTGTTTT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 2402
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "canFam2.chr1"
+        assert len(alignment.sequences[4].seq) == 125616256
+        assert alignment.sequences[4].seq[47545115 : 47545115 + 44] == "aacacacattagaacaacatgaagagctatttttaaatatacct"
+        assert alignment[4] == "---aggtatatttaaaaatagctcttcatgttgttctaatgtgtgtt"
+        assert alignment.sequences[4].annotations["quality"] == "99999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[5].seq) == 119354
+        assert alignment.sequences[5].seq[46714 : 46714 + 43] == "AACACACATCAGAACAACATGAAAACTATTTTTAAAAACACGT"
+        assert alignment[5] == "---ACGTGTTTTTAAAAATAG-TTTTCATGTTGTTCTGATGTGTGTT"
+        assert alignment.sequences[5].annotations["quality"] == "9999999999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 193
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 6)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 6
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -6834,21 +5587,15 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019465 AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT   3019512
 calJac1.C     10128 aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC     10175
 panTro2.c 157515743 -------atattttgaaatggcttttcatgttattctgatgTGTTTT 157515703
 hg18.chr6 155025688 -------atattttgaaatggcttttcatgttattctgatgTGTTTT 155025648
 canFam2.c  47545159 ---aggtatatttaaaaatagctcttcatgttgttctaatgtgtgtt  47545115
 felCat3.s     46757 ---ACGTGTTTTTAAAAATAG-TTTTCATGTTGTTCTGATGTGTGTT     46714
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=36924.000000
 s mm9.chr10                         3019465   47 + 129993255 AAGATAGATATTTAGAAGTAGCTTTTTATGTTTTTCTGATGTGTGTT
 s calJac1.Contig6394                  10128   47 +    133105 aacaTCTATATTTTGAAATGGCTTTTCATGTTACTCTGATGTGTGTC
@@ -6871,10 +5618,8 @@ e cavPor2.scaffold_216473              8048 1372 -     10026 I
 e otoGar1.scaffold_334.1-359464      184839 2731 -    359464 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'A', 'G', 'A', 'T', 'A', 'G', 'A', 'T', 'A', 'T', 'T', 'T',
@@ -6903,16 +5648,10 @@ np.array([['A', 'A', 'G', 'A', 'T', 'A', 'G', 'A', 'T', 'A', 'T', 'T', 'T',
            'T', 'G', 'T', 'G', 'T', 'G', 'T', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (622 aligned letters; 225 identities; 397 mismatches; 61 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (622 aligned letters; 225 identities; 397 mismatches; 61 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 622:
         identities = 225,
@@ -6939,145 +5678,107 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 16)
-        self.assertEqual(counts.left_deletions, 40)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 5)
-        self.assertEqual(counts.left_gaps, 56)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 5)
-        self.assertEqual(counts.insertions, 16)
-        self.assertEqual(counts.deletions, 45)
-        self.assertEqual(counts.gaps, 61)
-        self.assertEqual(counts.aligned, 622)
-        self.assertEqual(counts.identities, 225)
-        self.assertEqual(counts.mismatches, 397)
+"""
+        assert counts.left_insertions == 16
+        assert counts.left_deletions == 40
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 5
+        assert counts.left_gaps == 56
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 5
+        assert counts.insertions == 16
+        assert counts.deletions == 45
+        assert counts.gaps == 61
+        assert counts.aligned == 622
+        assert counts.identities == 225
+        assert counts.mismatches == 397
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 20303)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019512 : 3019512 + 92],
-            "TGCATCATTAAGACTAGAGTTCCTTTCTGTCTTTGCTTTCTTGACAGGGCCATGCTCGGCAGTCATTCTTAGACTGCTTTTTGTTTgtttgg",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TGCATCATTAAGACTAGAGTTCCT---------------TTCTGTCTT---TGCTTTCTTG--------ACAGGGCCATGCTCGGCAGTCATTCTTAGACTGCTTTTTGTTTgtttgg",
-        )
-        self.assertEqual(alignment.sequences[1].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[1].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[1].seq[10175 : 10175 + 86],
-            "CCTCATGAAGGCCCAAGTTCCTAAAACATTAATTCTCTTCCTATTTCCTAGCTGTCTCGCCTAGGCCTTGCCCGCCAGCAATTCCC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "--CCTCATGAAGGCCCAAGTTCCTAAA-----ACATTAATTCTCTTCC---TATTTCCTAGCTGTCTCGCCTAGGCCTTGCCCGCCAGCAATTCCC----------------------",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157515610 : 157515610 + 93],
-            "CCAATACCCATGTGGGAATTGCTGGCGGGCAAGACCTCTTTTCTAGAAAAGAGGAAGAGAATGAATGTTTTAGGAACTTGGGCCTTAATGAAG",
-        )
-        self.assertEqual(
-            alignment[2],
-            "--CTTCATTAAGGCCCAAGTTCCTAAA-----ACATTCATTCTCTTCC---TCTTTTCTAG------AAAAGAGGTCTTGCCCGCCAGCAATTCCCACATGGGTATTGG---------",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155025555 : 155025555 + 93],
-            "CCAATACCCATGTGGGAATTGCTGGCGGGCAAGACCTCTTTTCTAGAAAAGAGGAAGAGAATGAATGTTTTAGGAACTTGGGCCTTAATGAAG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "--CTTCATTAAGGCCCAAGTTCCTAAA-----ACATTCATTCTCTTCC---TCTTTTCTAG------AAAAGAGGTCTTGCCCGCCAGCAATTCCCACATGGGTATTGG---------",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[4].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[4].seq[47545018 : 47545018 + 97],
-            "CCGAACAAAGTAGGAATGACTGGCAGGCAAGACACTGATGAGGAAGGGTTGAAGAAAGAAAAAATATAAGCCTGTAAGAACCTGGGTTTAGATGAGG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "--CCTCATCTAAACCCAGGTTCTTACAGGCTTATATTTTTTCTTTCTTCAACCCTTCCTCA--------TCAGTGTCTTGCCTGCCAGTCATTCCTAC-----------TTTGTTCGG",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
+        assert alignment.score == 20303
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019512 : 3019512 + 92] == "TGCATCATTAAGACTAGAGTTCCTTTCTGTCTTTGCTTTCTTGACAGGGCCATGCTCGGCAGTCATTCTTAGACTGCTTTTTGTTTgtttgg"
+        assert alignment[0] == "TGCATCATTAAGACTAGAGTTCCT---------------TTCTGTCTT---TGCTTTCTTG--------ACAGGGCCATGCTCGGCAGTCATTCTTAGACTGCTTTTTGTTTgtttgg"
+        assert alignment.sequences[1].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[1].seq) == 133105
+        assert alignment.sequences[1].seq[10175 : 10175 + 86] == "CCTCATGAAGGCCCAAGTTCCTAAAACATTAATTCTCTTCCTATTTCCTAGCTGTCTCGCCTAGGCCTTGCCCGCCAGCAATTCCC"
+        assert alignment[1] == "--CCTCATGAAGGCCCAAGTTCCTAAA-----ACATTAATTCTCTTCC---TATTTCCTAGCTGTCTCGCCTAGGCCTTGCCCGCCAGCAATTCCC----------------------"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157515610 : 157515610 + 93] == "CCAATACCCATGTGGGAATTGCTGGCGGGCAAGACCTCTTTTCTAGAAAAGAGGAAGAGAATGAATGTTTTAGGAACTTGGGCCTTAATGAAG"
+        assert alignment[2] == "--CTTCATTAAGGCCCAAGTTCCTAAA-----ACATTCATTCTCTTCC---TCTTTTCTAG------AAAAGAGGTCTTGCCCGCCAGCAATTCCCACATGGGTATTGG---------"
+        assert alignment.sequences[2].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155025555 : 155025555 + 93] == "CCAATACCCATGTGGGAATTGCTGGCGGGCAAGACCTCTTTTCTAGAAAAGAGGAAGAGAATGAATGTTTTAGGAACTTGGGCCTTAATGAAG"
+        assert alignment[3] == "--CTTCATTAAGGCCCAAGTTCCTAAA-----ACATTCATTCTCTTCC---TCTTTTCTAG------AAAAGAGGTCTTGCCCGCCAGCAATTCCCACATGGGTATTGG---------"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "canFam2.chr1"
+        assert len(alignment.sequences[4].seq) == 125616256
+        assert alignment.sequences[4].seq[47545018 : 47545018 + 97] == "CCGAACAAAGTAGGAATGACTGGCAGGCAAGACACTGATGAGGAAGGGTTGAAGAAAGAAAAAATATAAGCCTGTAAGAACCTGGGTTTAGATGAGG"
+        assert alignment[4] == "--CCTCATCTAAACCCAGGTTCTTACAGGCTTATATTTTTTCTTTCTTCAACCCTTCCTCA--------TCAGTGTCTTGCCTGCCAGTCATTCCTAC-----------TTTGTTCGG"
+        assert alignment.sequences[4].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (46714, 46521))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (46714, 46521)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertEqual(len(alignment.annotations["empty"]), 7)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 5
+        assert len(alignment.annotations["empty"]) == 7
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -7100,10 +5801,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019512 TGCATCATTAAGACTAGAGTTCCT---------------TTCTGTCTT---TGCTTTCTT
 calJac1.C     10175 --CCTCATGAAGGCCCAAGTTCCTAAA-----ACATTAATTCTCTTCC---TATTTCCTA
 panTro2.c 157515703 --CTTCATTAAGGCCCAAGTTCCTAAA-----ACATTCATTCTCTTCC---TCTTTTCTA
@@ -7121,11 +5819,8 @@ calJac1.C     10261
 panTro2.c 157515610
 hg18.chr6 155025555
 canFam2.c  47545018
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=20303.000000
 s mm9.chr10                         3019512   92 + 129993255 TGCATCATTAAGACTAGAGTTCCT---------------TTCTGTCTT---TGCTTTCTTG--------ACAGGGCCATGCTCGGCAGTCATTCTTAGACTGCTTTTTGTTTgtttgg
 s calJac1.Contig6394                  10175   86 +    133105 --CCTCATGAAGGCCCAAGTTCCTAAA-----ACATTAATTCTCTTCC---TATTTCCTAGCTGTCTCGCCTAGGCCTTGCCCGCCAGCAATTCCC----------------------
@@ -7146,10 +5841,8 @@ e cavPor2.scaffold_216473              8048 1372 -     10026 I
 e otoGar1.scaffold_334.1-359464      184839 2731 -    359464 I
 e ponAbe2.chr6                     16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'G', 'C', 'A', 'T', 'C', 'A', 'T', 'T', 'A', 'A', 'G', 'A',
@@ -7204,16 +5897,10 @@ np.array([['T', 'G', 'C', 'A', 'T', 'C', 'A', 'T', 'T', 'A', 'A', 'G', 'A',
            'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (800 aligned letters; 580 identities; 220 mismatches; 244 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (800 aligned letters; 580 identities; 220 mismatches; 244 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 800:
         identities = 580,
@@ -7240,117 +5927,103 @@ AlignmentCounts object with
             right_deletions = 40:
                 open_right_deletions = 3,
                 extend_right_deletions = 37.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 8)
-        self.assertEqual(counts.right_insertions, 55)
-        self.assertEqual(counts.right_deletions, 40)
-        self.assertEqual(counts.internal_insertions, 84)
-        self.assertEqual(counts.internal_deletions, 57)
-        self.assertEqual(counts.left_gaps, 8)
-        self.assertEqual(counts.right_gaps, 95)
-        self.assertEqual(counts.internal_gaps, 141)
-        self.assertEqual(counts.insertions, 139)
-        self.assertEqual(counts.deletions, 105)
-        self.assertEqual(counts.gaps, 244)
-        self.assertEqual(counts.aligned, 800)
-        self.assertEqual(counts.identities, 580)
-        self.assertEqual(counts.mismatches, 220)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 8
+        assert counts.right_insertions == 55
+        assert counts.right_deletions == 40
+        assert counts.internal_insertions == 84
+        assert counts.internal_deletions == 57
+        assert counts.left_gaps == 8
+        assert counts.right_gaps == 95
+        assert counts.internal_gaps == 141
+        assert counts.insertions == 139
+        assert counts.deletions == 105
+        assert counts.gaps == 244
+        assert counts.aligned == 800
+        assert counts.identities == 580
+        assert counts.mismatches == 220
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019604 : 3019604 + 98],
-            "tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctggaactcactttgtagaccagactggccttgaactcagaaa",
-        )
-        self.assertEqual(
-            alignment[0],
-            "tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctggaactcactttgtagaccagactggccttgaactcagaaa",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019604 : 3019604 + 98] == "tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctggaactcactttgtagaccagactggccttgaactcagaaa"
+        assert alignment[0] == "tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctggaactcactttgtagaccagactggccttgaactcagaaa"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (46714, 46521))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (46714, 46521)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47545018, 47545018))
-        self.assertEqual(status, "C")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47545018, 47545018)
+        assert status == "C"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (10261, 10261))
-        self.assertEqual(status, "C")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (10261, 10261)
+        assert status == "C"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155025555, 155025555))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155025555, 155025555)
+        assert status == "C"
         empty = alignment.annotations["empty"][9]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157515610, 157515610))
-        self.assertEqual(status, "C")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157515610, 157515610)
+        assert status == "C"
         empty = alignment.annotations["empty"][10]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 11)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3019604, 3019702]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 11
+        assert np.array_equal(alignment.coordinates, np.array([[3019604, 3019702]]))
+        assert str(alignment) == """\
 mm9.chr10   3019604 tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctgga
 
 mm9.chr10   3019664 actcactttgtagaccagactggccttgaactcagaaa 3019702
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                          3019604   98 + 129993255 tttggtttggtttggttttttcaagacagggtttctttgtatagtcctagctgtcctggaactcactttgtagaccagactggccttgaactcagaaa
 e felCat3.scaffold_205680              72640  193 -    119354 I
@@ -7365,10 +6038,8 @@ e hg18.chr6                        155025555    0 + 170899992 C
 e panTro2.chr6                     157515610    0 + 173908612 C
 e ponAbe2.chr6                      16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['t', 't', 't', 'g', 'g', 't', 't', 't', 'g', 'g', 't', 't', 't',
@@ -7381,16 +6052,10 @@ np.array([['t', 't', 't', 'g', 'g', 't', 't', 't', 'g', 'g', 't', 't', 't',
            't', 'c', 'a', 'g', 'a', 'a', 'a']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -7417,117 +6082,100 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 45)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019702 : 3019702 + 42],
-            "tctgcctgcctctgcctcccaagtcctgggattaaaggcgtg",
-        )
-        self.assertEqual(
-            alignment[0],
-            "tctgcctgcctctgcctcccaag--------------------------------tcctgggattaaaggcgtg",
-        )
-        self.assertEqual(alignment.sequences[1].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[1].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[1].seq[46447 : 46447 + 74],
-            "TAAACCTTTAAGAACTTGAGTTTGTTTGTTTGGttttttttaatgtttatttttgagagagagagagagacaga",
-        )
-        self.assertEqual(
-            alignment[1],
-            "tctgtctctctctctctctcaaaaataaacattaaaaaaaaCCAAACAAACAAACTCAAGTTCTTAAAGGTTTA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 193)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
+        assert alignment.score == 45
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019702 : 3019702 + 42] == "tctgcctgcctctgcctcccaagtcctgggattaaaggcgtg"
+        assert alignment[0] == "tctgcctgcctctgcctcccaag--------------------------------tcctgggattaaaggcgtg"
+        assert alignment.sequences[1].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[1].seq) == 119354
+        assert alignment.sequences[1].seq[46447 : 46447 + 74] == "TAAACCTTTAAGAACTTGAGTTTGTTTGTTTGGttttttttaatgtttatttttgagagagagagagagacaga"
+        assert alignment[1] == "tctgtctctctctctctctcaaaaataaacattaaaaaaaaCCAAACAAACAAACTCAAGTTCTTAAAGGTTTA"
+        assert alignment.sequences[1].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 193
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47545018, 47545018))
-        self.assertEqual(status, "C")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47545018, 47545018)
+        assert status == "C"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (10261, 10261))
-        self.assertEqual(status, "C")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (10261, 10261)
+        assert status == "C"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (326690, 324316))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (326690, 324316)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (174625, 171894))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (174625, 171894)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155025555, 155025555))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155025555, 155025555)
+        assert status == "C"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157515610, 157515610))
-        self.assertEqual(status, "C")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157515610, 157515610)
+        assert status == "C"
         empty = alignment.annotations["empty"][9]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158040326, 158037803))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(len(alignment.annotations["empty"]), 10)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158040326, 158037803)
+        assert status == "I"
+        assert len(alignment.sequences) == 2
+        assert len(alignment.annotations["empty"]) == 10
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[3019702, 3019725, 3019725, 3019744],
@@ -7535,10 +6183,7 @@ AlignmentCounts object with
                             ])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019702 tctgcctgcctctgcctcccaag--------------------------------tcctg
                   0 ||||.||..||||..|||.|||.--------------------------------.....
 felCat3.s     46521 tctgtctctctctctctctcaaaaataaacattaaaaaaaaCCAAACAAACAAACTCAAG
@@ -7546,11 +6191,8 @@ felCat3.s     46521 tctgtctctctctctctctcaaaaataaacattaaaaaaaaCCAAACAAACAAACTCAAG
 mm9.chr10   3019730 ggattaaaggcgtg 3019744
                  60 ..............      74
 felCat3.s     46461 TTCTTAAAGGTTTA   46447
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=45.000000
 s mm9.chr10                          3019702   42 + 129993255 tctgcctgcctctgcctcccaag--------------------------------tcctgggattaaaggcgtg
 s felCat3.scaffold_205680              72833   74 -    119354 tctgtctctctctctctctcaaaaataaacattaaaaaaaaCCAAACAAACAAACTCAAGTTCTTAAAGGTTTA
@@ -7567,10 +6209,8 @@ e hg18.chr6                        155025555    0 + 170899992 C
 e panTro2.chr6                     157515610    0 + 173908612 C
 e ponAbe2.chr6                      16170105 2523 - 174210431 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['t', 'c', 't', 'g', 'c', 'c', 't', 'g', 'c', 'c', 't', 'c', 't',
@@ -7587,16 +6227,10 @@ np.array([['t', 'c', 't', 'g', 'c', 'c', 't', 'g', 'c', 'c', 't', 'c', 't',
            'A', 'A', 'A', 'G', 'G', 'T', 'T', 'T', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (42 aligned letters; 16 identities; 26 mismatches; 32 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (42 aligned letters; 16 identities; 26 mismatches; 32 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 42:
         identities = 16,
@@ -7623,164 +6257,119 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 32)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 32)
-        self.assertEqual(counts.insertions, 32)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 32)
-        self.assertEqual(counts.aligned, 42)
-        self.assertEqual(counts.identities, 16)
-        self.assertEqual(counts.mismatches, 26)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 32
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 32
+        assert counts.insertions == 32
+        assert counts.deletions == 0
+        assert counts.gaps == 32
+        assert counts.aligned == 42
+        assert counts.identities == 16
+        assert counts.mismatches == 26
         alignment = next(alignments)
-        self.assertEqual(alignment.score, -16865)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019744 : 3019744 + 33],
-            "cgccaccactgccctgcCTTAAACTGCTCTTAA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "-----------------cgccaccactgccctgcCT------------TAAACTGCTCTTAA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[1].seq[158037776 : 158037776 + 27],
-            "CCAATACCCATGTGGGAATTGCTGGCG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-----------------CGCCAGCAATTCC------------------CACATGGGTATTGG",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 2523)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[2].seq), 498454)
-        self.assertEqual(alignment.sequences[2].seq[324312 : 324312 + 4], "TCAA")
-        self.assertEqual(
-            alignment[2],
-            "----------------------------------------------------------TTGA",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["quality"], "9999")
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 2374)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[3].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[3].seq[10261 : 10261 + 13], "ACATGGCTACTGG"
-        )
-        self.assertEqual(
-            alignment[3],
-            "-------------------------------------------------ACATGGCTACTGG",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[4].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[4].seq[171883 : 171883 + 11], "TCAACACCAAT"
-        )
-        self.assertEqual(
-            alignment[4],
-            "---------------------------------------------------ATTGGTGTTGA",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["quality"], "87784564678")
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 2731)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[5].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[5].seq[4493 : 4493 + 41],
-            "TCAACACCCCTATGGGACCTGAGACAGGCAAGACAATGGTG",
-        )
-        self.assertEqual(
-            alignment[5],
-            "--------------------CACCATTGTCTTGCCTGTC-TCAGGTCCCATAGGGGTGTTGA",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "99999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[6].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[6].seq[46385 : 46385 + 62],
-            "TCTACACCAATGTGGGAATGACTGAAAGACAAGACACTGATGAGTAAGAGAAAGAGAAATCA",
-        )
-        self.assertEqual(
-            alignment[6],
-            "TGATTTCTCTTTCTCTTACTCATCAGTGTCTTGTCTTTCAGTCATTCCCACATTGGTGTAGA",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
+        assert alignment.score == -16865
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019744 : 3019744 + 33] == "cgccaccactgccctgcCTTAAACTGCTCTTAA"
+        assert alignment[0] == "-----------------cgccaccactgccctgcCT------------TAAACTGCTCTTAA"
+        assert alignment.sequences[1].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[1].seq) == 174210431
+        assert alignment.sequences[1].seq[158037776 : 158037776 + 27] == "CCAATACCCATGTGGGAATTGCTGGCG"
+        assert alignment[1] == "-----------------CGCCAGCAATTCC------------------CACATGGGTATTGG"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 2523
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[2].seq) == 498454
+        assert alignment.sequences[2].seq[324312 : 324312 + 4] == "TCAA"
+        assert alignment[2] == "----------------------------------------------------------TTGA"
+        assert alignment.sequences[2].annotations["quality"] == "9999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 2374
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[3].seq) == 133105
+        assert alignment.sequences[3].seq[10261 : 10261 + 13] == "ACATGGCTACTGG"
+        assert alignment[3] == "-------------------------------------------------ACATGGCTACTGG"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[4].seq) == 359464
+        assert alignment.sequences[4].seq[171883 : 171883 + 11] == "TCAACACCAAT"
+        assert alignment[4] == "---------------------------------------------------ATTGGTGTTGA"
+        assert alignment.sequences[4].annotations["quality"] == "87784564678"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 2731
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[5].seq) == 4726
+        assert alignment.sequences[5].seq[4493 : 4493 + 41] == "TCAACACCCCTATGGGACCTGAGACAGGCAAGACAATGGTG"
+        assert alignment[5] == "--------------------CACCATTGTCTTGCCTGTC-TCAGGTCCCATAGGGGTGTTGA"
+        assert alignment.sequences[5].annotations["quality"] == "99999999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "N"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[6].seq) == 119354
+        assert alignment.sequences[6].seq[46385 : 46385 + 62] == "TCTACACCAATGTGGGAATGACTGAAAGACAAGACACTGATGAGTAAGAGAAAGAGAAATCA"
+        assert alignment[6] == "TGATTTCTCTTTCTCTTACTCATCAGTGTCTTGTCTTTCAGTCATTCCCACATTGGTGTAGA"
+        assert alignment.sequences[6].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47545018, 47545018))
-        self.assertEqual(status, "C")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47545018, 47545018)
+        assert status == "C"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155025555, 155025555))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155025555, 155025555)
+        assert status == "C"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157515610, 157515610))
-        self.assertEqual(status, "C")
-        self.assertEqual(len(alignment.sequences), 7)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157515610, 157515610)
+        assert status == "C"
+        assert len(alignment.sequences) == 7
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -7802,10 +6391,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019744 -----------------cgccaccactgccctgcCT------------TAAACTGCTCTT
 ponAbe2.c 158037803 -----------------CGCCAGCAATTCC------------------CACATGGGTATT
 tupBel1.s    324316 ----------------------------------------------------------TT
@@ -7821,11 +6407,8 @@ calJac1.C     10272 GG     10274
 otoGar1.s    171885 GA    171883
 oryCun1.s      4495 GA      4493
 felCat3.s     46387 GA     46385
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=-16865.000000
 s mm9.chr10                          3019744   33 + 129993255 -----------------cgccaccactgccctgcCT------------TAAACTGCTCTTAA
 s ponAbe2.chr6                      16172628   27 - 174210431 -----------------CGCCAGCAATTCC------------------CACATGGGTATTGG
@@ -7851,10 +6434,8 @@ e cavPor2.scaffold_216473               8048 1372 -     10026 I
 e hg18.chr6                        155025555    0 + 170899992 C
 e panTro2.chr6                     157515610    0 + 173908612 C
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
@@ -7894,16 +6475,10 @@ np.array([['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
            'T', 'T', 'G', 'G', 'T', 'G', 'T', 'A', 'G', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (313 aligned letters; 174 identities; 139 mismatches; 520 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (313 aligned letters; 174 identities; 139 mismatches; 520 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 313:
         identities = 174,
@@ -7930,207 +6505,127 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 323)
-        self.assertEqual(counts.left_deletions, 132)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 59)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 455)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 65)
-        self.assertEqual(counts.insertions, 382)
-        self.assertEqual(counts.deletions, 138)
-        self.assertEqual(counts.gaps, 520)
-        self.assertEqual(counts.aligned, 313)
-        self.assertEqual(counts.identities, 174)
-        self.assertEqual(counts.mismatches, 139)
+"""
+        assert counts.left_insertions == 323
+        assert counts.left_deletions == 132
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 59
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 455
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 65
+        assert counts.insertions == 382
+        assert counts.deletions == 138
+        assert counts.gaps == 520
+        assert counts.aligned == 313
+        assert counts.identities == 174
+        assert counts.mismatches == 139
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 367532)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019777 : 3019777 + 183],
-            "GGCAATGTCAGGCTATGCGTTCTAGACAGGGCACAAGAAAAGCTTTTAGCAGCAGAATAAACTTTTAAAGTAAATTACTTTCCTTGATAGCAACTAGACGACCCAATTGATACAGTGGAAAGAGGCCTTTGAGAATGCATGAGAGAATATTTCCTGTAAGAGTTGAACAATTTAGAATTTACc",
-        )
-        self.assertEqual(
-            alignment[0],
-            "GGCAATGTCA-GGCTATGCGT------TCTAGACAGGGCACAAGAAAAGCTTTTAGCAGCAGAATAAACTTTT-AAAGTAAATTACTTTCCTTGATAGCAACTAGACGACCCAATTGA-TACAGT------GGAAAG-----A----------GGCCTTTGAGAAT---GCATGAGAGAATAT---TTCCTGTA------AGAGTTGAACAATTTAGAATTTACc",
-        )
-        self.assertEqual(alignment.sequences[1].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[1].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[1].seq[4300 : 4300 + 193],
-            "AATCCTAAACTATTTAGCTCTGAGAAATAGGGGAAGTAATATTATTCCATCCTGATTCCCAAAAGGCTTTTTTTTTCTTTGTTGTATCACTTTGAACACTTGATTACTAGCAAGGGAAGCAGTTTCCTCTAAAGGCTTATTCTACTGGAAAAAGCTTTTCCTGTCCCTTAGAACATAAGGTCATGATGTTGCC",
-        )
-        self.assertEqual(
-            alignment[1],
-            "GGCAACATCATGACCTTATGT------TCTAA----GGGACAGGAAAAGCTTTTTCCAGTAGAATAAGCCTTT-AGAGGAAACTGCTTCCCTTGCTAGTAATCAAGTGTTCAAAGTGA-TACAACAAAGAAAAAAAA-----A----------GCCTTTTGGGAAT-CAGGATGGAATAATATTACTTCCCCTATTTCTCAGAGCTAAATAGTTTAGGATT----",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999899999999989999999999999999999999999999999999999999999999999999898999999989979999999999999997999999998978998999999999999999978999999979689999999999999999979",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 37)
-        self.assertEqual(alignment.sequences[2].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[2].seq[155025365 : 155025365 + 190],
-            "AATCCTAAATTGTTTAACTCTTAGAAATAAGGGAAATAATATTATTCTATCCTGCATTCTCAAAAAAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTCCCTTTAACATTTTATTCCACTGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC",
-        )
-        self.assertEqual(
-            alignment[2],
-            "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCAGTGGAATAAAATGTT-AAAGGGAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A----------TTTTTTTGAGAATGCAGGATAGAATAATATTATTTCCCTTATTTCTAAGAGTTAAACAATTTAGGATT----",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[3].seq[157515419 : 157515419 + 191],
-            "AATCCTAAATTGTTTAACTCTTAGAAATAAGGGAAATAATATTATTCTATCCTGCATTCTCAAAAAAAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTTCCTTTAACATTTTATTCCACTGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC",
-        )
-        self.assertEqual(
-            alignment[3],
-            "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCAGTGGAATAAAATGTT-AAAGGAAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A---------TTTTTTTTGAGAATGCAGGATAGAATAATATTATTTCCCTTATTTCTAAGAGTTAAACAATTTAGGATT----",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[4].seq[158037586 : 158037586 + 190],
-            "AATCCTAAATTGTTTAACTCTAGAAATAAGGGAAATAATATTATTCTGTGCTGCATTCTCAAAAAGAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTTCCTTTAACATTTTATTCCACCGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC",
-        )
-        self.assertEqual(
-            alignment[4],
-            "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCGGTGGAATAAAATGTT-AAAGGAAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A---------TTCTTTTTGAGAATGCAGCACAGAATAATATTATTTCCCTTATTTCT-AGAGTTAAACAATTTAGGATT----",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 21)
-        self.assertEqual(alignment.sequences[5].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[5].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[5].seq[10274 : 10274 + 187],
-            "GGCAACACCGTGATACATATCCGAGATAAAGTACAGGAAAAGCTTTTGCAGTGGACGAAAATGTTGAAGGAAATTGCTTTTCTTGATAGCAATCAGGTCACCAAAGTGAGATGAAGAAAGTTTTTTGAGAATGTGGGATAGAATAATATTGTTTTCGTTATTTCTAAGAGTTAAACAATTTAGGATT",
-        )
-        self.assertEqual(
-            alignment[5],
-            "GGCAACACCGTGA-TACATAT------CCGAGATAAAGTACAGGAAAAGC-TTTTGCAGTGGACGAAAATGTT-GAAGGAAATTGCTTTTCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAA-----------------GTTTTTTGAGAATGTGGGATAGAATAATATTGTTTTCGTTATTTCTAAGAGTTAAACAATTTAGGATT----",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 21)
-        self.assertEqual(alignment.sequences[6].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[6].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[6].seq[171686 : 171686 + 197],
-            "AATCCTGAATTATTTAACTCTGAAATGGAGGGTGGATAAAATTATTCTTTCCAGCATTCTCAAAACATTTTTTCTTTATAATCACTTTGGTCACCTGATTGCTATCAAGAAAAGCAATTTCCTTTAACCTTTTATTCTACCGTAAAGGGCTTTTCCTGCACTTTGTCTTTATCTACAGCAAGGATCACGGCGTTGCC",
-        )
-        self.assertEqual(
-            alignment[6],
-            "GGCAACGCCGTGA-TCCTTGCTGTAGATAAAGACAAAGTGCAGGAAAAGCCCTTTACGGTAGAATAAAAGGTT-AAAGGAAATTGCTTTTCTTGATAGCAATCAGGTGACCAAAGTGATTATAA-------AGAAAA-----A----------ATGTTTTGAGAATGCTGGAAAGAATAATTTTATCCACCCTCCATTTCAGAGTTAAATAATTCAGGATT----",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "54667653455648997776896979788699699955776666776867789776453646557877552667697777697779896767576676677696675376877786786858478887756858859779666569356677477759968759378767656876769557597655596536566",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 358)
-        self.assertEqual(alignment.sequences[7].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[7].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[7].seq[324116 : 324116 + 196],
-            "AAGCCCAAGTTATTTAACTTAGACATAGGGAAAATAATATGCTTCTATACTGCATCCACAAAAGTTTGTTTTTGTTTTTTTTTTCAGTATGACTTTGGTCACCTGATTGCTGTCAAGGAAGGCAATTTCCTTTAAAAGTTTATCCTACTGCAAAAAGCTTTTCCTGTACTTTATCTAGAACATTCATGACATTGCC",
-        )
-        self.assertEqual(
-            alignment[7],
-            "GGCAATGTCATGA----ATGT------TCTAGATAAAGTACAGGAAAAGCTTTTTGCAGTAGGATAAACTTTT-AAAGGAAATTGCCTTCCTTGACAGCAATCAGGTGACCAAAGTCATACTGA-------AAAAAA-----AAACAAAAACAAACTTTTGTGGATGCAGTATAGAAGCATATTATTTTCCCTATGTCT--AAGTTAAATAACTTGGGCTT----",
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 623)
-        self.assertEqual(alignment.sequences[8].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[8].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[8].seq[46199 : 46199 + 186],
-            "aattttaaattatttaaCTCTTAGATGTAGGGGAAATAATATTATTGTATCCTGTATTCTCAAAAAAAATTCCCTTTATATTACTTTAATCACCTAATGTCTCTTGAAGAAAGCAATTTCCTACAACATTTTATTCTACTCAAAATGCTTTTCCTGCACTTTATCTAGAATGTACTTTATGATGTC",
-        )
-        self.assertEqual(
-            alignment[8],
-            "GACATC---ATAA-AGTACAT------TCTAGATAAAGTGCAGGAAAAGCATTTTG-AGTAGAATAAAATGTT-GTAGGAAATTGCTTTCTTCAAGAGACATTAGGTGATTAAAGTAA-TATAA-------AGGGAA-----T----------TTTTTTTGAGAATACAGGATACAATAATATTATTTCCCCTACATCTAAGAGttaaataatttaaaatt----",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 27)
-        self.assertEqual(alignment.sequences[9].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[9].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[9].seq[47544825 : 47544825 + 193],
-            "attaaattttaaattatttaaCTCTTAGAAGTAAGGGAAACAATATTATTCTAACTTGGATTCACTGAACTTTGTTTTTTCCCTTTATATTCCTTCAATCACCTGATTGCTCTCAAAGAAAGTAATTTCCTATTAACATTTTATCCTGTTCAAAATCCTTTTGTTGTACTTTACCCGGAATTTACATCATGAT",
-        )
-        self.assertEqual(
-            alignment[9],
-            "------ATCATGA-TGTAAAT------TCCGGGTAAAGTACAACAAAAGGATTTTG-AACAGGATAAAATGTTAATAGGAAATTACTTTCTTTGAGAGCAATCAGGTGATTGAAGGAA-TATAA-------AGGGAAAAAACA----------AAGTTCAGTGAATCCAAGTTAGAATAATATTGTTTCCCTTACTTCTAAGAGttaaataatttaaaatttaat",
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
+        assert alignment.score == 367532
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019777 : 3019777 + 183] == "GGCAATGTCAGGCTATGCGTTCTAGACAGGGCACAAGAAAAGCTTTTAGCAGCAGAATAAACTTTTAAAGTAAATTACTTTCCTTGATAGCAACTAGACGACCCAATTGATACAGTGGAAAGAGGCCTTTGAGAATGCATGAGAGAATATTTCCTGTAAGAGTTGAACAATTTAGAATTTACc"
+        assert alignment[0] == "GGCAATGTCA-GGCTATGCGT------TCTAGACAGGGCACAAGAAAAGCTTTTAGCAGCAGAATAAACTTTT-AAAGTAAATTACTTTCCTTGATAGCAACTAGACGACCCAATTGA-TACAGT------GGAAAG-----A----------GGCCTTTGAGAAT---GCATGAGAGAATAT---TTCCTGTA------AGAGTTGAACAATTTAGAATTTACc"
+        assert alignment.sequences[1].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[1].seq) == 4726
+        assert alignment.sequences[1].seq[4300 : 4300 + 193] == "AATCCTAAACTATTTAGCTCTGAGAAATAGGGGAAGTAATATTATTCCATCCTGATTCCCAAAAGGCTTTTTTTTTCTTTGTTGTATCACTTTGAACACTTGATTACTAGCAAGGGAAGCAGTTTCCTCTAAAGGCTTATTCTACTGGAAAAAGCTTTTCCTGTCCCTTAGAACATAAGGTCATGATGTTGCC"
+        assert alignment[1] == "GGCAACATCATGACCTTATGT------TCTAA----GGGACAGGAAAAGCTTTTTCCAGTAGAATAAGCCTTT-AGAGGAAACTGCTTCCCTTGCTAGTAATCAAGTGTTCAAAGTGA-TACAACAAAGAAAAAAAA-----A----------GCCTTTTGGGAAT-CAGGATGGAATAATATTACTTCCCCTATTTCTCAGAGCTAAATAGTTTAGGATT----"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999899999999989999999999999999999999999999999999999999999999999999898999999989979999999999999997999999998978998999999999999999978999999979689999999999999999979"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 37
+        assert alignment.sequences[2].id == "hg18.chr6"
+        assert len(alignment.sequences[2].seq) == 170899992
+        assert alignment.sequences[2].seq[155025365 : 155025365 + 190] == "AATCCTAAATTGTTTAACTCTTAGAAATAAGGGAAATAATATTATTCTATCCTGCATTCTCAAAAAAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTCCCTTTAACATTTTATTCCACTGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC"
+        assert alignment[2] == "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCAGTGGAATAAAATGTT-AAAGGGAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A----------TTTTTTTGAGAATGCAGGATAGAATAATATTATTTCCCTTATTTCTAAGAGTTAAACAATTTAGGATT----"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "panTro2.chr6"
+        assert len(alignment.sequences[3].seq) == 173908612
+        assert alignment.sequences[3].seq[157515419 : 157515419 + 191] == "AATCCTAAATTGTTTAACTCTTAGAAATAAGGGAAATAATATTATTCTATCCTGCATTCTCAAAAAAAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTTCCTTTAACATTTTATTCCACTGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC"
+        assert alignment[3] == "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCAGTGGAATAAAATGTT-AAAGGAAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A---------TTTTTTTTGAGAATGCAGGATAGAATAATATTATTTCCCTTATTTCTAAGAGTTAAACAATTTAGGATT----"
+        assert alignment.sequences[3].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[4].seq) == 174210431
+        assert alignment.sequences[4].seq[158037586 : 158037586 + 190] == "AATCCTAAATTGTTTAACTCTAGAAATAAGGGAAATAATATTATTCTGTGCTGCATTCTCAAAAAGAATTTTTCTTCATCTCACTTTGGTGACCTGATTGCTATCAAGGAAAGCAATTTCCTTTAACATTTTATTCCACCGCAAAAAGCTTTTCCTGTACTTTATCTTGAATATGTATCATGGTGTTGCC"
+        assert alignment[4] == "GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCGGTGGAATAAAATGTT-AAAGGAAATTGCTTTCCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAAA-----A---------TTCTTTTTGAGAATGCAGCACAGAATAATATTATTTCCCTTATTTCT-AGAGTTAAACAATTTAGGATT----"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 21
+        assert alignment.sequences[5].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[5].seq) == 133105
+        assert alignment.sequences[5].seq[10274 : 10274 + 187] == "GGCAACACCGTGATACATATCCGAGATAAAGTACAGGAAAAGCTTTTGCAGTGGACGAAAATGTTGAAGGAAATTGCTTTTCTTGATAGCAATCAGGTCACCAAAGTGAGATGAAGAAAGTTTTTTGAGAATGTGGGATAGAATAATATTGTTTTCGTTATTTCTAAGAGTTAAACAATTTAGGATT"
+        assert alignment[5] == "GGCAACACCGTGA-TACATAT------CCGAGATAAAGTACAGGAAAAGC-TTTTGCAGTGGACGAAAATGTT-GAAGGAAATTGCTTTTCTTGATAGCAATCAGGTCACCAAAGTGA-GATGA-------AGAAA-----------------GTTTTTTGAGAATGTGGGATAGAATAATATTGTTTTCGTTATTTCTAAGAGTTAAACAATTTAGGATT----"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 21
+        assert alignment.sequences[6].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[6].seq) == 359464
+        assert alignment.sequences[6].seq[171686 : 171686 + 197] == "AATCCTGAATTATTTAACTCTGAAATGGAGGGTGGATAAAATTATTCTTTCCAGCATTCTCAAAACATTTTTTCTTTATAATCACTTTGGTCACCTGATTGCTATCAAGAAAAGCAATTTCCTTTAACCTTTTATTCTACCGTAAAGGGCTTTTCCTGCACTTTGTCTTTATCTACAGCAAGGATCACGGCGTTGCC"
+        assert alignment[6] == "GGCAACGCCGTGA-TCCTTGCTGTAGATAAAGACAAAGTGCAGGAAAAGCCCTTTACGGTAGAATAAAAGGTT-AAAGGAAATTGCTTTTCTTGATAGCAATCAGGTGACCAAAGTGATTATAA-------AGAAAA-----A----------ATGTTTTGAGAATGCTGGAAAGAATAATTTTATCCACCCTCCATTTCAGAGTTAAATAATTCAGGATT----"
+        assert alignment.sequences[6].annotations["quality"] == "54667653455648997776896979788699699955776666776867789776453646557877552667697777697779896767576676677696675376877786786858478887756858859779666569356677477759968759378767656876769557597655596536566"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 358
+        assert alignment.sequences[7].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[7].seq) == 498454
+        assert alignment.sequences[7].seq[324116 : 324116 + 196] == "AAGCCCAAGTTATTTAACTTAGACATAGGGAAAATAATATGCTTCTATACTGCATCCACAAAAGTTTGTTTTTGTTTTTTTTTTCAGTATGACTTTGGTCACCTGATTGCTGTCAAGGAAGGCAATTTCCTTTAAAAGTTTATCCTACTGCAAAAAGCTTTTCCTGTACTTTATCTAGAACATTCATGACATTGCC"
+        assert alignment[7] == "GGCAATGTCATGA----ATGT------TCTAGATAAAGTACAGGAAAAGCTTTTTGCAGTAGGATAAACTTTT-AAAGGAAATTGCCTTCCTTGACAGCAATCAGGTGACCAAAGTCATACTGA-------AAAAAA-----AAACAAAAACAAACTTTTGTGGATGCAGTATAGAAGCATATTATTTTCCCTATGTCT--AAGTTAAATAACTTGGGCTT----"
+        assert alignment.sequences[7].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "I"
+        assert alignment.sequences[7].annotations["rightCount"] == 623
+        assert alignment.sequences[8].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[8].seq) == 119354
+        assert alignment.sequences[8].seq[46199 : 46199 + 186] == "aattttaaattatttaaCTCTTAGATGTAGGGGAAATAATATTATTGTATCCTGTATTCTCAAAAAAAATTCCCTTTATATTACTTTAATCACCTAATGTCTCTTGAAGAAAGCAATTTCCTACAACATTTTATTCTACTCAAAATGCTTTTCCTGCACTTTATCTAGAATGTACTTTATGATGTC"
+        assert alignment[8] == "GACATC---ATAA-AGTACAT------TCTAGATAAAGTGCAGGAAAAGCATTTTG-AGTAGAATAAAATGTT-GTAGGAAATTGCTTTCTTCAAGAGACATTAGGTGATTAAAGTAA-TATAA-------AGGGAA-----T----------TTTTTTTGAGAATACAGGATACAATAATATTATTTCCCCTACATCTAAGAGttaaataatttaaaatt----"
+        assert alignment.sequences[8].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "I"
+        assert alignment.sequences[8].annotations["rightCount"] == 27
+        assert alignment.sequences[9].id == "canFam2.chr1"
+        assert len(alignment.sequences[9].seq) == 125616256
+        assert alignment.sequences[9].seq[47544825 : 47544825 + 193] == "attaaattttaaattatttaaCTCTTAGAAGTAAGGGAAACAATATTATTCTAACTTGGATTCACTGAACTTTGTTTTTTCCCTTTATATTCCTTCAATCACCTGATTGCTCTCAAAGAAAGTAATTTCCTATTAACATTTTATCCTGTTCAAAATCCTTTTGTTGTACTTTACCCGGAATTTACATCATGAT"
+        assert alignment[9] == "------ATCATGA-TGTAAAT------TCCGGGTAAAGTACAACAAAAGGATTTTG-AACAGGATAAAATGTTAATAGGAAATTACTTTCTTTGAGAGCAATCAGGTGATTGAAGGAA-TATAA-------AGGGAAAAAACA----------AAGTTCAGTGAATCCAAGTTAGAATAATATTGTTTCCCTTACTTCTAAGAGttaaataatttaaaatttaat"
+        assert alignment.sequences[9].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 10)
-        self.assertEqual(len(alignment.annotations["empty"]), 3)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
+        assert len(alignment.sequences) == 10
+        assert len(alignment.annotations["empty"]) == 3
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -8208,10 +6703,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3019777 GGCAATGTCA-GGCTATGCGT------TCTAGACAGGGCACAAGAAAAGCTTTTAGCAGC
 oryCun1.s      4493 GGCAACATCATGACCTTATGT------TCTAA----GGGACAGGAAAAGCTTTTTCCAGT
 hg18.chr6 155025555 GGCAACACCATGA-TACATAT------TCAAGATAAAGTACAGGAAAAGCTTTTTGCAGT
@@ -8255,11 +6747,8 @@ otoGar1.s    171727 TTTTATCCACCCTCCATTTCAGAGTTAAATAATTCAGGATT----    171686
 tupBel1.s    324155 TATTATTTTCCCTATGTCT--AAGTTAAATAACTTGGGCTT----    324116
 felCat3.s     46240 TATTATTTCCCCTACATCTAAGAGttaaataatttaaaatt----     46199
 canFam2.c  47544870 TATTGTTTCCCTTACTTCTAAGAGttaaataatttaaaatttaat  47544825
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=367532.000000
 s mm9.chr10                         3019777  183 + 129993255 GGCAATGTCA-GGCTATGCGT------TCTAGACAGGGCACAAGAAAAGCTTTTAGCAGCAGAATAAACTTTT-AAAGTAAATTACTTTCCTTGATAGCAACTAGACGACCCAATTGA-TACAGT------GGAAAG-----A----------GGCCTTTGAGAAT---GCATGAGAGAATAT---TTCCTGTA------AGAGTTGAACAATTTAGAATTTACc
 s oryCun1.scaffold_156751               233  193 -      4726 GGCAACATCATGACCTTATGT------TCTAA----GGGACAGGAAAAGCTTTTTCCAGTAGAATAAGCCTTT-AGAGGAAACTGCTTCCCTTGCTAGTAATCAAGTGTTCAAAGTGA-TACAACAAAGAAAAAAAA-----A----------GCCTTTTGGGAAT-CAGGATGGAATAATATTACTTCCCCTATTTCTCAGAGCTAAATAGTTTAGGATT----
@@ -8290,17 +6779,11 @@ e ornAna1.chr2                     14751195 5690 -  54797317 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e cavPor2.scaffold_216473              8048 1372 -     10026 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (8223 aligned letters; 6176 identities; 2047 mismatches; 708 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (8223 aligned letters; 6176 identities; 2047 mismatches; 708 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 8223:
         identities = 6176,
@@ -8327,115 +6810,104 @@ AlignmentCounts object with
             right_deletions = 32:
                 open_right_deletions = 8,
                 extend_right_deletions = 24.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 54)
-        self.assertEqual(counts.right_insertions, 32)
-        self.assertEqual(counts.right_deletions, 32)
-        self.assertEqual(counts.internal_insertions, 365)
-        self.assertEqual(counts.internal_deletions, 225)
-        self.assertEqual(counts.left_gaps, 54)
-        self.assertEqual(counts.right_gaps, 64)
-        self.assertEqual(counts.internal_gaps, 590)
-        self.assertEqual(counts.insertions, 397)
-        self.assertEqual(counts.deletions, 311)
-        self.assertEqual(counts.gaps, 708)
-        self.assertEqual(counts.aligned, 8223)
-        self.assertEqual(counts.identities, 6176)
-        self.assertEqual(counts.mismatches, 2047)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 54
+        assert counts.right_insertions == 32
+        assert counts.right_deletions == 32
+        assert counts.internal_insertions == 365
+        assert counts.internal_deletions == 225
+        assert counts.left_gaps == 54
+        assert counts.right_gaps == 64
+        assert counts.internal_gaps == 590
+        assert counts.insertions == 397
+        assert counts.deletions == 311
+        assert counts.gaps == 708
+        assert counts.aligned == 8223
+        assert counts.identities == 6176
+        assert counts.mismatches == 2047
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3019960 : 3019960 + 757],
-            "actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacagttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgagggatgggcccatgcacccatcttaaaattttggacccagaattattcttctcaaaaggaaatgcagggatgaaaatggagcagagactggaagaaaggccaaccagagactgccctaactcaggatccatcgcatgtgcaggcaccaaccccaacactattgctgatgccatgttgtacttgctgatggaagcctggcatggctgtcctctgagagtctcaaatgaggcacctgacagatgcagatacttacagccaaccaatggactgagccccgggacctcaataaaagaatgaggggatggcaaccccataggaagaacaacagtatcaactccctggactcctcagagctcccggggactaagccaccaactaaagagcatacataggctgctctgaggccccagatacatatgtagcagaggactgcctcagtgggaggggatgtgcttggtcttgtgaaggcttgatgctccagagaaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccctcttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggagggagaacatttgaaatgtaaataaataaaataataaaaaa",
-        )
-        self.assertEqual(
-            alignment[0],
-            "actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacagttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgagggatgggcccatgcacccatcttaaaattttggacccagaattattcttctcaaaaggaaatgcagggatgaaaatggagcagagactggaagaaaggccaaccagagactgccctaactcaggatccatcgcatgtgcaggcaccaaccccaacactattgctgatgccatgttgtacttgctgatggaagcctggcatggctgtcctctgagagtctcaaatgaggcacctgacagatgcagatacttacagccaaccaatggactgagccccgggacctcaataaaagaatgaggggatggcaaccccataggaagaacaacagtatcaactccctggactcctcagagctcccggggactaagccaccaactaaagagcatacataggctgctctgaggccccagatacatatgtagcagaggactgcctcagtgggaggggatgtgcttggtcttgtgaaggcttgatgctccagagaaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccctcttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggagggagaacatttgaaatgtaaataaataaaataataaaaaa",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3019960 : 3019960 + 757] == "actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacagttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgagggatgggcccatgcacccatcttaaaattttggacccagaattattcttctcaaaaggaaatgcagggatgaaaatggagcagagactggaagaaaggccaaccagagactgccctaactcaggatccatcgcatgtgcaggcaccaaccccaacactattgctgatgccatgttgtacttgctgatggaagcctggcatggctgtcctctgagagtctcaaatgaggcacctgacagatgcagatacttacagccaaccaatggactgagccccgggacctcaataaaagaatgaggggatggcaaccccataggaagaacaacagtatcaactccctggactcctcagagctcccggggactaagccaccaactaaagagcatacataggctgctctgaggccccagatacatatgtagcagaggactgcctcagtgggaggggatgtgcttggtcttgtgaaggcttgatgctccagagaaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccctcttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggagggagaacatttgaaatgtaaataaataaaataataaaaaa"
+        assert alignment[0] == "actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacagttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgagggatgggcccatgcacccatcttaaaattttggacccagaattattcttctcaaaaggaaatgcagggatgaaaatggagcagagactggaagaaaggccaaccagagactgccctaactcaggatccatcgcatgtgcaggcaccaaccccaacactattgctgatgccatgttgtacttgctgatggaagcctggcatggctgtcctctgagagtctcaaatgaggcacctgacagatgcagatacttacagccaaccaatggactgagccccgggacctcaataaaagaatgaggggatggcaaccccataggaagaacaacagtatcaactccctggactcctcagagctcccggggactaagccaccaactaaagagcatacataggctgctctgaggccccagatacatatgtagcagaggactgcctcagtgggaggggatgtgcttggtcttgtgaaggcttgatgctccagagaaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccctcttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggagggagaacatttgaaatgtaaataaataaaataataaaaaa"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (46199, 46172))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (46199, 46172)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47544825, 47544825))
-        self.assertEqual(status, "C")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47544825, 47544825)
+        assert status == "C"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (10461, 10482))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (10461, 10482)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171686, 171328))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171686, 171328)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155025365, 155025365))
-        self.assertEqual(status, "C")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155025365, 155025365)
+        assert status == "C"
         empty = alignment.annotations["empty"][9]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157515419, 157515419))
-        self.assertEqual(status, "C")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157515419, 157515419)
+        assert status == "C"
         empty = alignment.annotations["empty"][10]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158037586, 158037565))
-        self.assertEqual(status, "I")
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158037586, 158037565)
+        assert status == "I"
         empty = alignment.annotations["empty"][11]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(record.seq), 4726)
-        self.assertEqual(segment, (4300, 4263))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 12)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3019960, 3020717]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "oryCun1.scaffold_156751"
+        assert len(record.seq) == 4726
+        assert segment == (4300, 4263)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 12
+        assert np.array_equal(alignment.coordinates, np.array([[3019960, 3020717]]))
+        assert str(alignment) == """\
 mm9.chr10   3019960 actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacag
 
 mm9.chr10   3020020 ttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgaggg
@@ -8461,11 +6933,8 @@ mm9.chr10   3020560 aaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccct
 mm9.chr10   3020620 cttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggaggga
 
 mm9.chr10   3020680 gaacatttgaaatgtaaataaataaaataataaaaaa 3020717
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                          3019960  757 + 129993255 actagggatgggagaggctcccagaacccagtaatgatgacattaagaaatacacaacagttgggaaatggaacccaaagagaacacctccagtagataagcatgacccccagttgagggatgggcccatgcacccatcttaaaattttggacccagaattattcttctcaaaaggaaatgcagggatgaaaatggagcagagactggaagaaaggccaaccagagactgccctaactcaggatccatcgcatgtgcaggcaccaaccccaacactattgctgatgccatgttgtacttgctgatggaagcctggcatggctgtcctctgagagtctcaaatgaggcacctgacagatgcagatacttacagccaaccaatggactgagccccgggacctcaataaaagaatgaggggatggcaaccccataggaagaacaacagtatcaactccctggactcctcagagctcccggggactaagccaccaactaaagagcatacataggctgctctgaggccccagatacatatgtagcagaggactgcctcagtgggaggggatgtgcttggtcttgtgaaggcttgatgctccagagaaggaggatgctagaggggtgaggtgggagtggatgggtgggtgggcaggggagcaccctcttagaggacaagggctctggggtgggggagctcatggagggggaactgggaaggagggagaacatttgaaatgtaaataaataaaataataaaaaa
 e felCat3.scaffold_205680              73155   27 -    119354 I
@@ -8481,10 +6950,8 @@ e panTro2.chr6                     157515419    0 + 173908612 C
 e ponAbe2.chr6                      16172845   21 - 174210431 I
 e oryCun1.scaffold_156751                426   37 -      4726 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['a', 'c', 't', 'a', 'g', 'g', 'g', 'a', 't', 'g', 'g', 'g', 'a',
@@ -8548,16 +7015,10 @@ np.array([['a', 'c', 't', 'a', 'g', 'g', 'g', 'a', 't', 'g', 'g', 'g', 'a',
            'a', 'a', 'a']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -8584,131 +7045,111 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 8951)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3020717 : 3020717 + 44],
-            "TGTCAAACATGCATAAAGATATACTGAGGAGCCCATGAATTTTA",
-        )
-        self.assertEqual(alignment[0], "TGTCAAACATGCATAAAGATATACT-GAGGAGCCCATGAATTTTA")
-        self.assertEqual(alignment.sequences[1].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[1].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[1].seq[47544792 : 47544792 + 33],
-            "TAAAATTCATGGGCCCCTCTATTATGTTAAACa",
-        )
-        self.assertEqual(alignment[1], "tGTT------------TAACATAATAGAGGGGCCCATGAATTTTA")
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157515381 : 157515381 + 38],
-            "TAAAATTCATGGACCCCTCTAGTATATTTAAAATTTTT",
-        )
-        self.assertEqual(alignment[2], "----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA")
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 11)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155025327 : 155025327 + 38],
-            "TAAAATTCATGGACCCCTCTAGTATATTTAAAATTTTT",
-        )
-        self.assertEqual(alignment[3], "----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA")
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 11)
+        assert alignment.score == 8951
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3020717 : 3020717 + 44] == "TGTCAAACATGCATAAAGATATACTGAGGAGCCCATGAATTTTA"
+        assert alignment[0] == "TGTCAAACATGCATAAAGATATACT-GAGGAGCCCATGAATTTTA"
+        assert alignment.sequences[1].id == "canFam2.chr1"
+        assert len(alignment.sequences[1].seq) == 125616256
+        assert alignment.sequences[1].seq[47544792 : 47544792 + 33] == "TAAAATTCATGGGCCCCTCTATTATGTTAAACa"
+        assert alignment[1] == "tGTT------------TAACATAATAGAGGGGCCCATGAATTTTA"
+        assert alignment.sequences[1].annotations["quality"] == "999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 9
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157515381 : 157515381 + 38] == "TAAAATTCATGGACCCCTCTAGTATATTTAAAATTTTT"
+        assert alignment[2] == "----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA"
+        assert alignment.sequences[2].annotations["quality"] == "99999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 11
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155025327 : 155025327 + 38] == "TAAAATTCATGGACCCCTCTAGTATATTTAAAATTTTT"
+        assert alignment[3] == "----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 11
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (46199, 46172))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (46199, 46172)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (10461, 10482))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (10461, 10482)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171686, 171328))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171686, 171328)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158037586, 158037565))
-        self.assertEqual(status, "I")
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158037586, 158037565)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(record.seq), 4726)
-        self.assertEqual(segment, (4300, 4263))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertEqual(len(alignment.annotations["empty"]), 9)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "oryCun1.scaffold_156751"
+        assert len(record.seq) == 4726
+        assert segment == (4300, 4263)
+        assert status == "I"
+        assert len(alignment.sequences) == 4
+        assert len(alignment.annotations["empty"]) == 9
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -8724,19 +7165,13 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3020717 TGTCAAACATGCATAAAGATATACT-GAGGAGCCCATGAATTTTA   3020761
 canFam2.c  47544825 tGTT------------TAACATAATAGAGGGGCCCATGAATTTTA  47544792
 panTro2.c 157515419 ----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA 157515381
 hg18.chr6 155025365 ----AAAAAT---TTTAAATATACTAGAGGGGTCCATGAATTTTA 155025327
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=8951.000000
 s mm9.chr10                         3020717   44 + 129993255 TGTCAAACATGCATAAAGATATACT-GAGGAGCCCATGAATTTTA
 s canFam2.chr1                     78071431   33 - 125616256 tGTT------------TAACATAATAGAGGGGCCCATGAATTTTA
@@ -8757,10 +7192,8 @@ e otoGar1.scaffold_334.1-359464      187778  358 -    359464 I
 e ponAbe2.chr6                     16172845   21 - 174210431 I
 e oryCun1.scaffold_156751               426   37 -      4726 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'G', 'T', 'C', 'A', 'A', 'A', 'C', 'A', 'T', 'G', 'C', 'A',
@@ -8781,16 +7214,10 @@ np.array([['T', 'G', 'T', 'C', 'A', 'A', 'A', 'C', 'A', 'T', 'G', 'C', 'A',
            'A', 'T', 'T', 'T', 'T', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (202 aligned letters; 175 identities; 27 mismatches; 55 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (202 aligned letters; 175 identities; 27 mismatches; 55 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 202:
         identities = 175,
@@ -8817,125 +7244,111 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 16)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 21)
-        self.assertEqual(counts.internal_deletions, 18)
-        self.assertEqual(counts.left_gaps, 16)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 39)
-        self.assertEqual(counts.insertions, 21)
-        self.assertEqual(counts.deletions, 34)
-        self.assertEqual(counts.gaps, 55)
-        self.assertEqual(counts.aligned, 202)
-        self.assertEqual(counts.identities, 175)
-        self.assertEqual(counts.mismatches, 27)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 16
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 21
+        assert counts.internal_deletions == 18
+        assert counts.left_gaps == 16
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 39
+        assert counts.insertions == 21
+        assert counts.deletions == 34
+        assert counts.gaps == 55
+        assert counts.aligned == 202
+        assert counts.identities == 175
+        assert counts.mismatches == 27
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 0)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3020761 : 3020761 + 157],
-            "TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaagattttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaagtgctgagatcatacctctgcaccatcctgcccACCT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaagattttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaagtgctgagatcatacctctgcaccatcctgcccACCT",
-        )
+        assert alignment.score == 0
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3020761 : 3020761 + 157] == "TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaagattttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaagtgctgagatcatacctctgcaccatcctgcccACCT"
+        assert alignment[0] == "TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaagattttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaagtgctgagatcatacctctgcaccatcctgcccACCT"
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (46199, 46172))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (46199, 46172)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "canFam2.chr1")
-        self.assertEqual(len(record.seq), 125616256)
-        self.assertEqual(segment, (47544792, 47544783))
-        self.assertEqual(status, "I")
+        assert record.id == "canFam2.chr1"
+        assert len(record.seq) == 125616256
+        assert segment == (47544792, 47544783)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (10461, 10482))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (10461, 10482)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][6]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (1978, 606))
-        self.assertEqual(status, "I")
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (1978, 606)
+        assert status == "I"
         empty = alignment.annotations["empty"][7]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171686, 171328))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171686, 171328)
+        assert status == "I"
         empty = alignment.annotations["empty"][8]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "hg18.chr6")
-        self.assertEqual(len(record.seq), 170899992)
-        self.assertEqual(segment, (155025327, 155025316))
-        self.assertEqual(status, "I")
+        assert record.id == "hg18.chr6"
+        assert len(record.seq) == 170899992
+        assert segment == (155025327, 155025316)
+        assert status == "I"
         empty = alignment.annotations["empty"][9]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "panTro2.chr6")
-        self.assertEqual(len(record.seq), 173908612)
-        self.assertEqual(segment, (157515381, 157515370))
-        self.assertEqual(status, "I")
+        assert record.id == "panTro2.chr6"
+        assert len(record.seq) == 173908612
+        assert segment == (157515381, 157515370)
+        assert status == "I"
         empty = alignment.annotations["empty"][10]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ponAbe2.chr6")
-        self.assertEqual(len(record.seq), 174210431)
-        self.assertEqual(segment, (158037586, 158037565))
-        self.assertEqual(status, "I")
+        assert record.id == "ponAbe2.chr6"
+        assert len(record.seq) == 174210431
+        assert segment == (158037586, 158037565)
+        assert status == "I"
         empty = alignment.annotations["empty"][11]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(record.seq), 4726)
-        self.assertEqual(segment, (4300, 4263))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 1)
-        self.assertEqual(len(alignment.annotations["empty"]), 12)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[3020761, 3020918]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert record.id == "oryCun1.scaffold_156751"
+        assert len(record.seq) == 4726
+        assert segment == (4300, 4263)
+        assert status == "I"
+        assert len(alignment.sequences) == 1
+        assert len(alignment.annotations["empty"]) == 12
+        assert np.array_equal(alignment.coordinates, np.array([[3020761, 3020918]]))
+        assert str(alignment) == """\
 mm9.chr10   3020761 TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaag
 
 mm9.chr10   3020821 attttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaa
 
 mm9.chr10   3020881 gtgctgagatcatacctctgcaccatcctgcccACCT 3020918
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=0.000000
 s mm9.chr10                         3020761  157 + 129993255 TATATATGCTATCCGTGTGCTGTGATTTTTGTTTTAAATGTTATTTTATGTATATGcaagattttgcattgtagcagaaggtggcttcaaactcacgatcctcctgcctcagccttccaagtgctgagatcatacctctgcaccatcctgcccACCT
 e felCat3.scaffold_205680             73155   27 -    119354 I
@@ -8951,10 +7364,8 @@ e panTro2.chr6                     16393231   11 - 173908612 I
 e ponAbe2.chr6                     16172845   21 - 174210431 I
 e oryCun1.scaffold_156751               426   37 -      4726 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'A', 'T', 'A', 'T', 'A', 'T', 'G', 'C', 'T', 'A', 'T', 'C',
@@ -8972,16 +7383,10 @@ np.array([['T', 'A', 'T', 'A', 'T', 'A', 'T', 'G', 'C', 'T', 'A', 'T', 'C',
            'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (0 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 0:
         identities = 0,
@@ -9008,195 +7413,124 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 0)
-        self.assertEqual(counts.identities, 0)
-        self.assertEqual(counts.mismatches, 0)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 0
+        assert counts.identities == 0
+        assert counts.mismatches == 0
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 85471)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3020918 : 3020918 + 96],
-            "GAGGTTTGTGACTTTTAATACTGATTGTTATCTAACATCACAGAATTCTCAGTTCTTAAGGAAACAATTGTTCTGTGTGTTATTTGTCTAGGAGGA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "GAGGTTTGTGACTTTTAATA----------CTGATTGTTATCTAACATCACAGAATTCTCAGTTCTTAAGGAAACAATTGTTCTGTGTGTTATTTGTCTAGGAGGA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[1].seq[155025243 : 155025243 + 73],
-            "TTGTCCTAAATAATTAATAAGTCAAACATGTTTTTCCTTAAAAGCTGAGGATTGTGCAGTATTAAATAACCAT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "---------------------------------ATGGTTATTTAATACTGCACAATCCTCAGCTTTTAAGGAAAAACATGTTTGACTTATTAATTATTTAGGACAA",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 11)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157515297 : 157515297 + 73],
-            "TTGTCCTAAATAATTAATAAGTCAAACATGTTTTTCCTTAAAAGCTGAGGATTGTGCAGTATTAAATAACCAT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "---------------------------------ATGGTTATTTAATACTGCACAATCCTCAGCTTTTAAGGAAAAACATGTTTGACTTATTAATTATTTAGGACAA",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 11)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[3].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[3].seq[47544708 : 47544708 + 75],
-            "TTGTCCTAAGTAATTAACAAATCACTTTTTCCTTAAGAGCTGAGAACTTCATAATGGTACAGAATTATTTTATTA",
-        )
-        self.assertEqual(
-            alignment[3],
-            "--------------------------TAATAAAATAATTCTGTACCATTATGAAGTTCTCAGCTCTTAAGGAAAAA-----GTGATTTGTTAATTACTTAGGACAA",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[4].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[4].seq[46096 : 46096 + 76],
-            "TTGTCCTAAATAATTAATAAATTACTTTGTGATATTAAAGAATTATTTCATTACTTCACCATTAAAATTCATGGAC",
-        )
-        self.assertEqual(
-            alignment[4],
-            "---GTCCATGAATTTTAATGGTGAAGTAATGAAATAATTCTTTAATATCAC----------------------AAA-----GTAATTTATTAATTATTTAGGACAA",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "9999899999999999999999999999999999999999999999999999999999999999999999999769",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 27)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[5].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[5].seq[524 : 524 + 82],
-            "tttaaaaaaatcacactttTTCCATCAGAACTGAAAACTTTGTAATATTAatcttcttttcctattaaaATTTGCAGAACTC",
-        )
-        self.assertEqual(
-            alignment[5],
-            "GAGTTCTGCAAATtttaata----------ggaaaagaagatTAATATTACAAAGTTTTCAGTTCTGATGGAAaaa----------gtgtgatttttttaaa----",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9967996679966856646585678288383465687882688656636765583677657766676965686997776684",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 1372)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 28)
-        self.assertEqual(alignment.sequences[6].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[6].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[6].seq[4161 : 4161 + 102],
-            "TCATCCCAAGTCATTAACAAGTCAAACACTTTTTTCCTTAAGACTTGAGGATTTTCCAACATTAAATAATTATCTCATTGCTTTATTAAAATTCATGGATCT",
-        )
-        self.assertEqual(
-            alignment[6],
-            "-AGATCCATGAATTTTAATA---AAGCAATGAGATAATTATTTAATGTTGGAAAATCCTCAAGTCTTAAGGAAAAAAGTGTTTGACTTGTTAATGACTTGGGATGA",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "999999799999999999999999999999999999999999999999999998677999969999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 37)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[7].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[7].seq[10482 : 10482 + 100],
-            "GGGGTCCATGAATTTTAATAGTAACAAAATGGTTATTCAATATTGCAAAATCCTCAGCTTTAAGGAAAAACATATTTGATTTGTTAATTATTTAGGACAA",
-        )
-        self.assertEqual(
-            alignment[7],
-            "GGGGTCCATGAATTTTAATA-----GTAACAAAATGGTTATTCAATATTGCAAAATCCTCAGC-TTTAAGGAAAAACATATTTGATTTGTTAATTATTTAGGACAA",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 21)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[8].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[8].seq[158037464 : 158037464 + 101],
-            "TTGTCCTAAATAATTAATAAGTCAAACACGTTTTTCCTTAAAAGCTGAGGATTTTGCAATATTAAATAACCATTTTATTACTATTAAAATTCATGGACCCC",
-        )
-        self.assertEqual(
-            alignment[8],
-            "GGGGTCCATGAATTTTAATA-----GTAATAAAATGGTTATTTAATATTGCAAAATCCTCAGCTTTTAAGGAAAAACGTGTTTGACTTATTAATTATTTAGGACAA",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 21)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
+        assert alignment.score == 85471
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3020918 : 3020918 + 96] == "GAGGTTTGTGACTTTTAATACTGATTGTTATCTAACATCACAGAATTCTCAGTTCTTAAGGAAACAATTGTTCTGTGTGTTATTTGTCTAGGAGGA"
+        assert alignment[0] == "GAGGTTTGTGACTTTTAATA----------CTGATTGTTATCTAACATCACAGAATTCTCAGTTCTTAAGGAAACAATTGTTCTGTGTGTTATTTGTCTAGGAGGA"
+        assert alignment.sequences[1].id == "hg18.chr6"
+        assert len(alignment.sequences[1].seq) == 170899992
+        assert alignment.sequences[1].seq[155025243 : 155025243 + 73] == "TTGTCCTAAATAATTAATAAGTCAAACATGTTTTTCCTTAAAAGCTGAGGATTGTGCAGTATTAAATAACCAT"
+        assert alignment[1] == "---------------------------------ATGGTTATTTAATACTGCACAATCCTCAGCTTTTAAGGAAAAACATGTTTGACTTATTAATTATTTAGGACAA"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 11
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157515297 : 157515297 + 73] == "TTGTCCTAAATAATTAATAAGTCAAACATGTTTTTCCTTAAAAGCTGAGGATTGTGCAGTATTAAATAACCAT"
+        assert alignment[2] == "---------------------------------ATGGTTATTTAATACTGCACAATCCTCAGCTTTTAAGGAAAAACATGTTTGACTTATTAATTATTTAGGACAA"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 11
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "canFam2.chr1"
+        assert len(alignment.sequences[3].seq) == 125616256
+        assert alignment.sequences[3].seq[47544708 : 47544708 + 75] == "TTGTCCTAAGTAATTAACAAATCACTTTTTCCTTAAGAGCTGAGAACTTCATAATGGTACAGAATTATTTTATTA"
+        assert alignment[3] == "--------------------------TAATAAAATAATTCTGTACCATTATGAAGTTCTCAGCTCTTAAGGAAAAA-----GTGATTTGTTAATTACTTAGGACAA"
+        assert alignment.sequences[3].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 9
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[4].seq) == 119354
+        assert alignment.sequences[4].seq[46096 : 46096 + 76] == "TTGTCCTAAATAATTAATAAATTACTTTGTGATATTAAAGAATTATTTCATTACTTCACCATTAAAATTCATGGAC"
+        assert alignment[4] == "---GTCCATGAATTTTAATGGTGAAGTAATGAAATAATTCTTTAATATCAC----------------------AAA-----GTAATTTATTAATTATTTAGGACAA"
+        assert alignment.sequences[4].annotations["quality"] == "9999899999999999999999999999999999999999999999999999999999999999999999999769"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 27
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[5].seq) == 10026
+        assert alignment.sequences[5].seq[524 : 524 + 82] == "tttaaaaaaatcacactttTTCCATCAGAACTGAAAACTTTGTAATATTAatcttcttttcctattaaaATTTGCAGAACTC"
+        assert alignment[5] == "GAGTTCTGCAAATtttaata----------ggaaaagaagatTAATATTACAAAGTTTTCAGTTCTGATGGAAaaa----------gtgtgatttttttaaa----"
+        assert alignment.sequences[5].annotations["quality"] == "9967996679966856646585678288383465687882688656636765583677657766676965686997776684"
+        assert alignment.sequences[5].annotations["leftStatus"] == "I"
+        assert alignment.sequences[5].annotations["leftCount"] == 1372
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 28
+        assert alignment.sequences[6].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[6].seq) == 4726
+        assert alignment.sequences[6].seq[4161 : 4161 + 102] == "TCATCCCAAGTCATTAACAAGTCAAACACTTTTTTCCTTAAGACTTGAGGATTTTCCAACATTAAATAATTATCTCATTGCTTTATTAAAATTCATGGATCT"
+        assert alignment[6] == "-AGATCCATGAATTTTAATA---AAGCAATGAGATAATTATTTAATGTTGGAAAATCCTCAAGTCTTAAGGAAAAAAGTGTTTGACTTGTTAATGACTTGGGATGA"
+        assert alignment.sequences[6].annotations["quality"] == "999999799999999999999999999999999999999999999999999998677999969999999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "I"
+        assert alignment.sequences[6].annotations["leftCount"] == 37
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[7].seq) == 133105
+        assert alignment.sequences[7].seq[10482 : 10482 + 100] == "GGGGTCCATGAATTTTAATAGTAACAAAATGGTTATTCAATATTGCAAAATCCTCAGCTTTAAGGAAAAACATATTTGATTTGTTAATTATTTAGGACAA"
+        assert alignment[7] == "GGGGTCCATGAATTTTAATA-----GTAACAAAATGGTTATTCAATATTGCAAAATCCTCAGC-TTTAAGGAAAAACATATTTGATTTGTTAATTATTTAGGACAA"
+        assert alignment.sequences[7].annotations["leftStatus"] == "I"
+        assert alignment.sequences[7].annotations["leftCount"] == 21
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[8].seq) == 174210431
+        assert alignment.sequences[8].seq[158037464 : 158037464 + 101] == "TTGTCCTAAATAATTAATAAGTCAAACACGTTTTTCCTTAAAAGCTGAGGATTTTGCAATATTAAATAACCATTTTATTACTATTAAAATTCATGGACCCC"
+        assert alignment[8] == "GGGGTCCATGAATTTTAATA-----GTAATAAAATGGTTATTTAATATTGCAAAATCCTCAGCTTTTAAGGAAAAACGTGTTTGACTTATTAATTATTTAGGACAA"
+        assert alignment.sequences[8].annotations["leftStatus"] == "I"
+        assert alignment.sequences[8].annotations["leftCount"] == 21
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171686, 171328))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 9)
-        self.assertEqual(len(alignment.annotations["empty"]), 4)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171686, 171328)
+        assert status == "I"
+        assert len(alignment.sequences) == 9
+        assert len(alignment.annotations["empty"]) == 4
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -9231,10 +7565,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3020918 GAGGTTTGTGACTTTTAATA----------CTGATTGTTATCTAACATCACAGAATTCTC
 hg18.chr6 155025316 ---------------------------------ATGGTTATTTAATACTGCACAATCCTC
 panTro2.c 157515370 ---------------------------------ATGGTTATTTAATACTGCACAATCCTC
@@ -9254,11 +7585,8 @@ cavPor2.s       556 AGTTCTGATGGAAaaa----------gtgtgatttttttaaa----       524
 oryCun1.s      4207 AAGTCTTAAGGAAAAAAGTGTTTGACTTGTTAATGACTTGGGATGA      4161
 calJac1.C     10537 AGC-TTTAAGGAAAAACATATTTGATTTGTTAATTATTTAGGACAA     10582
 ponAbe2.c 158037510 AGCTTTTAAGGAAAAACGTGTTTGACTTATTAATTATTTAGGACAA 158037464
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=85471.000000
 s mm9.chr10                         3020918   96 + 129993255 GAGGTTTGTGACTTTTAATA----------CTGATTGTTATCTAACATCACAGAATTCTCAGTTCTTAAGGAAACAATTGTTCTGTGTGTTATTTGTCTAGGAGGA
 s hg18.chr6                        15874676   73 - 170899992 ---------------------------------ATGGTTATTTAATACTGCACAATCCTCAGCTTTTAAGGAAAAACATGTTTGACTTATTAATTATTTAGGACAA
@@ -9287,10 +7615,8 @@ e tupBel1.scaffold_114895.1-498454   174338  623 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e otoGar1.scaffold_334.1-359464      187778  358 -    359464 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['G', 'A', 'G', 'G', 'T', 'T', 'T', 'G', 'T', 'G', 'A', 'C', 'T',
@@ -9376,16 +7702,10 @@ np.array([['G', 'A', 'G', 'G', 'T', 'T', 'T', 'G', 'T', 'G', 'A', 'C', 'T',
            'A', 'A']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (2660 aligned letters; 1843 identities; 817 mismatches; 904 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (2660 aligned letters; 1843 identities; 817 mismatches; 904 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 2660:
         identities = 1843,
@@ -9412,183 +7732,133 @@ AlignmentCounts object with
             right_deletions = 20:
                 open_right_deletions = 5,
                 extend_right_deletions = 15.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 410)
-        self.assertEqual(counts.left_deletions, 71)
-        self.assertEqual(counts.right_insertions, 12)
-        self.assertEqual(counts.right_deletions, 20)
-        self.assertEqual(counts.internal_insertions, 196)
-        self.assertEqual(counts.internal_deletions, 195)
-        self.assertEqual(counts.left_gaps, 481)
-        self.assertEqual(counts.right_gaps, 32)
-        self.assertEqual(counts.internal_gaps, 391)
-        self.assertEqual(counts.insertions, 618)
-        self.assertEqual(counts.deletions, 286)
-        self.assertEqual(counts.gaps, 904)
-        self.assertEqual(counts.aligned, 2660)
-        self.assertEqual(counts.identities, 1843)
-        self.assertEqual(counts.mismatches, 817)
+"""
+        assert counts.left_insertions == 410
+        assert counts.left_deletions == 71
+        assert counts.right_insertions == 12
+        assert counts.right_deletions == 20
+        assert counts.internal_insertions == 196
+        assert counts.internal_deletions == 195
+        assert counts.left_gaps == 481
+        assert counts.right_gaps == 32
+        assert counts.internal_gaps == 391
+        assert counts.insertions == 618
+        assert counts.deletions == 286
+        assert counts.gaps == 904
+        assert counts.aligned == 2660
+        assert counts.identities == 1843
+        assert counts.mismatches == 817
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 105724)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021014 : 3021014 + 40],
-            "ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG",
-        )
-        self.assertEqual(alignment[0], "ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG")
-        self.assertEqual(alignment.sequences[1].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[1].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[1].seq[4121 : 4121 + 40],
-            "AATTCCTAAATCATCCAAGTTGGAATGACTTCATCAAGAT",
-        )
-        self.assertEqual(alignment[1], "ATCTTGATGAAGTCATTCCAACTTGGATGATTTAGGAATT")
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999969999699999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[2].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[2].seq[171288 : 171288 + 40],
-            "CATTCCTAAATCACATAAATTGGAATAACTTCACCAAGAT",
-        )
-        self.assertEqual(alignment[2], "ATCTTGGTGAAGTTATTCCAATTTATGTGATTTAGGAATG")
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 358)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[3].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[3].seq[10582 : 10582 + 40],
-            "ATTTTGGTGAAGTTATTCCAACTTGTGTGGCTTAGGAATG",
-        )
-        self.assertEqual(alignment[3], "ATTTTGGTGAAGTTATTCCAACTTGTGTGGCTTAGGAATG")
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[4].seq[155025203 : 155025203 + 40],
-            "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT",
-        )
-        self.assertEqual(alignment[4], "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG")
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[5].seq[157515257 : 157515257 + 40],
-            "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT",
-        )
-        self.assertEqual(alignment[5], "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG")
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[6].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[6].seq[158037424 : 158037424 + 40],
-            "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT",
-        )
-        self.assertEqual(alignment[6], "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG")
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[7].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[7].seq[47544668 : 47544668 + 40],
-            "CATTCCTAAATCATGCGAGTCAGAATGACTTCACTGAGAT",
-        )
-        self.assertEqual(alignment[7], "ATCTCAGTGAAGTCATTCTGACTCGCATGATTTAGGAATG")
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"],
-            "9999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[8].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[8].seq[46056 : 46056 + 40],
-            "CATACCTAAATCATGCAAGTCAGAATAACTTCACTGAGAT",
-        )
-        self.assertEqual(alignment[8], "ATCTCAGTGAAGTTATTCTGACTTGCATGATTTAGGTATG")
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "9999989999989988999997999979997996167779",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[9].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[9].seq[7314 : 7314 + 40],
-            "CATCGCTCAGTCATACGAGTCGGAATGATTTCACTGATGT",
-        )
-        self.assertEqual(alignment[9], "ACATCAGTGAAATCATTCCGACTCGTATGACTGAGCGATG")
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "9759855999977756667495765475885678385647",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
+        assert alignment.score == 105724
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021014 : 3021014 + 40] == "ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG"
+        assert alignment[0] == "ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG"
+        assert alignment.sequences[1].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[1].seq) == 4726
+        assert alignment.sequences[1].seq[4121 : 4121 + 40] == "AATTCCTAAATCATCCAAGTTGGAATGACTTCATCAAGAT"
+        assert alignment[1] == "ATCTTGATGAAGTCATTCCAACTTGGATGATTTAGGAATT"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999969999699999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[2].seq) == 359464
+        assert alignment.sequences[2].seq[171288 : 171288 + 40] == "CATTCCTAAATCACATAAATTGGAATAACTTCACCAAGAT"
+        assert alignment[2] == "ATCTTGGTGAAGTTATTCCAATTTATGTGATTTAGGAATG"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 358
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[3].seq) == 133105
+        assert alignment.sequences[3].seq[10582 : 10582 + 40] == "ATTTTGGTGAAGTTATTCCAACTTGTGTGGCTTAGGAATG"
+        assert alignment[3] == "ATTTTGGTGAAGTTATTCCAACTTGTGTGGCTTAGGAATG"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "hg18.chr6"
+        assert len(alignment.sequences[4].seq) == 170899992
+        assert alignment.sequences[4].seq[155025203 : 155025203 + 40] == "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT"
+        assert alignment[4] == "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "panTro2.chr6"
+        assert len(alignment.sequences[5].seq) == 173908612
+        assert alignment.sequences[5].seq[157515257 : 157515257 + 40] == "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT"
+        assert alignment[5] == "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG"
+        assert alignment.sequences[5].annotations["quality"] == "9999999999999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[6].seq) == 174210431
+        assert alignment.sequences[6].seq[158037424 : 158037424 + 40] == "CATTCCTAAGCCATGCAAGTTGGAATAACTTCACCAAAAT"
+        assert alignment[6] == "ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "canFam2.chr1"
+        assert len(alignment.sequences[7].seq) == 125616256
+        assert alignment.sequences[7].seq[47544668 : 47544668 + 40] == "CATTCCTAAATCATGCGAGTCAGAATGACTTCACTGAGAT"
+        assert alignment[7] == "ATCTCAGTGAAGTCATTCTGACTCGCATGATTTAGGAATG"
+        assert alignment.sequences[7].annotations["quality"] == "9999999999999999999999999999999999999999"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[8].seq) == 119354
+        assert alignment.sequences[8].seq[46056 : 46056 + 40] == "CATACCTAAATCATGCAAGTCAGAATAACTTCACTGAGAT"
+        assert alignment[8] == "ATCTCAGTGAAGTTATTCTGACTTGCATGATTTAGGTATG"
+        assert alignment.sequences[8].annotations["quality"] == "9999989999989988999997999979997996167779"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[9].seq) == 10470
+        assert alignment.sequences[9].seq[7314 : 7314 + 40] == "CATCGCTCAGTCATACGAGTCGGAATGATTTCACTGATGT"
+        assert alignment[9] == "ACATCAGTGAAATCATTCCGACTCGTATGACTGAGCGATG"
+        assert alignment.sequences[9].annotations["quality"] == "9759855999977756667495765475885678385647"
+        assert alignment.sequences[9].annotations["leftStatus"] == "N"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(record.seq), 10026)
-        self.assertEqual(segment, (524, 496))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 10)
-        self.assertEqual(len(alignment.annotations["empty"]), 4)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "cavPor2.scaffold_216473"
+        assert len(record.seq) == 10026
+        assert segment == (524, 496)
+        assert status == "I"
+        assert len(alignment.sequences) == 10
+        assert len(alignment.annotations["empty"]) == 4
+        assert np.array_equal(
                 # fmt: off
                 alignment.coordinates, np.array([[  3021014,   3021054],
                                                     [     4161,      4121],
@@ -9603,10 +7873,7 @@ AlignmentCounts object with
                                                    ])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021014 ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG   3021054
 oryCun1.s      4161 ATCTTGATGAAGTCATTCCAACTTGGATGATTTAGGAATT      4121
 otoGar1.s    171328 ATCTTGGTGAAGTTATTCCAATTTATGTGATTTAGGAATG    171288
@@ -9617,11 +7884,8 @@ ponAbe2.c 158037464 ATTTTGGTGAAGTTATTCCAACTTGCATGGCTTAGGAATG 158037424
 canFam2.c  47544708 ATCTCAGTGAAGTCATTCTGACTCGCATGATTTAGGAATG  47544668
 felCat3.s     46096 ATCTCAGTGAAGTTATTCTGACTTGCATGATTTAGGTATG     46056
 dasNov1.s      7354 ACATCAGTGAAATCATTCCGACTCGTATGACTGAGCGATG      7314
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=105724.000000
 s mm9.chr10                         3021014   40 + 129993255 ACCTTGGTGACGCCACTGGATTTTGTATGACTGAATACTG
 s oryCun1.scaffold_156751               565   40 -      4726 ATCTTGATGAAGTCATTCCAACTTGGATGATTTAGGAATT
@@ -9653,10 +7917,8 @@ e tupBel1.scaffold_114895.1-498454   174338  623 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 e cavPor2.scaffold_216473              9502   28 -     10026 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'C', 'C', 'T', 'T', 'G', 'G', 'T', 'G', 'A', 'C', 'G', 'C',
@@ -9701,16 +7963,10 @@ np.array([['A', 'C', 'C', 'T', 'T', 'G', 'G', 'T', 'G', 'A', 'C', 'G', 'C',
            'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1800 aligned letters; 1371 identities; 429 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1800 aligned letters; 1371 identities; 429 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1800:
         identities = 1371,
@@ -9737,225 +7993,136 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1800)
-        self.assertEqual(counts.identities, 1371)
-        self.assertEqual(counts.mismatches, 429)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1800
+        assert counts.identities == 1371
+        assert counts.mismatches == 429
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 115790)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021054 : 3021054 + 50],
-            "CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAGGACTTACATGCAG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAG--------------------GACTTACATGCAG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[458 : 458 + 38],
-            "TCACAAGTATTTATAGCAACTCTGAACTCCCAAATGAG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CTCATTTGGGAGTTCAGAGTT--------GCTATAAA--------------------TACTTGTGA----",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "78877766789884666566698766677876665669",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 28)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[4052 : 4052 + 69],
-            "ATACGTGTAATTAAGGAGGAAAAAAGAAGACTCCATTAGGCAGTTATAAAATGTAAGAGCCCAAATTAG",
-        )
-        self.assertEqual(
-            alignment[2],
-            "CTAATTTGGGCTCTTACATTTTATAACTGCCTAATGGAGTCTTCTTTTTTCCT-CCTTAATTACACGTAT",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "999999999999979997999999999999999999999997997999999979979999999495999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[3].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[3].seq[171219 : 171219 + 69],
-            "GTACATAGAGTCTGGGGAAGGGACCAGTGGGCTCCATTAAGCCTTTATGAACCTGTGTCCCCAAGTTAG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "CTAACTTGGGGACACAGG-TTCATAAAGGCTTAATGGAGCCCACTGGTCCCTTCCCCAGACTCTATGTAC",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "999999999999999999999999999999999999998999999689999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[4].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[4].seq[10622 : 10622 + 70],
-            "CCAGTTTGGGGACTTAGATTTTCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGCCTATATGTAT",
-        )
-        self.assertEqual(
-            alignment[4],
-            "CCAGTTTGGGGACTTAGATTTTCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGCCTATATGTAT",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155025133 : 155025133 + 70],
-            "ATACATATAGTCTAGGGAAGGAAGGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGT",
-        )
-        self.assertEqual(
-            alignment[5],
-            "ACAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCCTTCCTTCCCTAGACTATATGTAT",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[6].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[6].seq[157515187 : 157515187 + 70],
-            "ATACATATAGTCTAGGGAAGGAAAGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGG",
-        )
-        self.assertEqual(
-            alignment[6],
-            "CCAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGACTATATGTAT",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[7].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[7].seq[158037354 : 158037354 + 70],
-            "ATACATATAGTCTAGGGAAGGAAAGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGG",
-        )
-        self.assertEqual(
-            alignment[7],
-            "CCAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGACTATATGTAT",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[8].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[8].seq[47544598 : 47544598 + 70],
-            "ATACATATGGTGTAGGGAAGAAAACATCAGCTTTCATTAAGCAATTATGAAATTTGAGTCACCAAATTAG",
-        )
-        self.assertEqual(
-            alignment[8],
-            "CTAATTTGGTGACTCAAATTTCATAATTGCTTAATGAAAGCTGATGTTTTCTTCCCTACACCATATGTAT",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[9].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[9].seq[45986 : 45986 + 70],
-            "ATGCATATAGTCTTGGGAAGGAAACAGCAGGCTTCCTTAAGCAATTATGAAATTCAAGTCACCAAATTAG",
-        )
-        self.assertEqual(
-            alignment[9],
-            "CTAATTTGGTGACTTGAATTTCATAATTGCTTAAGGAAGCCTGCTGTTTCCTTCCCAAGACTATATGCAT",
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "9769999999975699868977669777966666596959759669595666758736585676666655",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[10].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[10].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[10].seq[7244 : 7244 + 70],
-            "ATACTTATAGTCTAGAGAAGAAAACAGCAGGCTTCGGTTAGCAATTTTAAAATGTGAGTCCCCCAATTAG",
-        )
-        self.assertEqual(
-            alignment[10],
-            "CTAATTGGGGGACTCACATTTTAAAATTGCTAACCGAAGCCTGCTGTTTTCTTCTCTAGACTATAAGTAT",
-        )
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"],
-            "5556576999664654656985688667655565647767537567688856666555556565555656",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
+        assert alignment.score == 115790
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021054 : 3021054 + 50] == "CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAGGACTTACATGCAG"
+        assert alignment[0] == "CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAG--------------------GACTTACATGCAG"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[458 : 458 + 38] == "TCACAAGTATTTATAGCAACTCTGAACTCCCAAATGAG"
+        assert alignment[1] == "CTCATTTGGGAGTTCAGAGTT--------GCTATAAA--------------------TACTTGTGA----"
+        assert alignment.sequences[1].annotations["quality"] == "78877766789884666566698766677876665669"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 28
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[4052 : 4052 + 69] == "ATACGTGTAATTAAGGAGGAAAAAAGAAGACTCCATTAGGCAGTTATAAAATGTAAGAGCCCAAATTAG"
+        assert alignment[2] == "CTAATTTGGGCTCTTACATTTTATAACTGCCTAATGGAGTCTTCTTTTTTCCT-CCTTAATTACACGTAT"
+        assert alignment.sequences[2].annotations["quality"] == "999999999999979997999999999999999999999997997999999979979999999495999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[3].seq) == 359464
+        assert alignment.sequences[3].seq[171219 : 171219 + 69] == "GTACATAGAGTCTGGGGAAGGGACCAGTGGGCTCCATTAAGCCTTTATGAACCTGTGTCCCCAAGTTAG"
+        assert alignment[3] == "CTAACTTGGGGACACAGG-TTCATAAAGGCTTAATGGAGCCCACTGGTCCCTTCCCCAGACTCTATGTAC"
+        assert alignment.sequences[3].annotations["quality"] == "999999999999999999999999999999999999998999999689999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[4].seq) == 133105
+        assert alignment.sequences[4].seq[10622 : 10622 + 70] == "CCAGTTTGGGGACTTAGATTTTCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGCCTATATGTAT"
+        assert alignment[4] == "CCAGTTTGGGGACTTAGATTTTCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGCCTATATGTAT"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155025133 : 155025133 + 70] == "ATACATATAGTCTAGGGAAGGAAGGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGT"
+        assert alignment[5] == "ACAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCCTTCCTTCCCTAGACTATATGTAT"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "panTro2.chr6"
+        assert len(alignment.sequences[6].seq) == 173908612
+        assert alignment.sequences[6].seq[157515187 : 157515187 + 70] == "ATACATATAGTCTAGGGAAGGAAAGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGG"
+        assert alignment[6] == "CCAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGACTATATGTAT"
+        assert alignment.sequences[6].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[7].seq) == 174210431
+        assert alignment.sequences[7].seq[158037354 : 158037354 + 70] == "ATACATATAGTCTAGGGAAGGAAAGAGCAGACTTCATTAGGCAGTTAGGAAATGTAAATCCCCAAATTGG"
+        assert alignment[7] == "CCAATTTGGGGATTTACATTTCCTAACTGCCTAATGAAGTCTGCTCTTTCCTTCCCTAGACTATATGTAT"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "canFam2.chr1"
+        assert len(alignment.sequences[8].seq) == 125616256
+        assert alignment.sequences[8].seq[47544598 : 47544598 + 70] == "ATACATATGGTGTAGGGAAGAAAACATCAGCTTTCATTAAGCAATTATGAAATTTGAGTCACCAAATTAG"
+        assert alignment[8] == "CTAATTTGGTGACTCAAATTTCATAATTGCTTAATGAAAGCTGATGTTTTCTTCCCTACACCATATGTAT"
+        assert alignment.sequences[8].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[9].seq) == 119354
+        assert alignment.sequences[9].seq[45986 : 45986 + 70] == "ATGCATATAGTCTTGGGAAGGAAACAGCAGGCTTCCTTAAGCAATTATGAAATTCAAGTCACCAAATTAG"
+        assert alignment[9] == "CTAATTTGGTGACTTGAATTTCATAATTGCTTAAGGAAGCCTGCTGTTTCCTTCCCAAGACTATATGCAT"
+        assert alignment.sequences[9].annotations["quality"] == "9769999999975699868977669777966666596959759669595666758736585676666655"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
+        assert alignment.sequences[10].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[10].seq) == 10470
+        assert alignment.sequences[10].seq[7244 : 7244 + 70] == "ATACTTATAGTCTAGAGAAGAAAACAGCAGGCTTCGGTTAGCAATTTTAAAATGTGAGTCCCCCAATTAG"
+        assert alignment[10] == "CTAATTGGGGGACTCACATTTTAAAATTGCTAACCGAAGCCTGCTGTTTTCTTCTCTAGACTATAAGTAT"
+        assert alignment.sequences[10].annotations["quality"] == "5556576999664654656985688667655565647767537567688856666555556565555656"
+        assert alignment.sequences[10].annotations["leftStatus"] == "C"
+        assert alignment.sequences[10].annotations["leftCount"] == 0
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "echTel1.scaffold_288249")
-        self.assertEqual(len(record.seq), 100002)
-        self.assertEqual(segment, (87661, 95225))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 11)
-        self.assertEqual(len(alignment.annotations["empty"]), 3)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "echTel1.scaffold_288249"
+        assert len(record.seq) == 100002
+        assert segment == (87661, 95225)
+        assert status == "I"
+        assert len(alignment.sequences) == 11
+        assert len(alignment.annotations["empty"]) == 3
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -9985,10 +8152,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021054 CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAG--------------------GAC
 cavPor2.s       496 CTCATTTGGGAGTTCAGAGTT--------GCTATAAA--------------------TAC
 oryCun1.s      4121 CTAATTTGGGCTCTTACATTTTATAACTGCCTAATGGAGTCTTCTTTTTTCCT-CCTTAA
@@ -10012,11 +8176,8 @@ ponAbe2.c 158037364 CTATATGTAT 158037354
 canFam2.c  47544608 CCATATGTAT  47544598
 felCat3.s     45996 CTATATGCAT     45986
 dasNov1.s      7254 CTATAAGTAT      7244
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=115790.000000
 s mm9.chr10                         3021054   50 + 129993255 CTCATTTGGGAACTTACAGGTCAGCAAAGGCTTCCAG--------------------GACTTACATGCAG
 s cavPor2.scaffold_216473              9530   38 -     10026 CTCATTTGGGAGTTCAGAGTT--------GCTATAAA--------------------TACTTGTGA----
@@ -10050,10 +8211,8 @@ e ornAna1.chr2                     14751195 5690 -  54797317 I
 e tupBel1.scaffold_114895.1-498454   174338  623 -    498454 I
 e echTel1.scaffold_288249             87661 7564 +    100002 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'T', 'C', 'A', 'T', 'T', 'T', 'G', 'G', 'G', 'A', 'A', 'C',
@@ -10124,16 +8283,10 @@ np.array([['C', 'T', 'C', 'A', 'T', 'T', 'T', 'G', 'G', 'G', 'A', 'A', 'C',
            'A', 'G', 'T', 'A', 'T']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (3332 aligned letters; 2370 identities; 962 mismatches; 496 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (3332 aligned letters; 2370 identities; 962 mismatches; 496 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 3332:
         identities = 2370,
@@ -10160,194 +8313,139 @@ AlignmentCounts object with
             right_deletions = 4:
                 open_right_deletions = 1,
                 extend_right_deletions = 3.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 36)
-        self.assertEqual(counts.right_deletions, 4)
-        self.assertEqual(counts.internal_insertions, 445)
-        self.assertEqual(counts.internal_deletions, 11)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 40)
-        self.assertEqual(counts.internal_gaps, 456)
-        self.assertEqual(counts.insertions, 481)
-        self.assertEqual(counts.deletions, 15)
-        self.assertEqual(counts.gaps, 496)
-        self.assertEqual(counts.aligned, 3332)
-        self.assertEqual(counts.identities, 2370)
-        self.assertEqual(counts.mismatches, 962)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 36
+        assert counts.right_deletions == 4
+        assert counts.internal_insertions == 445
+        assert counts.internal_deletions == 11
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 40
+        assert counts.internal_gaps == 456
+        assert counts.insertions == 481
+        assert counts.deletions == 15
+        assert counts.gaps == 496
+        assert counts.aligned == 3332
+        assert counts.identities == 2370
+        assert counts.mismatches == 962
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 44222)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021104 : 3021104 + 32],
-            "CTGTTAGTGCTGTTTTAATGTACCTCGCAGTA",
-        )
-        self.assertEqual(alignment[0], "CTGTTAGTGCTGTTTT---AATGTACCTCGCAGTA")
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[431 : 431 + 27], "TATAAAAATTTACATTAAGAAAGTAAT"
-        )
-        self.assertEqual(alignment[1], "-----ATTACTTTCTT---AATGTAAATTTTTATA")
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"], "554558687467957999989884575"
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[4022 : 4022 + 30],
-            "TATAAAATATTACATTGAGAATACTAGCAA",
-        )
-        self.assertEqual(alignment[2], "TTGCTAGTA--TTCTC---AATGTAATATTTTATA")
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "999979999966656999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[3].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[3].seq[171187 : 171187 + 32],
-            "TATAAAACATTATATTAAGGGAACACCAGCAA",
-        )
-        self.assertEqual(alignment[3], "TTGCTGGTGTTCCCTT---AATATAATGTTTTATA")
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "99999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[4].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[4].seq[10692 : 10692 + 30],
-            "TTACTCGTGCCCTTAATATAGCATTTTATA",
-        )
-        self.assertEqual(alignment[4], "TTACTCGTG--CCCTT---AATATAGCATTTTATA")
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155025103 : 155025103 + 30],
-            "TATAAAATGTGATATTAAGAGTACCAGCAA",
-        )
-        self.assertEqual(alignment[5], "TTGCTGGTA--CTCTT---AATATCACATTTTATA")
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[6].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[6].seq[157515157 : 157515157 + 30],
-            "TATAAAATGTGATATTAAGAGTACCAGCAA",
-        )
-        self.assertEqual(alignment[6], "TTGCTGGTA--CTCTT---AATATCACATTTTATA")
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[7].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[7].seq[158037324 : 158037324 + 30],
-            "TATAAAATGTTATATTAAGAGCACCAGCAA",
-        )
-        self.assertEqual(alignment[7], "TTGCTGGTG--CTCTT---AATATAACATTTTATA")
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[8].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[8].seq[47544573 : 47544573 + 25],
-            "TGCTACATTTTGAGAGCACCAGCAA",
-        )
-        self.assertEqual(alignment[8], "TTGCTGGTGCTCTCAA---AATGTAGCA-------")
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 196)
-        self.assertEqual(alignment.sequences[9].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[9].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[9].seq[45961 : 45961 + 25], "TGTTATATTTTGAGAGCACCAGCAA"
-        )
-        self.assertEqual(alignment[9], "TTGCTGGTGCTCTCAA---AATATAACA-------")
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"], "8677668566555658876555655"
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 6)
-        self.assertEqual(alignment.sequences[10].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[10].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[10].seq[7211 : 7211 + 33],
-            "CATAAAATGTTACATTAATCAGATCACCAGCAA",
-        )
-        self.assertEqual(alignment[10], "TTGCTGGTG--ATCTGATTAATGTAACATTTTATG")
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"],
-            "856647736775356546747663745776545",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[11].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[11].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[11].seq[95225 : 95225 + 21], "CTGTTAATGCTCTGTTTTATG"
-        )
-        self.assertEqual(alignment[11], "CTGTTAATG--CTCTG------------TTTTATG")
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"], "999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 7564)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 0)
+        assert alignment.score == 44222
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021104 : 3021104 + 32] == "CTGTTAGTGCTGTTTTAATGTACCTCGCAGTA"
+        assert alignment[0] == "CTGTTAGTGCTGTTTT---AATGTACCTCGCAGTA"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[431 : 431 + 27] == "TATAAAAATTTACATTAAGAAAGTAAT"
+        assert alignment[1] == "-----ATTACTTTCTT---AATGTAAATTTTTATA"
+        assert alignment.sequences[1].annotations["quality"] == "554558687467957999989884575"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[4022 : 4022 + 30] == "TATAAAATATTACATTGAGAATACTAGCAA"
+        assert alignment[2] == "TTGCTAGTA--TTCTC---AATGTAATATTTTATA"
+        assert alignment.sequences[2].annotations["quality"] == "999979999966656999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[3].seq) == 359464
+        assert alignment.sequences[3].seq[171187 : 171187 + 32] == "TATAAAACATTATATTAAGGGAACACCAGCAA"
+        assert alignment[3] == "TTGCTGGTGTTCCCTT---AATATAATGTTTTATA"
+        assert alignment.sequences[3].annotations["quality"] == "99999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[4].seq) == 133105
+        assert alignment.sequences[4].seq[10692 : 10692 + 30] == "TTACTCGTGCCCTTAATATAGCATTTTATA"
+        assert alignment[4] == "TTACTCGTG--CCCTT---AATATAGCATTTTATA"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155025103 : 155025103 + 30] == "TATAAAATGTGATATTAAGAGTACCAGCAA"
+        assert alignment[5] == "TTGCTGGTA--CTCTT---AATATCACATTTTATA"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "panTro2.chr6"
+        assert len(alignment.sequences[6].seq) == 173908612
+        assert alignment.sequences[6].seq[157515157 : 157515157 + 30] == "TATAAAATGTGATATTAAGAGTACCAGCAA"
+        assert alignment[6] == "TTGCTGGTA--CTCTT---AATATCACATTTTATA"
+        assert alignment.sequences[6].annotations["quality"] == "999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[7].seq) == 174210431
+        assert alignment.sequences[7].seq[158037324 : 158037324 + 30] == "TATAAAATGTTATATTAAGAGCACCAGCAA"
+        assert alignment[7] == "TTGCTGGTG--CTCTT---AATATAACATTTTATA"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "canFam2.chr1"
+        assert len(alignment.sequences[8].seq) == 125616256
+        assert alignment.sequences[8].seq[47544573 : 47544573 + 25] == "TGCTACATTTTGAGAGCACCAGCAA"
+        assert alignment[8] == "TTGCTGGTGCTCTCAA---AATGTAGCA-------"
+        assert alignment.sequences[8].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "I"
+        assert alignment.sequences[8].annotations["rightCount"] == 196
+        assert alignment.sequences[9].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[9].seq) == 119354
+        assert alignment.sequences[9].seq[45961 : 45961 + 25] == "TGTTATATTTTGAGAGCACCAGCAA"
+        assert alignment[9] == "TTGCTGGTGCTCTCAA---AATATAACA-------"
+        assert alignment.sequences[9].annotations["quality"] == "8677668566555658876555655"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "I"
+        assert alignment.sequences[9].annotations["rightCount"] == 6
+        assert alignment.sequences[10].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[10].seq) == 10470
+        assert alignment.sequences[10].seq[7211 : 7211 + 33] == "CATAAAATGTTACATTAATCAGATCACCAGCAA"
+        assert alignment[10] == "TTGCTGGTG--ATCTGATTAATGTAACATTTTATG"
+        assert alignment.sequences[10].annotations["quality"] == "856647736775356546747663745776545"
+        assert alignment.sequences[10].annotations["leftStatus"] == "C"
+        assert alignment.sequences[10].annotations["leftCount"] == 0
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
+        assert alignment.sequences[11].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[11].seq) == 100002
+        assert alignment.sequences[11].seq[95225 : 95225 + 21] == "CTGTTAATGCTCTGTTTTATG"
+        assert alignment[11] == "CTGTTAATG--CTCTG------------TTTTATG"
+        assert alignment.sequences[11].annotations["quality"] == "999999999999999999999"
+        assert alignment.sequences[11].annotations["leftStatus"] == "I"
+        assert alignment.sequences[11].annotations["leftCount"] == 7564
+        assert alignment.sequences[11].annotations["rightStatus"] == "C"
+        assert alignment.sequences[11].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 12)
-        self.assertEqual(len(alignment.annotations["empty"]), 2)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
+        assert len(alignment.sequences) == 12
+        assert len(alignment.annotations["empty"]) == 2
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -10379,10 +8477,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021104 CTGTTAGTGCTGTTTT---AATGTACCTCGCAGTA   3021136
 cavPor2.s       458 -----ATTACTTTCTT---AATGTAAATTTTTATA       431
 oryCun1.s      4052 TTGCTAGTA--TTCTC---AATGTAATATTTTATA      4022
@@ -10395,11 +8490,8 @@ canFam2.c  47544598 TTGCTGGTGCTCTCAA---AATGTAGCA-------  47544573
 felCat3.s     45986 TTGCTGGTGCTCTCAA---AATATAACA-------     45961
 dasNov1.s      7244 TTGCTGGTG--ATCTGATTAATGTAACATTTTATG      7211
 echTel1.s     95225 CTGTTAATG--CTCTG------------TTTTATG     95246
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=44222.000000
 s mm9.chr10                         3021104   32 + 129993255 CTGTTAGTGCTGTTTT---AATGTACCTCGCAGTA
 s cavPor2.scaffold_216473              9568   27 -     10026 -----ATTACTTTCTT---AATGTAAATTTTTATA
@@ -10435,10 +8527,8 @@ i echTel1.scaffold_288249          I 7564 C 0
 e ornAna1.chr2                     14751195 5690 -  54797317 I
 e tupBel1.scaffold_114895.1-498454   174338  623 -    498454 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'T', 'G', 'T', 'T', 'A', 'G', 'T', 'G', 'C', 'T', 'G', 'T',
@@ -10479,16 +8569,10 @@ np.array([['C', 'T', 'G', 'T', 'T', 'A', 'G', 'T', 'G', 'C', 'T', 'G', 'T',
            '-', '-', 'T', 'T', 'T', 'T', 'A', 'T', 'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1699 aligned letters; 1239 identities; 460 mismatches; 397 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1699 aligned letters; 1239 identities; 460 mismatches; 397 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1699:
         identities = 1239,
@@ -10515,255 +8599,148 @@ AlignmentCounts object with
             right_deletions = 112:
                 open_right_deletions = 16,
                 extend_right_deletions = 96.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 50)
-        self.assertEqual(counts.left_deletions, 5)
-        self.assertEqual(counts.right_insertions, 28)
-        self.assertEqual(counts.right_deletions, 112)
-        self.assertEqual(counts.internal_insertions, 52)
-        self.assertEqual(counts.internal_deletions, 150)
-        self.assertEqual(counts.left_gaps, 55)
-        self.assertEqual(counts.right_gaps, 140)
-        self.assertEqual(counts.internal_gaps, 202)
-        self.assertEqual(counts.insertions, 130)
-        self.assertEqual(counts.deletions, 267)
-        self.assertEqual(counts.gaps, 397)
-        self.assertEqual(counts.aligned, 1699)
-        self.assertEqual(counts.identities, 1239)
-        self.assertEqual(counts.mismatches, 460)
+"""
+        assert counts.left_insertions == 50
+        assert counts.left_deletions == 5
+        assert counts.right_insertions == 28
+        assert counts.right_deletions == 112
+        assert counts.internal_insertions == 52
+        assert counts.internal_deletions == 150
+        assert counts.left_gaps == 55
+        assert counts.right_gaps == 140
+        assert counts.internal_gaps == 202
+        assert counts.insertions == 130
+        assert counts.deletions == 267
+        assert counts.gaps == 397
+        assert counts.aligned == 1699
+        assert counts.identities == 1239
+        assert counts.mismatches == 460
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 43757)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021136 : 3021136 + 44],
-            "AGGCAAATGAGGTGATAAGATTGTGTTTACTCCCTCTGTGCTTG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "AGGCAAATGAGGTGATAAGA-------TTGTGTT-----TAC----TCCCTCTGTGC----------TTG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[388 : 388 + 43],
-            "catacacacagagaatgAATATATCACTGTTATCTCATCTGCT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "AG-CAGATGAGATAACAGTG-------ATATATT-----cat----tctctgtgtgt----------atg",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "4996766988786798889867956675666896967579888",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[3980 : 3980 + 42],
-            "CACACAAATAAGAAATAGATGCCCTCATCACCTCATTTGCTT",
-        )
-        self.assertEqual(
-            alignment[2],
-            "AAGCAAATGAGGTGATGAGG---------GCATC-----TAT----TTCTTATTTGT----------GTG",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "999989999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[3].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[3].seq[171142 : 171142 + 45],
-            "CACACGTGGGGGACAAGTACATATGTCCTGTGATCTCATTTGTTT",
-        )
-        self.assertEqual(
-            alignment[3],
-            "AAACAAATGAGATCACA-GG-------ACATATG-----TA--CTTGTCCCCCACGT----------GTG",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "999999999999999999999999999999939999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 15)
-        self.assertEqual(alignment.sequences[4].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[4].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[4].seq[10722 : 10722 + 45],
-            "AAGCAAATGAGATCACAGCACATGTATATTTTTTCTCCGTGTGTG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "AAGCAAATGAGATCACA----------GCACATG-----TATATTTTTTCTCCGTGT----------GTG",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 15)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155025056 : 155025056 + 47],
-            "CACACACAGAGAAAAAAACATATATGCCCTTGTGATCTCATTTGTTT",
-        )
-        self.assertEqual(
-            alignment[5],
-            "AAACAAATGAGATCACAAGG-------GCATATA-----TGT-TTTTTTCTCTGTGT----------GTG",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 15)
-        self.assertEqual(alignment.sequences[6].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[6].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[6].seq[157515110 : 157515110 + 47],
-            "CACACACAGAGAAAAAAACATATATGCCCTTGTGATCTCATTTGTTT",
-        )
-        self.assertEqual(
-            alignment[6],
-            "AAACAAATGAGATCACAAGG-------GCATATA-----TGT-TTTTTTCTCTGTGT----------GTG",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "99999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 15)
-        self.assertEqual(alignment.sequences[7].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[7].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[7].seq[158037277 : 158037277 + 47],
-            "CACACACAGAGAAAAAAATACATATGCCCTTGTGATCTCATTTGTTT",
-        )
-        self.assertEqual(
-            alignment[7],
-            "AAACAAATGAGATCACAAGG-------GCATATG-----TAT-TTTTTTCTCTGTGT----------GTG",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 15)
-        self.assertEqual(alignment.sequences[8].id, "eriEur1.scaffold_266115")
-        self.assertEqual(len(alignment.sequences[8].seq), 4589)
-        self.assertEqual(
-            alignment.sequences[8].seq[358 : 358 + 65],
-            "taaataataagataagatgaaagCATAGCATGTATTTTCTtgccctctccttctctgtctctgtc",
-        )
-        self.assertEqual(
-            alignment[8],
-            "taaataataagataagatgaaagCATAGCATGTA-----TTTTCTtgccctctccttctctgtctctgtc",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[9].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[9].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[9].seq[47544326 : 47544326 + 51],
-            "CACAGACCCCACACAGAGAGAAAGCATATACACACGGTATCTCATTTTCTa",
-        )
-        self.assertEqual(
-            alignment[9],
-            "tAGAAAATGAGATACC-----------GTGTGTA-----TATGCTTTCTCTCTGTGT---GGGGTCTGTG",
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 196)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[10].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[10].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[10].seq[45904 : 45904 + 51],
-            "CACAGACACCACACAGAGAGGAAGAATACACGTGTCTTATCTCATTTGCTT",
-        )
-        self.assertEqual(
-            alignment[10],
-            "AAGCAAATGAGATAAG-----------ACACGTG-----TATTCTTCCTCTCTGTGT---GGTGTCTGTG",
-        )
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"],
-            "975559665645435353463242434515353544222333635339999",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 6)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[11].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[11].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[11].seq[7165 : 7165 + 46],
-            "TACACAGAGAAAGAATATTTATTTGCCCTGGTCCTCTCACTTTCCT",
-        )
-        self.assertEqual(
-            alignment[11],
-            "AGGAAAGTGAGAGGACCAGG-------GCAAATA-----AATATTCTTTCTCTGTGT----------A--",
-        )
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"],
-            "5556976455665765856867685558586864578595356565",
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[12].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[12].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[12].seq[95246 : 95246 + 51],
-            "AAGAAGGTGAGATGACAAGGGTGTATAGATAGGATATTCTTGCTTTGGGTG",
-        )
-        self.assertEqual(
-            alignment[12],
-            "AAGAAGGTGAGATGACAAGG-------GTGTATAGATAGGATATTCTTGCTTTGGGT----------G--",
-        )
-        self.assertEqual(
-            alignment.sequences[12].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[12].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[12].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["rightCount"], 0)
+        assert alignment.score == 43757
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021136 : 3021136 + 44] == "AGGCAAATGAGGTGATAAGATTGTGTTTACTCCCTCTGTGCTTG"
+        assert alignment[0] == "AGGCAAATGAGGTGATAAGA-------TTGTGTT-----TAC----TCCCTCTGTGC----------TTG"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[388 : 388 + 43] == "catacacacagagaatgAATATATCACTGTTATCTCATCTGCT"
+        assert alignment[1] == "AG-CAGATGAGATAACAGTG-------ATATATT-----cat----tctctgtgtgt----------atg"
+        assert alignment.sequences[1].annotations["quality"] == "4996766988786798889867956675666896967579888"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[3980 : 3980 + 42] == "CACACAAATAAGAAATAGATGCCCTCATCACCTCATTTGCTT"
+        assert alignment[2] == "AAGCAAATGAGGTGATGAGG---------GCATC-----TAT----TTCTTATTTGT----------GTG"
+        assert alignment.sequences[2].annotations["quality"] == "999989999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[3].seq) == 359464
+        assert alignment.sequences[3].seq[171142 : 171142 + 45] == "CACACGTGGGGGACAAGTACATATGTCCTGTGATCTCATTTGTTT"
+        assert alignment[3] == "AAACAAATGAGATCACA-GG-------ACATATG-----TA--CTTGTCCCCCACGT----------GTG"
+        assert alignment.sequences[3].annotations["quality"] == "999999999999999999999999999999939999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 15
+        assert alignment.sequences[4].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[4].seq) == 133105
+        assert alignment.sequences[4].seq[10722 : 10722 + 45] == "AAGCAAATGAGATCACAGCACATGTATATTTTTTCTCCGTGTGTG"
+        assert alignment[4] == "AAGCAAATGAGATCACA----------GCACATG-----TATATTTTTTCTCCGTGT----------GTG"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 15
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155025056 : 155025056 + 47] == "CACACACAGAGAAAAAAACATATATGCCCTTGTGATCTCATTTGTTT"
+        assert alignment[5] == "AAACAAATGAGATCACAAGG-------GCATATA-----TGT-TTTTTTCTCTGTGT----------GTG"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 15
+        assert alignment.sequences[6].id == "panTro2.chr6"
+        assert len(alignment.sequences[6].seq) == 173908612
+        assert alignment.sequences[6].seq[157515110 : 157515110 + 47] == "CACACACAGAGAAAAAAACATATATGCCCTTGTGATCTCATTTGTTT"
+        assert alignment[6] == "AAACAAATGAGATCACAAGG-------GCATATA-----TGT-TTTTTTCTCTGTGT----------GTG"
+        assert alignment.sequences[6].annotations["quality"] == "99999999999999999999999999999999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 15
+        assert alignment.sequences[7].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[7].seq) == 174210431
+        assert alignment.sequences[7].seq[158037277 : 158037277 + 47] == "CACACACAGAGAAAAAAATACATATGCCCTTGTGATCTCATTTGTTT"
+        assert alignment[7] == "AAACAAATGAGATCACAAGG-------GCATATG-----TAT-TTTTTTCTCTGTGT----------GTG"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "I"
+        assert alignment.sequences[7].annotations["rightCount"] == 15
+        assert alignment.sequences[8].id == "eriEur1.scaffold_266115"
+        assert len(alignment.sequences[8].seq) == 4589
+        assert alignment.sequences[8].seq[358 : 358 + 65] == "taaataataagataagatgaaagCATAGCATGTATTTTCTtgccctctccttctctgtctctgtc"
+        assert alignment[8] == "taaataataagataagatgaaagCATAGCATGTA-----TTTTCTtgccctctccttctctgtctctgtc"
+        assert alignment.sequences[8].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "N"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "I"
+        assert alignment.sequences[8].annotations["rightCount"] == 9
+        assert alignment.sequences[9].id == "canFam2.chr1"
+        assert len(alignment.sequences[9].seq) == 125616256
+        assert alignment.sequences[9].seq[47544326 : 47544326 + 51] == "CACAGACCCCACACAGAGAGAAAGCATATACACACGGTATCTCATTTTCTa"
+        assert alignment[9] == "tAGAAAATGAGATACC-----------GTGTGTA-----TATGCTTTCTCTCTGTGT---GGGGTCTGTG"
+        assert alignment.sequences[9].annotations["quality"] == "999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[9].annotations["leftStatus"] == "I"
+        assert alignment.sequences[9].annotations["leftCount"] == 196
+        assert alignment.sequences[9].annotations["rightStatus"] == "I"
+        assert alignment.sequences[9].annotations["rightCount"] == 9
+        assert alignment.sequences[10].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[10].seq) == 119354
+        assert alignment.sequences[10].seq[45904 : 45904 + 51] == "CACAGACACCACACAGAGAGGAAGAATACACGTGTCTTATCTCATTTGCTT"
+        assert alignment[10] == "AAGCAAATGAGATAAG-----------ACACGTG-----TATTCTTCCTCTCTGTGT---GGTGTCTGTG"
+        assert alignment.sequences[10].annotations["quality"] == "975559665645435353463242434515353544222333635339999"
+        assert alignment.sequences[10].annotations["leftStatus"] == "I"
+        assert alignment.sequences[10].annotations["leftCount"] == 6
+        assert alignment.sequences[10].annotations["rightStatus"] == "I"
+        assert alignment.sequences[10].annotations["rightCount"] == 9
+        assert alignment.sequences[11].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[11].seq) == 10470
+        assert alignment.sequences[11].seq[7165 : 7165 + 46] == "TACACAGAGAAAGAATATTTATTTGCCCTGGTCCTCTCACTTTCCT"
+        assert alignment[11] == "AGGAAAGTGAGAGGACCAGG-------GCAAATA-----AATATTCTTTCTCTGTGT----------A--"
+        assert alignment.sequences[11].annotations["quality"] == "5556976455665765856867685558586864578595356565"
+        assert alignment.sequences[11].annotations["leftStatus"] == "C"
+        assert alignment.sequences[11].annotations["leftCount"] == 0
+        assert alignment.sequences[11].annotations["rightStatus"] == "C"
+        assert alignment.sequences[11].annotations["rightCount"] == 0
+        assert alignment.sequences[12].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[12].seq) == 100002
+        assert alignment.sequences[12].seq[95246 : 95246 + 51] == "AAGAAGGTGAGATGACAAGGGTGTATAGATAGGATATTCTTGCTTTGGGTG"
+        assert alignment[12] == "AAGAAGGTGAGATGACAAGG-------GTGTATAGATAGGATATTCTTGCTTTGGGT----------G--"
+        assert alignment.sequences[12].annotations["quality"] == "999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[12].annotations["leftStatus"] == "C"
+        assert alignment.sequences[12].annotations["leftCount"] == 0
+        assert alignment.sequences[12].annotations["rightStatus"] == "C"
+        assert alignment.sequences[12].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (324116, 323493))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 13)
-        self.assertEqual(len(alignment.annotations["empty"]), 2)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (324116, 323493)
+        assert status == "I"
+        assert len(alignment.sequences) == 13
+        assert len(alignment.annotations["empty"]) == 2
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -10823,10 +8800,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021136 AGGCAAATGAGGTGATAAGA-------TTGTGTT-----TAC----TCCCTCTGTGC---
 cavPor2.s       431 AG-CAGATGAGATAACAGTG-------ATATATT-----cat----tctctgtgtgt---
 oryCun1.s      4022 AAGCAAATGAGGTGATGAGG---------GCATC-----TAT----TTCTTATTTGT---
@@ -10854,11 +8828,8 @@ canFam2.c  47544336 GGGGTCTGTG  47544326
 felCat3.s     45914 GGTGTCTGTG     45904
 dasNov1.s      7166 -------A--      7165
 echTel1.s     95296 -------G--     95297
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=43757.000000
 s mm9.chr10                         3021136   44 + 129993255 AGGCAAATGAGGTGATAAGA-------TTGTGTT-----TAC----TCCCTCTGTGC----------TTG
 s cavPor2.scaffold_216473              9595   43 -     10026 AG-CAGATGAGATAACAGTG-------ATATATT-----cat----tctctgtgtgt----------atg
@@ -10897,10 +8868,8 @@ i echTel1.scaffold_288249          C 0 C 0
 e ornAna1.chr2                     14751195 5690 -  54797317 I
 e tupBel1.scaffold_114895.1-498454   174338  623 -    498454 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'G', 'G', 'C', 'A', 'A', 'A', 'T', 'G', 'A', 'G', 'G', 'T',
@@ -10983,16 +8952,10 @@ np.array([['A', 'G', 'G', 'C', 'A', 'A', 'A', 'T', 'G', 'A', 'G', 'G', 'T',
            '-', '-', 'G', '-', '-']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (3378 aligned letters; 1953 identities; 1425 mismatches; 732 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (3378 aligned letters; 1953 identities; 1425 mismatches; 732 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 3378:
         identities = 1953,
@@ -11019,242 +8982,151 @@ AlignmentCounts object with
             right_deletions = 44:
                 open_right_deletions = 22,
                 extend_right_deletions = 22.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 44)
-        self.assertEqual(counts.internal_insertions, 517)
-        self.assertEqual(counts.internal_deletions, 171)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 44)
-        self.assertEqual(counts.internal_gaps, 688)
-        self.assertEqual(counts.insertions, 517)
-        self.assertEqual(counts.deletions, 215)
-        self.assertEqual(counts.gaps, 732)
-        self.assertEqual(counts.aligned, 3378)
-        self.assertEqual(counts.identities, 1953)
-        self.assertEqual(counts.mismatches, 1425)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 44
+        assert counts.internal_insertions == 517
+        assert counts.internal_deletions == 171
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 44
+        assert counts.internal_gaps == 688
+        assert counts.insertions == 517
+        assert counts.deletions == 215
+        assert counts.gaps == 732
+        assert counts.aligned == 3378
+        assert counts.identities == 1953
+        assert counts.mismatches == 1425
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 32886)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021180 : 3021180 + 24],
-            "TCCCAGAGAGTCTGATAGGAGGAG",
-        )
-        self.assertEqual(
-            alignment[0], "-------------------TCCC-------AGAGAGTCTGA-TAGGAGGAG"
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[356 : 356 + 32],
-            "TACTTTATACTCAGAGCCACTATACAAaggca",
-        )
-        self.assertEqual(
-            alignment[1], "-------------------tgcctTTGTATAGTGGCTCTGAGTATAAAGTA"
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "67576649966655666885655548785776",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[3953 : 3953 + 27], "TATATTCAGAAATGCTATACACAGGCA"
-        )
-        self.assertEqual(
-            alignment[2], "-------------------TGCCTGTGTATAGCATTTCTGAATATA-----"
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"], "999999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158037237 : 158037237 + 25],
-            "TACTTCATATTCATACACACTCAGA",
-        )
-        self.assertEqual(
-            alignment[3], "-----------------------TCTG---AGTGTGTATGAATATGAAGTA"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 15)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[4].seq[157515070 : 157515070 + 25],
-            "TACTTCATATTCATACATACTCAGA",
-        )
-        self.assertEqual(
-            alignment[4], "-----------------------TCTG---AGTATGTATGAATATGAAGTA"
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 15)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155025016 : 155025016 + 25],
-            "TACTTCATATTCATACATACTCAGA",
-        )
-        self.assertEqual(
-            alignment[5], "-----------------------TCTG---AGTATGTATGAATATGAAGTA"
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 15)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[6].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[6].seq[10782 : 10782 + 25], "TCTGAGTATGTCTGAATATGAAGTG"
-        )
-        self.assertEqual(
-            alignment[6], "-----------------------TCTG---AGTATGTCTGAATATGAAGTG"
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 15)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[7].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[7].seq[171102 : 171102 + 25],
-            "CACATCATGTTCAGACACACTTAGA",
-        )
-        self.assertEqual(
-            alignment[7], "-----------------------TCTA---AGTGTGTCTGAACATGATGTG"
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 15)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[8].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[8].seq[323468 : 323468 + 25],
-            "TACCTCAAGTTCAGACACTCAGAGA",
-        )
-        self.assertEqual(
-            alignment[8], "-----------------------TCTC---TGAGTGTCTGAACTTGAGGTA"
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 623)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "eriEur1.scaffold_266115")
-        self.assertEqual(len(alignment.sequences[9].seq), 4589)
-        self.assertEqual(
-            alignment.sequences[9].seq[432 : 432 + 19], "TCTCAGTGTGTCTGACCAG"
-        )
-        self.assertEqual(
-            alignment[9], "-----------------------TCTC---AGTGTGTCTGACCAG------"
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"], "9999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[10].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[10].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[10].seq[47544292 : 47544292 + 25],
-            "TACCTCACATTCAGACACACTCAGA",
-        )
-        self.assertEqual(
-            alignment[10], "-----------------------TCTG---AGTGTGTCTGAATGTGAGGTA"
-        )
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[11].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[11].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[11].seq[45870 : 45870 + 25], "CACCTCACATTCAGGAACACTCAGA"
-        )
-        self.assertEqual(
-            alignment[11], "-----------------------TCTG---AGTGTTCCTGAATGTGAGGTG"
-        )
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"], "9999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[12].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[12].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[12].seq[7118 : 7118 + 47],
-            "TACCTCAAGTTCAGACACGCTCAGAAATGCTCCGCAAAGGCACACAA",
-        )
-        self.assertEqual(
-            alignment[12], "T-TGTGTGCCTTTGCGGAGCATTTCTG---AGCGTGTCTGAACTTGAGGTA"
-        )
-        self.assertEqual(
-            alignment.sequences[12].annotations["quality"],
-            "73659557766555777595699547965955937797755656587",
-        )
-        self.assertEqual(alignment.sequences[12].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[12].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[13].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[13].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[13].seq[95297 : 95297 + 48],
-            "TGCCCAGGACTGCGCATGGTATTTCTTGGTGTGTCTGAAGGTGAGATA",
-        )
-        self.assertEqual(
-            alignment[13], "TGCCCAGGACTGCGCATGGTATTTCTT---GGTGTGTCTGAAGGTGAGATA"
-        )
-        self.assertEqual(
-            alignment.sequences[13].annotations["quality"],
-            "999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[13].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[13].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["rightCount"], 0)
+        assert alignment.score == 32886
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021180 : 3021180 + 24] == "TCCCAGAGAGTCTGATAGGAGGAG"
+        assert alignment[0] == "-------------------TCCC-------AGAGAGTCTGA-TAGGAGGAG"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[356 : 356 + 32] == "TACTTTATACTCAGAGCCACTATACAAaggca"
+        assert alignment[1] == "-------------------tgcctTTGTATAGTGGCTCTGAGTATAAAGTA"
+        assert alignment.sequences[1].annotations["quality"] == "67576649966655666885655548785776"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[3953 : 3953 + 27] == "TATATTCAGAAATGCTATACACAGGCA"
+        assert alignment[2] == "-------------------TGCCTGTGTATAGCATTTCTGAATATA-----"
+        assert alignment.sequences[2].annotations["quality"] == "999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158037237 : 158037237 + 25] == "TACTTCATATTCATACACACTCAGA"
+        assert alignment[3] == "-----------------------TCTG---AGTGTGTATGAATATGAAGTA"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 15
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "panTro2.chr6"
+        assert len(alignment.sequences[4].seq) == 173908612
+        assert alignment.sequences[4].seq[157515070 : 157515070 + 25] == "TACTTCATATTCATACATACTCAGA"
+        assert alignment[4] == "-----------------------TCTG---AGTATGTATGAATATGAAGTA"
+        assert alignment.sequences[4].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 15
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155025016 : 155025016 + 25] == "TACTTCATATTCATACATACTCAGA"
+        assert alignment[5] == "-----------------------TCTG---AGTATGTATGAATATGAAGTA"
+        assert alignment.sequences[5].annotations["leftStatus"] == "I"
+        assert alignment.sequences[5].annotations["leftCount"] == 15
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[6].seq) == 133105
+        assert alignment.sequences[6].seq[10782 : 10782 + 25] == "TCTGAGTATGTCTGAATATGAAGTG"
+        assert alignment[6] == "-----------------------TCTG---AGTATGTCTGAATATGAAGTG"
+        assert alignment.sequences[6].annotations["leftStatus"] == "I"
+        assert alignment.sequences[6].annotations["leftCount"] == 15
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[7].seq) == 359464
+        assert alignment.sequences[7].seq[171102 : 171102 + 25] == "CACATCATGTTCAGACACACTTAGA"
+        assert alignment[7] == "-----------------------TCTA---AGTGTGTCTGAACATGATGTG"
+        assert alignment.sequences[7].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[7].annotations["leftStatus"] == "I"
+        assert alignment.sequences[7].annotations["leftCount"] == 15
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[8].seq) == 498454
+        assert alignment.sequences[8].seq[323468 : 323468 + 25] == "TACCTCAAGTTCAGACACTCAGAGA"
+        assert alignment[8] == "-----------------------TCTC---TGAGTGTCTGAACTTGAGGTA"
+        assert alignment.sequences[8].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "I"
+        assert alignment.sequences[8].annotations["leftCount"] == 623
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "eriEur1.scaffold_266115"
+        assert len(alignment.sequences[9].seq) == 4589
+        assert alignment.sequences[9].seq[432 : 432 + 19] == "TCTCAGTGTGTCTGACCAG"
+        assert alignment[9] == "-----------------------TCTC---AGTGTGTCTGACCAG------"
+        assert alignment.sequences[9].annotations["quality"] == "9999999999999999999"
+        assert alignment.sequences[9].annotations["leftStatus"] == "I"
+        assert alignment.sequences[9].annotations["leftCount"] == 9
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
+        assert alignment.sequences[10].id == "canFam2.chr1"
+        assert len(alignment.sequences[10].seq) == 125616256
+        assert alignment.sequences[10].seq[47544292 : 47544292 + 25] == "TACCTCACATTCAGACACACTCAGA"
+        assert alignment[10] == "-----------------------TCTG---AGTGTGTCTGAATGTGAGGTA"
+        assert alignment.sequences[10].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[10].annotations["leftStatus"] == "I"
+        assert alignment.sequences[10].annotations["leftCount"] == 9
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
+        assert alignment.sequences[11].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[11].seq) == 119354
+        assert alignment.sequences[11].seq[45870 : 45870 + 25] == "CACCTCACATTCAGGAACACTCAGA"
+        assert alignment[11] == "-----------------------TCTG---AGTGTTCCTGAATGTGAGGTG"
+        assert alignment.sequences[11].annotations["quality"] == "9999999999999999999999999"
+        assert alignment.sequences[11].annotations["leftStatus"] == "I"
+        assert alignment.sequences[11].annotations["leftCount"] == 9
+        assert alignment.sequences[11].annotations["rightStatus"] == "C"
+        assert alignment.sequences[11].annotations["rightCount"] == 0
+        assert alignment.sequences[12].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[12].seq) == 10470
+        assert alignment.sequences[12].seq[7118 : 7118 + 47] == "TACCTCAAGTTCAGACACGCTCAGAAATGCTCCGCAAAGGCACACAA"
+        assert alignment[12] == "T-TGTGTGCCTTTGCGGAGCATTTCTG---AGCGTGTCTGAACTTGAGGTA"
+        assert alignment.sequences[12].annotations["quality"] == "73659557766555777595699547965955937797755656587"
+        assert alignment.sequences[12].annotations["leftStatus"] == "C"
+        assert alignment.sequences[12].annotations["leftCount"] == 0
+        assert alignment.sequences[12].annotations["rightStatus"] == "C"
+        assert alignment.sequences[12].annotations["rightCount"] == 0
+        assert alignment.sequences[13].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[13].seq) == 100002
+        assert alignment.sequences[13].seq[95297 : 95297 + 48] == "TGCCCAGGACTGCGCATGGTATTTCTTGGTGTGTCTGAAGGTGAGATA"
+        assert alignment[13] == "TGCCCAGGACTGCGCATGGTATTTCTT---GGTGTGTCTGAAGGTGAGATA"
+        assert alignment.sequences[13].annotations["quality"] == "999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[13].annotations["leftStatus"] == "C"
+        assert alignment.sequences[13].annotations["leftCount"] == 0
+        assert alignment.sequences[13].annotations["rightStatus"] == "C"
+        assert alignment.sequences[13].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 14)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
+        assert len(alignment.sequences) == 14
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -11290,10 +9162,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021180 -------------------TCCC-------AGAGAGTCTGA-TAGGAGGAG
 cavPor2.s       388 -------------------tgcctTTGTATAGTGGCTCTGAGTATAAAGTA
 oryCun1.s      3980 -------------------TGCCTGTGTATAGCATTTCTGAATATA-----
@@ -11323,11 +9192,8 @@ canFam2.c  47544292
 felCat3.s     45870
 dasNov1.s      7118
 echTel1.s     95345
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=32886.000000
 s mm9.chr10                         3021180   24 + 129993255 -------------------TCCC-------AGAGAGTCTGA-TAGGAGGAG
 s cavPor2.scaffold_216473              9638   32 -     10026 -------------------tgcctTTGTATAGTGGCTCTGAGTATAAAGTA
@@ -11368,10 +9234,8 @@ q echTel1.scaffold_288249                                    9999999999999999999
 i echTel1.scaffold_288249          C 0 C 0
 e ornAna1.chr2                     14751195 5690 -  54797317 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
@@ -11433,16 +9297,10 @@ np.array([['-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-', '-',
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (2133 aligned letters; 1535 identities; 598 mismatches; 895 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (2133 aligned letters; 1535 identities; 598 mismatches; 895 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 2133:
         identities = 1535,
@@ -11469,285 +9327,160 @@ AlignmentCounts object with
             right_deletions = 59:
                 open_right_deletions = 11,
                 extend_right_deletions = 48.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 516)
-        self.assertEqual(counts.left_deletions, 108)
-        self.assertEqual(counts.right_insertions, 74)
-        self.assertEqual(counts.right_deletions, 59)
-        self.assertEqual(counts.internal_insertions, 72)
-        self.assertEqual(counts.internal_deletions, 66)
-        self.assertEqual(counts.left_gaps, 624)
-        self.assertEqual(counts.right_gaps, 133)
-        self.assertEqual(counts.internal_gaps, 138)
-        self.assertEqual(counts.insertions, 662)
-        self.assertEqual(counts.deletions, 233)
-        self.assertEqual(counts.gaps, 895)
-        self.assertEqual(counts.aligned, 2133)
-        self.assertEqual(counts.identities, 1535)
-        self.assertEqual(counts.mismatches, 598)
+"""
+        assert counts.left_insertions == 516
+        assert counts.left_deletions == 108
+        assert counts.right_insertions == 74
+        assert counts.right_deletions == 59
+        assert counts.internal_insertions == 72
+        assert counts.internal_deletions == 66
+        assert counts.left_gaps == 624
+        assert counts.right_gaps == 133
+        assert counts.internal_gaps == 138
+        assert counts.insertions == 662
+        assert counts.deletions == 233
+        assert counts.gaps == 895
+        assert counts.aligned == 2133
+        assert counts.identities == 1535
+        assert counts.mismatches == 598
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 309116)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021204 : 3021204 + 71],
-            "TGCACTGGTTTTCCTGCAGTGGTTCTCAGTAATAGGAAGACAACAGAATTTGAAGTATCCGGCTTTGGCCA",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TGCACTGGTTTTCC-TGCAGTGGTTCTCAGTAATAGGAAGACA-ACAGAATTTGAAGTATCCGGCTTTGGCCA",
-        )
-        self.assertEqual(alignment.sequences[1].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[1].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[1].seq[95345 : 95345 + 73],
-            "GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAAATATTCTTGGCTA",
-        )
-        self.assertEqual(
-            alignment[1],
-            "GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAAATATTCTTGGCTA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[2].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[2].seq[7048 : 7048 + 70],
-            "TAGCCAAGAGCATTTATTATAAATTCAAAATGCTCTCTTAGTGTGATTTCCCTCACTGAAAATCAATGCA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "TGCATTGATTTTCAGTGAGGGAAATCACAC---TAAGAGAGCATTTTGAATTTATAATAAATGCTCTTGGCTA",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "5796635799979575966667835948658458696597898258979678997999677999997699",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[3].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[3].seq[45798 : 45798 + 72],
-            "CAGCCAAAAACATTTGCTATAATTTCAAAATGCATTCCTATTCATGTGAATCAATGCATGAAAATCAATGCA",
-        )
-        self.assertEqual(
-            alignment[3],
-            "TGCATTGATTTTCA-TGCATTGATTCACATGAATAGGAATGCATTTTGAAATTATAGCAAATGTTTTTGGCTG",
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[4].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[4].seq[47544221 : 47544221 + 71],
-            "CAGCCAAAAGCATTTCCTATAAATTCAAATGTATTCCTATTCATGTGAATCAACGCATGAAAATTAATGCA",
-        )
-        self.assertEqual(
-            alignment[4],
-            "TGCATTAATTTTCA-TGCGTTGATTCACATGAATAGGAATACA-TTTGAATTTATAGGAAATGCTTTTGGCTG",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "eriEur1.scaffold_266115")
-        self.assertEqual(len(alignment.sequences[5].seq), 4589)
-        self.assertEqual(
-            alignment.sequences[5].seq[451 : 451 + 70],
-            "GCACTGATTCTCGAGGGTTGATTCCCAGTAAGAGGAAACTGCGTGAGTTTACAGTACATGGGCTTGGCTG",
-        )
-        self.assertEqual(
-            alignment[5],
-            "-GCACTGATTCTCG-AGGGTTGATTCCCAGTAAGAGGAAACTG-CGTGAGTTTACAGTACATGGGCTTGGCTG",
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999799",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "sorAra1.scaffold_2476")
-        self.assertEqual(len(alignment.sequences[6].seq), 4997)
-        self.assertEqual(
-            alignment.sequences[6].seq[1615 : 1615 + 70],
-            "TGGCCAAATCATTTATCATAAATTGAAGTGCTTTCCTTTTCATGTGAATCAATACTTAAAAATCAATGCA",
-        )
-        self.assertEqual(
-            alignment[6],
-            "TGCATTGATTTTTA-AGTATTGATTCACATGAAAAGGAAAGCA-CTTCAATTTATGATAAAT-GATTTGGCCA",
-        )
-        self.assertEqual(
-            alignment.sequences[6].annotations["quality"],
-            "8999999999998999999999999999999999999999999999999997999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[7].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[7].seq[323397 : 323397 + 71],
-            "TGGTCAGAAGCATTTCCTATCAATTAGAATCGTTTCCTATTAATGTGACATAACACATGGAATTCAATGCA",
-        )
-        self.assertEqual(
-            alignment[7],
-            "TGCATTGAATTCCA-TGTGTTATGTCACATTAATAGGAAACGA-TTCTAATTGATAGGAAATGCTTCTGACCA",
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"],
-            "99999899899999999999999999999999999999999999999999999999999999999999997",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(alignment.sequences[8].seq), 359464)
-        self.assertEqual(
-            alignment.sequences[8].seq[171035 : 171035 + 67],
-            "TGGCCAAATGCCTTTCCTACAAATTCACATGTTTTCCCGTTAAGGTGAATCAATGTGTAAAAATCCA",
-        )
-        self.assertEqual(
-            alignment[8],
-            "TG----GATTTTTA-CACATTGATTCACCTTAACGGGAAAACA-TGTGAATTTGTAGGAAAGGCATTTGGCCA",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "8899999999989999989994384888899999999966359999569699999923799351281",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 6280)
-        self.assertEqual(alignment.sequences[9].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[9].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[9].seq[10807 : 10807 + 71],
-            "TGCATTGGTTTTTATGCCTTGATTCACATGAATAGGAAAACGTTTGAATTTATAGGAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(
-            alignment[9],
-            "TGCATTGGTTTTTA-TGCCTTGATTCACATGAATAGGAAAACG-TTTGAATTTATAGGAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[10].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[10].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[10].seq[155024945 : 155024945 + 71],
-            "TGGCCAAAACCATTTACTATAAATTCAAACATTTTCCTATTCATGTAAATCAATGCATAAAAATCAAAGCA",
-        )
-        self.assertEqual(
-            alignment[10],
-            "TGCTTTGATTTTTA-TGCATTGATTTACATGAATAGGAAAATG-TTTGAATTTATAGTAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[11].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[11].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[11].seq[157514999 : 157514999 + 71],
-            "TGGCCAAAACCATTTACTATAAATTCAAATGTTTTCCTATTCATGTAAATCAATGCATAAAAATCAAAGCA",
-        )
-        self.assertEqual(
-            alignment[11],
-            "TGCTTTGATTTTTA-TGCATTGATTTACATGAATAGGAAAACA-TTTGAATTTATAGTAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"],
-            "99999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[12].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[12].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[12].seq[158037166 : 158037166 + 71],
-            "TGGCCAAAACCATTTACTATAAATTCAAACGTTTTCCTATCCATGTAAATCAATGCATAAAAATCAAAGCA",
-        )
-        self.assertEqual(
-            alignment[12],
-            "TGCTTTGATTTTTA-TGCATTGATTTACATGGATAGGAAAACG-TTTGAATTTATAGTAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(alignment.sequences[12].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[12].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[13].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[13].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[13].seq[3888 : 3888 + 65],
-            "TGACCAAAAGCCATTGCTATAAATGCAAATGTTTTCCCGTCGATGTAAATCAAAGTATGTAAAGA",
-        )
-        self.assertEqual(
-            alignment[13],
-            "------TCTTTACA-TACTTTGATTTACATCGACGGGAAAACA-TTTGCATTTATAGCAATGGCTTTTGGTCA",
-        )
-        self.assertEqual(
-            alignment.sequences[13].annotations["quality"],
-            "99999994999999999999989999999999999999999999999999899999999999999",
-        )
-        self.assertEqual(alignment.sequences[13].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[13].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[14].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[14].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[14].seq[285 : 285 + 71],
-            "TGGCCAAAACCATTTACTATAAATTGGACTGTTTTCCTATTAATGTGAATTAATGCATGGAAATCAATGCC",
-        )
-        self.assertEqual(
-            alignment[14],
-            "GGCATTGATTTCCA-TGCATTAATTCACATTAATAGGAAAACA-GTCCAATTTATAGTAAATGGTTTTGGCCA",
-        )
-        self.assertEqual(
-            alignment.sequences[14].annotations["quality"],
-            "77888768786695388675879644655668865666547868687676669688688666687574686",
-        )
-        self.assertEqual(alignment.sequences[14].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[14].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[14].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[14].annotations["rightCount"], 0)
+        assert alignment.score == 309116
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021204 : 3021204 + 71] == "TGCACTGGTTTTCCTGCAGTGGTTCTCAGTAATAGGAAGACAACAGAATTTGAAGTATCCGGCTTTGGCCA"
+        assert alignment[0] == "TGCACTGGTTTTCC-TGCAGTGGTTCTCAGTAATAGGAAGACA-ACAGAATTTGAAGTATCCGGCTTTGGCCA"
+        assert alignment.sequences[1].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[1].seq) == 100002
+        assert alignment.sequences[1].seq[95345 : 95345 + 73] == "GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAAATATTCTTGGCTA"
+        assert alignment[1] == "GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAAATATTCTTGGCTA"
+        assert alignment.sequences[1].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[2].seq) == 10470
+        assert alignment.sequences[2].seq[7048 : 7048 + 70] == "TAGCCAAGAGCATTTATTATAAATTCAAAATGCTCTCTTAGTGTGATTTCCCTCACTGAAAATCAATGCA"
+        assert alignment[2] == "TGCATTGATTTTCAGTGAGGGAAATCACAC---TAAGAGAGCATTTTGAATTTATAATAAATGCTCTTGGCTA"
+        assert alignment.sequences[2].annotations["quality"] == "5796635799979575966667835948658458696597898258979678997999677999997699"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[3].seq) == 119354
+        assert alignment.sequences[3].seq[45798 : 45798 + 72] == "CAGCCAAAAACATTTGCTATAATTTCAAAATGCATTCCTATTCATGTGAATCAATGCATGAAAATCAATGCA"
+        assert alignment[3] == "TGCATTGATTTTCA-TGCATTGATTCACATGAATAGGAATGCATTTTGAAATTATAGCAAATGTTTTTGGCTG"
+        assert alignment.sequences[3].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "canFam2.chr1"
+        assert len(alignment.sequences[4].seq) == 125616256
+        assert alignment.sequences[4].seq[47544221 : 47544221 + 71] == "CAGCCAAAAGCATTTCCTATAAATTCAAATGTATTCCTATTCATGTGAATCAACGCATGAAAATTAATGCA"
+        assert alignment[4] == "TGCATTAATTTTCA-TGCGTTGATTCACATGAATAGGAATACA-TTTGAATTTATAGGAAATGCTTTTGGCTG"
+        assert alignment.sequences[4].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "eriEur1.scaffold_266115"
+        assert len(alignment.sequences[5].seq) == 4589
+        assert alignment.sequences[5].seq[451 : 451 + 70] == "GCACTGATTCTCGAGGGTTGATTCCCAGTAAGAGGAAACTGCGTGAGTTTACAGTACATGGGCTTGGCTG"
+        assert alignment[5] == "-GCACTGATTCTCG-AGGGTTGATTCCCAGTAAGAGGAAACTG-CGTGAGTTTACAGTACATGGGCTTGGCTG"
+        assert alignment.sequences[5].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999799"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "sorAra1.scaffold_2476"
+        assert len(alignment.sequences[6].seq) == 4997
+        assert alignment.sequences[6].seq[1615 : 1615 + 70] == "TGGCCAAATCATTTATCATAAATTGAAGTGCTTTCCTTTTCATGTGAATCAATACTTAAAAATCAATGCA"
+        assert alignment[6] == "TGCATTGATTTTTA-AGTATTGATTCACATGAAAAGGAAAGCA-CTTCAATTTATGATAAAT-GATTTGGCCA"
+        assert alignment.sequences[6].annotations["quality"] == "8999999999998999999999999999999999999999999999999997999999999999999999"
+        assert alignment.sequences[6].annotations["leftStatus"] == "N"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[7].seq) == 498454
+        assert alignment.sequences[7].seq[323397 : 323397 + 71] == "TGGTCAGAAGCATTTCCTATCAATTAGAATCGTTTCCTATTAATGTGACATAACACATGGAATTCAATGCA"
+        assert alignment[7] == "TGCATTGAATTCCA-TGTGTTATGTCACATTAATAGGAAACGA-TTCTAATTGATAGGAAATGCTTCTGACCA"
+        assert alignment.sequences[7].annotations["quality"] == "99999899899999999999999999999999999999999999999999999999999999999999997"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "otoGar1.scaffold_334.1-359464"
+        assert len(alignment.sequences[8].seq) == 359464
+        assert alignment.sequences[8].seq[171035 : 171035 + 67] == "TGGCCAAATGCCTTTCCTACAAATTCACATGTTTTCCCGTTAAGGTGAATCAATGTGTAAAAATCCA"
+        assert alignment[8] == "TG----GATTTTTA-CACATTGATTCACCTTAACGGGAAAACA-TGTGAATTTGTAGGAAAGGCATTTGGCCA"
+        assert alignment.sequences[8].annotations["quality"] == "8899999999989999989994384888899999999966359999569699999923799351281"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "I"
+        assert alignment.sequences[8].annotations["rightCount"] == 6280
+        assert alignment.sequences[9].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[9].seq) == 133105
+        assert alignment.sequences[9].seq[10807 : 10807 + 71] == "TGCATTGGTTTTTATGCCTTGATTCACATGAATAGGAAAACGTTTGAATTTATAGGAAATGGTTTTGGCCA"
+        assert alignment[9] == "TGCATTGGTTTTTA-TGCCTTGATTCACATGAATAGGAAAACG-TTTGAATTTATAGGAAATGGTTTTGGCCA"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
+        assert alignment.sequences[10].id == "hg18.chr6"
+        assert len(alignment.sequences[10].seq) == 170899992
+        assert alignment.sequences[10].seq[155024945 : 155024945 + 71] == "TGGCCAAAACCATTTACTATAAATTCAAACATTTTCCTATTCATGTAAATCAATGCATAAAAATCAAAGCA"
+        assert alignment[10] == "TGCTTTGATTTTTA-TGCATTGATTTACATGAATAGGAAAATG-TTTGAATTTATAGTAAATGGTTTTGGCCA"
+        assert alignment.sequences[10].annotations["leftStatus"] == "C"
+        assert alignment.sequences[10].annotations["leftCount"] == 0
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
+        assert alignment.sequences[11].id == "panTro2.chr6"
+        assert len(alignment.sequences[11].seq) == 173908612
+        assert alignment.sequences[11].seq[157514999 : 157514999 + 71] == "TGGCCAAAACCATTTACTATAAATTCAAATGTTTTCCTATTCATGTAAATCAATGCATAAAAATCAAAGCA"
+        assert alignment[11] == "TGCTTTGATTTTTA-TGCATTGATTTACATGAATAGGAAAACA-TTTGAATTTATAGTAAATGGTTTTGGCCA"
+        assert alignment.sequences[11].annotations["quality"] == "99999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[11].annotations["leftStatus"] == "C"
+        assert alignment.sequences[11].annotations["leftCount"] == 0
+        assert alignment.sequences[11].annotations["rightStatus"] == "C"
+        assert alignment.sequences[11].annotations["rightCount"] == 0
+        assert alignment.sequences[12].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[12].seq) == 174210431
+        assert alignment.sequences[12].seq[158037166 : 158037166 + 71] == "TGGCCAAAACCATTTACTATAAATTCAAACGTTTTCCTATCCATGTAAATCAATGCATAAAAATCAAAGCA"
+        assert alignment[12] == "TGCTTTGATTTTTA-TGCATTGATTTACATGGATAGGAAAACG-TTTGAATTTATAGTAAATGGTTTTGGCCA"
+        assert alignment.sequences[12].annotations["leftStatus"] == "C"
+        assert alignment.sequences[12].annotations["leftCount"] == 0
+        assert alignment.sequences[12].annotations["rightStatus"] == "C"
+        assert alignment.sequences[12].annotations["rightCount"] == 0
+        assert alignment.sequences[13].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[13].seq) == 4726
+        assert alignment.sequences[13].seq[3888 : 3888 + 65] == "TGACCAAAAGCCATTGCTATAAATGCAAATGTTTTCCCGTCGATGTAAATCAAAGTATGTAAAGA"
+        assert alignment[13] == "------TCTTTACA-TACTTTGATTTACATCGACGGGAAAACA-TTTGCATTTATAGCAATGGCTTTTGGTCA"
+        assert alignment.sequences[13].annotations["quality"] == "99999994999999999999989999999999999999999999999999899999999999999"
+        assert alignment.sequences[13].annotations["leftStatus"] == "C"
+        assert alignment.sequences[13].annotations["leftCount"] == 0
+        assert alignment.sequences[13].annotations["rightStatus"] == "C"
+        assert alignment.sequences[13].annotations["rightCount"] == 0
+        assert alignment.sequences[14].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[14].seq) == 10026
+        assert alignment.sequences[14].seq[285 : 285 + 71] == "TGGCCAAAACCATTTACTATAAATTGGACTGTTTTCCTATTAATGTGAATTAATGCATGGAAATCAATGCC"
+        assert alignment[14] == "GGCATTGATTTCCA-TGCATTAATTCACATTAATAGGAAAACA-GTCCAATTTATAGTAAATGGTTTTGGCCA"
+        assert alignment.sequences[14].annotations["quality"] == "77888768786695388675879644655668865666547868687676669688688666687574686"
+        assert alignment.sequences[14].annotations["leftStatus"] == "C"
+        assert alignment.sequences[14].annotations["leftCount"] == 0
+        assert alignment.sequences[14].annotations["rightStatus"] == "C"
+        assert alignment.sequences[14].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "ornAna1.chr2")
-        self.assertEqual(len(record.seq), 54797317)
-        self.assertEqual(segment, (40046122, 40040432))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 15)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "ornAna1.chr2"
+        assert len(record.seq) == 54797317
+        assert segment == (40046122, 40040432)
+        assert status == "I"
+        assert len(alignment.sequences) == 15
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -11800,10 +9533,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021204 TGCACTGGTTTTCC-TGCAGTGGTTCTCAGTAATAGGAAGACA-ACAGAATTTGAAGTAT
 echTel1.s     95345 GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAA
 dasNov1.s      7118 TGCATTGATTTTCAGTGAGGGAAATCACAC---TAAGAGAGCATTTTGAATTTATAATAA
@@ -11835,11 +9565,8 @@ panTro2.c 157515012 ATGGTTTTGGCCA 157514999
 ponAbe2.c 158037179 ATGGTTTTGGCCA 158037166
 oryCun1.s      3901 TGGCTTTTGGTCA      3888
 cavPor2.s       298 ATGGTTTTGGCCA       285
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=309116.000000
 s mm9.chr10                         3021204   71 + 129993255 TGCACTGGTTTTCC-TGCAGTGGTTCTCAGTAATAGGAAGACA-ACAGAATTTGAAGTATCCGGCTTTGGCCA
 s echTel1.scaffold_288249             95345   73 +    100002 GGCATTGGTTTTTAGAGAGAGAACCCACATAAGTAGGAAAACATTTTGAATTTATAGTAAATATTCTTGGCTA
@@ -11883,17 +9610,11 @@ q cavPor2.scaffold_216473                                    77888768786695-3886
 i cavPor2.scaffold_216473          C 0 C 0
 e ornAna1.chr2                     14751195 5690 -  54797317 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (7254 aligned letters; 5314 identities; 1940 mismatches; 262 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (7254 aligned letters; 5314 identities; 1940 mismatches; 262 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 7254:
         identities = 5314,
@@ -11920,281 +9641,159 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 14)
-        self.assertEqual(counts.left_deletions, 78)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 69)
-        self.assertEqual(counts.internal_deletions, 101)
-        self.assertEqual(counts.left_gaps, 92)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 170)
-        self.assertEqual(counts.insertions, 83)
-        self.assertEqual(counts.deletions, 179)
-        self.assertEqual(counts.gaps, 262)
-        self.assertEqual(counts.aligned, 7254)
-        self.assertEqual(counts.identities, 5314)
-        self.assertEqual(counts.mismatches, 1940)
+"""
+        assert counts.left_insertions == 14
+        assert counts.left_deletions == 78
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 69
+        assert counts.internal_deletions == 101
+        assert counts.left_gaps == 92
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 170
+        assert counts.insertions == 83
+        assert counts.deletions == 179
+        assert counts.gaps == 262
+        assert counts.aligned == 7254
+        assert counts.identities == 5314
+        assert counts.mismatches == 1940
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 891219)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021275 : 3021275 + 146],
-            "CTTTCTCTGACATTACTGTAACTGAAGTAGCTCAGAAGCACAAAAGGTCACATCATGCATCCATGCAGAATCCACTGAAGCTGTTTGGAAAGGCCACGTGTCTTCCCAGAAGGCCAGTTACACCATCATTTCCTTCCATGTTTCAG",
-        )
-        self.assertEqual(
-            alignment[0],
-            "CTTTCTCTGACATTACTGTAACTGAAGTAGCTC-AGAAGCACAAAAGGTCACATCATGCATCCATGCAGAATCCACTGAAGCTGTTTGGAAAGGC-----------------------CACGTGTCTTCCCAGAAGGCCAGTTACACCATCATTTCCTTCCATGTTTCAG",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[116 : 116 + 169],
-            "TTGAAATATGGAAGGAAATGATGGCGTGACTGGATTTCCTGCGAGACACATGAACTAAGTAATAAAATGCGAGGTGCCTTTATGAACGGAACTAGTAAATTTTGCATAAATGCCTGACATGACCTTTTGTGCTTTTCAGCTAGTTCGCTTACAGTAACATCAGCAAAGG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "CCTTTGCTGATGTTACTGTAAGCGAACTAGCTG-AAAAGCACAAAAGGTCATGTCAGGCATTTATGCAAAATTTACTAGTTCCGTTCATAAAGGCACCTCGCATTTTATTACTTAGTTCATGTGTCTCGCAGGAAATCCAGTCACGCCATCATTTCCTTCCATATTTCAA",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "6685365455476645398666666666666688787886799997788875886655536666688786768476688854689668876558688874778656675665668746666788474786888875667457786687996867886548798845555",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[3730 : 3730 + 158],
-            "TTGAAATGTGGAAGGAAATCGCGGCGTGACTGGATTTCCTGAACAAAGTAATACAACACAAGGTGCTGTTATAAACAGTGCTAGTACATTTGACATAAATGCCTGCCATGGCCTTTTGTGCTTTGGAGCGCTTTCAGCTAGAGTAACATCAGAGACGA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "TCGTCTCTGATGTTACTCTAGCTGAAAGCGCTC-CAAAGCACAAAAGGCCATGGCAGGCATTTATGTCAAATGTACTAGCACTGTTTATAACAGCACCTTGTGTTGTATTACTTTGTTCA-----------GGAAATCCAGTCACGCCGCGATTTCCTTCCACATTTCAA",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "99999987999999999999999999999799999999799999999898999999988999999988999999989996999999999988897996999999999999979999987899998987999799998998999999999777999899",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158036997 : 158036997 + 169],
-            "ATGAAATATGGAAGGAAATGATGGCGTGACTGAATTTCCTGAAAGATACATTAACAAAGTAATAAAACACAAGGTACCCTTATAAACAGCACTAGTAAGTTTTACATGAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTCATGTAAAACTTACTAGTGCTGTTTATAAGGGTACCTTGTGTTTTATTACTTTGTTAATGTATCTTTCAGGAAATTCAGTCACGCCATCATTTCCTTCCATATTTCAT",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[4].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[4].seq[157514830 : 157514830 + 169],
-            "ATGAAATATGGAAGGAAATGATGGCATGACTGGATTTCCTGAAAGGTACATTAACAAAGTAATAAAACACAAGGTACCCTTATAAACAGCACTAGTAAGTTTTACATAAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAGGGTACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155024776 : 155024776 + 169],
-            "ATGAAATATGGAAGGAAATGATGGCATGACTGGATTTCCTGAAAGGTACATTAACAAAGTAATAAAACACAAGATACCCTTATAAACAGCACTAGTAAGTTTTACATAAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG",
-        )
-        self.assertEqual(
-            alignment[5],
-            "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAGGGTATCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[6].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[6].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[6].seq[10878 : 10878 + 169],
-            "CCTTCTCTGATATTACTGTAACTGAAATAGCTCAAAAGCACAAAAGGTCATGGCAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAAGGCACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT",
-        )
-        self.assertEqual(
-            alignment[6],
-            "CCTTCTCTGATATTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGCAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAAGGCACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[7].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[7].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[7].seq[323241 : 323241 + 156],
-            "CTGAGATATGGAAGGAAATGATGGCCCGACTGGATTTCCTGTAAGGCACATGAACAAAGTAATAAAACACGAGATGCCTTCAGAAACTTTACATCAATGCCTGGCATGACCTTTTGTGCTTCTGAGCTACTTTGGTTACAGGAACATCTGAGAGGA",
-        )
-        self.assertEqual(
-            alignment[7],
-            "TCCTCTCAGATGTTCCTGTAACCAAAGTAGCTC-AGAAGCACAAAAGGTCATGCCAGGCATTGATGTAAA-------------GTTTCTGAAGGCATCTCGTGTTTTATTACTTTGTTCATGTGCCTTACAGGAAATCCAGTCGGGCCATCATTTCCTTCCATATCTCAG",
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[8].id, "sorAra1.scaffold_2476")
-        self.assertEqual(len(alignment.sequences[8].seq), 4997)
-        self.assertEqual(
-            alignment.sequences[8].seq[1445 : 1445 + 170],
-            "CTGGAATATGGGAGGAAATGATGAGATTACAGGATTTCCGGAAAAGTTCATGATCAACAACATTATATGCAAGGGGTCTTTATAAACAGCACTGGTATATTTTACATCAATGCCTGACATGACCTTTTGTGCTTTTTGAGCTACCTCAGTTACAGTAACATCAGAGAAGG",
-        )
-        self.assertEqual(
-            alignment[8],
-            "CCTTCTCTGATGTTACTGTAACTGAGGTAGCTCAAAAAGCACAAAAGGTCATGTCAGGCATTGATGTAAAATATACCAGTGCTGTTTATAAAGACCCCTTGCATATAATGTTGTTGATCATGAACTTTTCCGGAAATCCTGTAATCTCATCATTTCCTCCCATATTCCAG",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "99999999999999997999999999999999999999999999999999999999999999999999999999999979999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "eriEur1.scaffold_266115")
-        self.assertEqual(len(alignment.sequences[9].seq), 4589)
-        self.assertEqual(
-            alignment.sequences[9].seq[521 : 521 + 156],
-            "CCTTCTCTGATCTGACTGTAACCGAAGTCTCTCGAAAGCACAAAAGCTCACGGCAGGCCTTTCTGTAAAATACAGCGGCGCTGCTTCCAAAGGCaccttgcagatgtctctcacgcATTTGGCAGGAGTCCCTGTCACTCGGCCAGTTCCTTCCTG",
-        )
-        self.assertEqual(
-            alignment[9],
-            "CCTTCTCTGATCTGACTGTAACCGAAGTCTCTC-GAAAGCACAAAAGCTCACGGCAGGCCTTTCTGTAAAATACAGCGGCGCTGCTTCCAAAGGCaccttgca------gatgtctctcacgcATTTGGCAGGAGTCCCTGTCACTCGGCCAGTTCC-------TTCCTG",
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999799999999999999999999998987999899999999999999999999999999999999999999999999999999999999999998999989",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[10].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[10].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[10].seq[47544053 : 47544053 + 168],
-            "TTGAAATATGGAAGGAAGTAACAGGATGACAGGATTTCCTGTAAAGTACATGAACAAAGCAATATTACACGAGGTGCCTTTATAAACAGCTCTAGTAAATTTTACATAAAGCCTGACATGACCTTTTGTGCTTTTGAGCTACTTCAGTTACAGTAACATCAGAGACAG",
-        )
-        self.assertEqual(
-            alignment[10],
-            "CTGTCTCTGATGTTACTGTAACTGAAGTAGCTC-AAAAGCACAAAAGGTCATGTCAGGC-TTTATGTAAAATTTACTAGAGCTGTTTATAAAGGCACCTCGTGTAATATTGCTTTGTTCATGTACTTTACAGGAAATCCTGTCATCCTGTTACTTCCTTCCATATTTCAA",
-        )
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"],
-            "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[11].id, "felCat3.scaffold_205680")
-        self.assertEqual(len(alignment.sequences[11].seq), 119354)
-        self.assertEqual(
-            alignment.sequences[11].seq[45629 : 45629 + 169],
-            "CTGAACTATGGAAGGAAATGACAGGATGACAGGATTTCCTATAAAGTGCATGAACAAAGCAATAATACACAAGGTACCTTTATAAACAGCACTAGTAAATTTTACATAAATGCCTGACATCACCTTTTGTGCTTTTGAACTATTTCAGTTACAGTAACATCAGAGACAG",
-        )
-        self.assertEqual(
-            alignment[11],
-            "CTGTCTCTGATGTTACTGTAACTGAAATAGTTC-AAAAGCACAAAAGGTGATGTCAGGCATTTATGTAAAATTTACTAGTGCTGTTTATAAAGGTACCTTGTGTATTATTGCTTTGTTCATGCACTTTATAGGAAATCCTGTCATCCTGTCATTTCCTTCCATAGTTCAG",
-        )
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 34165)
-        self.assertEqual(alignment.sequences[12].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[12].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[12].seq[6880 : 6880 + 168],
-            "GTGACTTATGGAAGGAAATGATGGTATGACAGGATTTCCTGTAAGGGGGATAGAAAAAGTAATAGAACACAAGGTCCTTTATAAACAGCACTAGTAAATTTTACATCAATGCCCGACATGACCTTTTGTGCTTTTGAGCCTCTTCAGTTACAGTAACATCAGAGAAGG",
-        )
-        self.assertEqual(
-            alignment[12],
-            "CCTTCTCTGATGTTACTGTAACTGAAGAGGCTC-AAAAGCACAAAAGGTCATGTCGGGCATTGATGTAAAATTTACTAGTGCTG-TTTATAAAGGACCTTGTGTTCTATTACTTTTTCTATCCCCCTTACAGGAAATCCTGTCATACCATCATTTCCTTCCATAAGTCAC",
-        )
-        self.assertEqual(
-            alignment.sequences[12].annotations["quality"],
-            "989999999999999937699999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[12].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[12].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[13].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[13].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[13].seq[95418 : 95418 + 169],
-            "CCATCTCTGATATTACTGTAATGGAATTACTTTGAAAGCACAAAAGGTCAGGACAAGCGTGTATGTGAAATTTCCTAGAGCTGTTTTCCTGCACACCTTGGATTTTATTGCTTAGTTCATTTGCTTTCCCAGAAATCCCGCCATGCCATCATTTCCTTCCACATCTCAG",
-        )
-        self.assertEqual(
-            alignment[13],
-            "CCATCTCTGATATTACTGTAATGGAATTACTTT-GAAAGCACAAAAGGTCAGGACAAGCGTGTATGTGAAATTTCCTAGAGCTGTTTTCCTGCACACCTTGGATTTTATTGCTTAGTTCATTTGCTTTCCCAGAAATCCCGCCATGCCATCATTTCCTTCCACATCTCAG",
-        )
-        self.assertEqual(
-            alignment.sequences[13].annotations["quality"],
-            "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[13].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[13].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[14].id, "ornAna1.chr2")
-        self.assertEqual(len(alignment.sequences[14].seq), 54797317)
-        self.assertEqual(
-            alignment.sequences[14].seq[40040263 : 40040263 + 169],
-            "TGAAGATATGGAAGGAAATGATGGCTTGACAGGATTTCCCCTAAGGTGAATGAATAGCCTCATAAAACACAAAGCAGCTTTATGAACAGGGCTATTAAGTTGCACATGATTGGCTGATATGACCTTTCCTATCTTCTGGGTAGCTGAGTTACAGTGATATCAGAGGTGG",
-        )
-        self.assertEqual(
-            alignment[14],
-            "CCACCTCTGATATCACTGTAACTCAGCTACCCA-GAAGATAGGAAAGGTCATATCAGCCAATCATGTGCAACTTAATAGCCCTGTTCATAAAGCTGCTTTGTGTTTTATGAGGCTATTCATTCACCTTAGGGGAAATCCTGTCAAGCCATCATTTCCTTCCATATCTTCA",
-        )
-        self.assertEqual(alignment.sequences[14].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[14].annotations["leftCount"], 5690)
-        self.assertEqual(alignment.sequences[14].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[14].annotations["rightCount"], 0)
+        assert alignment.score == 891219
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021275 : 3021275 + 146] == "CTTTCTCTGACATTACTGTAACTGAAGTAGCTCAGAAGCACAAAAGGTCACATCATGCATCCATGCAGAATCCACTGAAGCTGTTTGGAAAGGCCACGTGTCTTCCCAGAAGGCCAGTTACACCATCATTTCCTTCCATGTTTCAG"
+        assert alignment[0] == "CTTTCTCTGACATTACTGTAACTGAAGTAGCTC-AGAAGCACAAAAGGTCACATCATGCATCCATGCAGAATCCACTGAAGCTGTTTGGAAAGGC-----------------------CACGTGTCTTCCCAGAAGGCCAGTTACACCATCATTTCCTTCCATGTTTCAG"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[116 : 116 + 169] == "TTGAAATATGGAAGGAAATGATGGCGTGACTGGATTTCCTGCGAGACACATGAACTAAGTAATAAAATGCGAGGTGCCTTTATGAACGGAACTAGTAAATTTTGCATAAATGCCTGACATGACCTTTTGTGCTTTTCAGCTAGTTCGCTTACAGTAACATCAGCAAAGG"
+        assert alignment[1] == "CCTTTGCTGATGTTACTGTAAGCGAACTAGCTG-AAAAGCACAAAAGGTCATGTCAGGCATTTATGCAAAATTTACTAGTTCCGTTCATAAAGGCACCTCGCATTTTATTACTTAGTTCATGTGTCTCGCAGGAAATCCAGTCACGCCATCATTTCCTTCCATATTTCAA"
+        assert alignment.sequences[1].annotations["quality"] == "6685365455476645398666666666666688787886799997788875886655536666688786768476688854689668876558688874778656675665668746666788474786888875667457786687996867886548798845555"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[3730 : 3730 + 158] == "TTGAAATGTGGAAGGAAATCGCGGCGTGACTGGATTTCCTGAACAAAGTAATACAACACAAGGTGCTGTTATAAACAGTGCTAGTACATTTGACATAAATGCCTGCCATGGCCTTTTGTGCTTTGGAGCGCTTTCAGCTAGAGTAACATCAGAGACGA"
+        assert alignment[2] == "TCGTCTCTGATGTTACTCTAGCTGAAAGCGCTC-CAAAGCACAAAAGGCCATGGCAGGCATTTATGTCAAATGTACTAGCACTGTTTATAACAGCACCTTGTGTTGTATTACTTTGTTCA-----------GGAAATCCAGTCACGCCGCGATTTCCTTCCACATTTCAA"
+        assert alignment.sequences[2].annotations["quality"] == "99999987999999999999999999999799999999799999999898999999988999999988999999989996999999999988897996999999999999979999987899998987999799998998999999999777999899"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "C"
+        assert alignment.sequences[2].annotations["rightCount"] == 0
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158036997 : 158036997 + 169] == "ATGAAATATGGAAGGAAATGATGGCGTGACTGAATTTCCTGAAAGATACATTAACAAAGTAATAAAACACAAGGTACCCTTATAAACAGCACTAGTAAGTTTTACATGAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG"
+        assert alignment[3] == "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTCATGTAAAACTTACTAGTGCTGTTTATAAGGGTACCTTGTGTTTTATTACTTTGTTAATGTATCTTTCAGGAAATTCAGTCACGCCATCATTTCCTTCCATATTTCAT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "C"
+        assert alignment.sequences[3].annotations["rightCount"] == 0
+        assert alignment.sequences[4].id == "panTro2.chr6"
+        assert len(alignment.sequences[4].seq) == 173908612
+        assert alignment.sequences[4].seq[157514830 : 157514830 + 169] == "ATGAAATATGGAAGGAAATGATGGCATGACTGGATTTCCTGAAAGGTACATTAACAAAGTAATAAAACACAAGGTACCCTTATAAACAGCACTAGTAAGTTTTACATAAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG"
+        assert alignment[4] == "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAGGGTACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT"
+        assert alignment.sequences[4].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "C"
+        assert alignment.sequences[4].annotations["rightCount"] == 0
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155024776 : 155024776 + 169] == "ATGAAATATGGAAGGAAATGATGGCATGACTGGATTTCCTGAAAGGTACATTAACAAAGTAATAAAACACAAGATACCCTTATAAACAGCACTAGTAAGTTTTACATAAATGCCTCCCATGACCTTTTGTGCTTTTGAGCTATTTCAGTTACAGTAACATCAGAGAAGG"
+        assert alignment[5] == "CCTTCTCTGATGTTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGGAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAGGGTATCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
+        assert alignment.sequences[6].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[6].seq) == 133105
+        assert alignment.sequences[6].seq[10878 : 10878 + 169] == "CCTTCTCTGATATTACTGTAACTGAAATAGCTCAAAAGCACAAAAGGTCATGGCAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAAGGCACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT"
+        assert alignment[6] == "CCTTCTCTGATATTACTGTAACTGAAATAGCTC-AAAAGCACAAAAGGTCATGGCAGGCATTTATGTAAAACTTACTAGTGCTGTTTATAAAGGCACCTTGTGTTTTATTACTTTGTTAATGTACCTTTCAGGAAATCCAGTCATGCCATCATTTCCTTCCATATTTCAT"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
+        assert alignment.sequences[7].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[7].seq) == 498454
+        assert alignment.sequences[7].seq[323241 : 323241 + 156] == "CTGAGATATGGAAGGAAATGATGGCCCGACTGGATTTCCTGTAAGGCACATGAACAAAGTAATAAAACACGAGATGCCTTCAGAAACTTTACATCAATGCCTGGCATGACCTTTTGTGCTTCTGAGCTACTTTGGTTACAGGAACATCTGAGAGGA"
+        assert alignment[7] == "TCCTCTCAGATGTTCCTGTAACCAAAGTAGCTC-AGAAGCACAAAAGGTCATGCCAGGCATTGATGTAAA-------------GTTTCTGAAGGCATCTCGTGTTTTATTACTTTGTTCATGTGCCTTACAGGAAATCCAGTCGGGCCATCATTTCCTTCCATATCTCAG"
+        assert alignment.sequences[7].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "C"
+        assert alignment.sequences[7].annotations["rightCount"] == 0
+        assert alignment.sequences[8].id == "sorAra1.scaffold_2476"
+        assert len(alignment.sequences[8].seq) == 4997
+        assert alignment.sequences[8].seq[1445 : 1445 + 170] == "CTGGAATATGGGAGGAAATGATGAGATTACAGGATTTCCGGAAAAGTTCATGATCAACAACATTATATGCAAGGGGTCTTTATAAACAGCACTGGTATATTTTACATCAATGCCTGACATGACCTTTTGTGCTTTTTGAGCTACCTCAGTTACAGTAACATCAGAGAAGG"
+        assert alignment[8] == "CCTTCTCTGATGTTACTGTAACTGAGGTAGCTCAAAAAGCACAAAAGGTCATGTCAGGCATTGATGTAAAATATACCAGTGCTGTTTATAAAGACCCCTTGCATATAATGTTGTTGATCATGAACTTTTCCGGAAATCCTGTAATCTCATCATTTCCTCCCATATTCCAG"
+        assert alignment.sequences[8].annotations["quality"] == "99999999999999997999999999999999999999999999999999999999999999999999999999999979999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "C"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "eriEur1.scaffold_266115"
+        assert len(alignment.sequences[9].seq) == 4589
+        assert alignment.sequences[9].seq[521 : 521 + 156] == "CCTTCTCTGATCTGACTGTAACCGAAGTCTCTCGAAAGCACAAAAGCTCACGGCAGGCCTTTCTGTAAAATACAGCGGCGCTGCTTCCAAAGGCaccttgcagatgtctctcacgcATTTGGCAGGAGTCCCTGTCACTCGGCCAGTTCCTTCCTG"
+        assert alignment[9] == "CCTTCTCTGATCTGACTGTAACCGAAGTCTCTC-GAAAGCACAAAAGCTCACGGCAGGCCTTTCTGTAAAATACAGCGGCGCTGCTTCCAAAGGCaccttgca------gatgtctctcacgcATTTGGCAGGAGTCCCTGTCACTCGGCCAGTTCC-------TTCCTG"
+        assert alignment.sequences[9].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999799999999999999999999998987999899999999999999999999999999999999999999999999999999999999999998999989"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "C"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
+        assert alignment.sequences[10].id == "canFam2.chr1"
+        assert len(alignment.sequences[10].seq) == 125616256
+        assert alignment.sequences[10].seq[47544053 : 47544053 + 168] == "TTGAAATATGGAAGGAAGTAACAGGATGACAGGATTTCCTGTAAAGTACATGAACAAAGCAATATTACACGAGGTGCCTTTATAAACAGCTCTAGTAAATTTTACATAAAGCCTGACATGACCTTTTGTGCTTTTGAGCTACTTCAGTTACAGTAACATCAGAGACAG"
+        assert alignment[10] == "CTGTCTCTGATGTTACTGTAACTGAAGTAGCTC-AAAAGCACAAAAGGTCATGTCAGGC-TTTATGTAAAATTTACTAGAGCTGTTTATAAAGGCACCTCGTGTAATATTGCTTTGTTCATGTACTTTACAGGAAATCCTGTCATCCTGTTACTTCCTTCCATATTTCAA"
+        assert alignment.sequences[10].annotations["quality"] == "999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[10].annotations["leftStatus"] == "C"
+        assert alignment.sequences[10].annotations["leftCount"] == 0
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
+        assert alignment.sequences[11].id == "felCat3.scaffold_205680"
+        assert len(alignment.sequences[11].seq) == 119354
+        assert alignment.sequences[11].seq[45629 : 45629 + 169] == "CTGAACTATGGAAGGAAATGACAGGATGACAGGATTTCCTATAAAGTGCATGAACAAAGCAATAATACACAAGGTACCTTTATAAACAGCACTAGTAAATTTTACATAAATGCCTGACATCACCTTTTGTGCTTTTGAACTATTTCAGTTACAGTAACATCAGAGACAG"
+        assert alignment[11] == "CTGTCTCTGATGTTACTGTAACTGAAATAGTTC-AAAAGCACAAAAGGTGATGTCAGGCATTTATGTAAAATTTACTAGTGCTGTTTATAAAGGTACCTTGTGTATTATTGCTTTGTTCATGCACTTTATAGGAAATCCTGTCATCCTGTCATTTCCTTCCATAGTTCAG"
+        assert alignment.sequences[11].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[11].annotations["leftStatus"] == "C"
+        assert alignment.sequences[11].annotations["leftCount"] == 0
+        assert alignment.sequences[11].annotations["rightStatus"] == "I"
+        assert alignment.sequences[11].annotations["rightCount"] == 34165
+        assert alignment.sequences[12].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[12].seq) == 10470
+        assert alignment.sequences[12].seq[6880 : 6880 + 168] == "GTGACTTATGGAAGGAAATGATGGTATGACAGGATTTCCTGTAAGGGGGATAGAAAAAGTAATAGAACACAAGGTCCTTTATAAACAGCACTAGTAAATTTTACATCAATGCCCGACATGACCTTTTGTGCTTTTGAGCCTCTTCAGTTACAGTAACATCAGAGAAGG"
+        assert alignment[12] == "CCTTCTCTGATGTTACTGTAACTGAAGAGGCTC-AAAAGCACAAAAGGTCATGTCGGGCATTGATGTAAAATTTACTAGTGCTG-TTTATAAAGGACCTTGTGTTCTATTACTTTTTCTATCCCCCTTACAGGAAATCCTGTCATACCATCATTTCCTTCCATAAGTCAC"
+        assert alignment.sequences[12].annotations["quality"] == "989999999999999937699999999999999799999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[12].annotations["leftStatus"] == "C"
+        assert alignment.sequences[12].annotations["leftCount"] == 0
+        assert alignment.sequences[12].annotations["rightStatus"] == "C"
+        assert alignment.sequences[12].annotations["rightCount"] == 0
+        assert alignment.sequences[13].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[13].seq) == 100002
+        assert alignment.sequences[13].seq[95418 : 95418 + 169] == "CCATCTCTGATATTACTGTAATGGAATTACTTTGAAAGCACAAAAGGTCAGGACAAGCGTGTATGTGAAATTTCCTAGAGCTGTTTTCCTGCACACCTTGGATTTTATTGCTTAGTTCATTTGCTTTCCCAGAAATCCCGCCATGCCATCATTTCCTTCCACATCTCAG"
+        assert alignment[13] == "CCATCTCTGATATTACTGTAATGGAATTACTTT-GAAAGCACAAAAGGTCAGGACAAGCGTGTATGTGAAATTTCCTAGAGCTGTTTTCCTGCACACCTTGGATTTTATTGCTTAGTTCATTTGCTTTCCCAGAAATCCCGCCATGCCATCATTTCCTTCCACATCTCAG"
+        assert alignment.sequences[13].annotations["quality"] == "9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999"
+        assert alignment.sequences[13].annotations["leftStatus"] == "C"
+        assert alignment.sequences[13].annotations["leftCount"] == 0
+        assert alignment.sequences[13].annotations["rightStatus"] == "C"
+        assert alignment.sequences[13].annotations["rightCount"] == 0
+        assert alignment.sequences[14].id == "ornAna1.chr2"
+        assert len(alignment.sequences[14].seq) == 54797317
+        assert alignment.sequences[14].seq[40040263 : 40040263 + 169] == "TGAAGATATGGAAGGAAATGATGGCTTGACAGGATTTCCCCTAAGGTGAATGAATAGCCTCATAAAACACAAAGCAGCTTTATGAACAGGGCTATTAAGTTGCACATGATTGGCTGATATGACCTTTCCTATCTTCTGGGTAGCTGAGTTACAGTGATATCAGAGGTGG"
+        assert alignment[14] == "CCACCTCTGATATCACTGTAACTCAGCTACCCA-GAAGATAGGAAAGGTCATATCAGCCAATCATGTGCAACTTAATAGCCCTGTTCATAAAGCTGCTTTGTGTTTTATGAGGCTATTCATTCACCTTAGGGGAAATCCTGTCAAGCCATCATTTCCTTCCATATCTTCA"
+        assert alignment.sequences[14].annotations["leftStatus"] == "I"
+        assert alignment.sequences[14].annotations["leftCount"] == 5690
+        assert alignment.sequences[14].annotations["rightStatus"] == "C"
+        assert alignment.sequences[14].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171035, 164755))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 15)
-        self.assertEqual(len(alignment.annotations["empty"]), 1)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171035, 164755)
+        assert status == "I"
+        assert len(alignment.sequences) == 15
+        assert len(alignment.annotations["empty"]) == 1
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -12247,10 +9846,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021275 CTTTCTCTGACATTACTGTAACTGAAGTAGCTC-AGAAGCACAAAAGGTCACATCATGCA
 cavPor2.s       285 CCTTTGCTGATGTTACTGTAAGCGAACTAGCTG-AAAAGCACAAAAGGTCATGTCAGGCA
 oryCun1.s      3888 TCGTCTCTGATGTTACTCTAGCTGAAAGCGCTC-CAAAGCACAAAAGGCCATGGCAGGCA
@@ -12298,11 +9894,8 @@ felCat3.s     45679 TGCACTTTATAGGAAATCCTGTCATCCTGTCATTTCCTTCCATAGTTCAG     45629
 dasNov1.s      6930 TCCCCCTTACAGGAAATCCTGTCATACCATCATTTCCTTCCATAAGTCAC      6880
 echTel1.s     95537 TTTGCTTTCCCAGAAATCCCGCCATGCCATCATTTCCTTCCACATCTCAG     95587
 ornAna1.c  40040313 TTCACCTTAGGGGAAATCCTGTCAAGCCATCATTTCCTTCCATATCTTCA  40040263
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=891219.000000
 s mm9.chr10                         3021275  146 + 129993255 CTTTCTCTGACATTACTGTAACTGAAGTAGCTC-AGAAGCACAAAAGGTCACATCATGCATCCATGCAGAATCCACTGAAGCTGTTTGGAAAGGC-----------------------CACGTGTCTTCCCAGAAGGCCAGTTACACCATCATTTCCTTCCATGTTTCAG
 s cavPor2.scaffold_216473              9741  169 -     10026 CCTTTGCTGATGTTACTGTAAGCGAACTAGCTG-AAAAGCACAAAAGGTCATGTCAGGCATTTATGCAAAATTTACTAGTTCCGTTCATAAAGGCACCTCGCATTTTATTACTTAGTTCATGTGTCTCGCAGGAAATCCAGTCACGCCATCATTTCCTTCCATATTTCAA
@@ -12345,17 +9938,11 @@ s ornAna1.chr2                     14756885  169 -  54797317 CCACCTCTGATATCACTGT
 i ornAna1.chr2                     I 5690 C 0
 e otoGar1.scaffold_334.1-359464      188429 6280 -    359464 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (16883 aligned letters; 12901 identities; 3982 mismatches; 870 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (16883 aligned letters; 12901 identities; 3982 mismatches; 870 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 16883:
         identities = 12901,
@@ -12382,269 +9969,156 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 618)
-        self.assertEqual(counts.internal_deletions, 252)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 870)
-        self.assertEqual(counts.insertions, 618)
-        self.assertEqual(counts.deletions, 252)
-        self.assertEqual(counts.gaps, 870)
-        self.assertEqual(counts.aligned, 16883)
-        self.assertEqual(counts.identities, 12901)
-        self.assertEqual(counts.mismatches, 3982)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 618
+        assert counts.internal_deletions == 252
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 870
+        assert counts.insertions == 618
+        assert counts.deletions == 252
+        assert counts.gaps == 870
+        assert counts.aligned == 16883
+        assert counts.identities == 12901
+        assert counts.mismatches == 3982
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 30254)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021421 : 3021421 + 44],
-            "ACGTTGCTCATTGTAATTGAAGCATTTATTACCAATGCCTTCCC",
-        )
-        self.assertEqual(
-            alignment[0],
-            "-ACGTTGCTCATTGT-----AATTGAAGCATTTATTACCAA--------TG--------------CCTTCCC",
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[69 : 69 + 47],
-            "CAGAGGGGCCGTCAGCAAAACATACTTTTATTTGTAACAAGGAACAG",
-        )
-        self.assertEqual(
-            alignment[1],
-            "-CTGTTCCTTGTTACA----AATAAAAGTATGTTTTGCTGA--------CG-------G-----CCCCTCTG",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "47675464566778886867867744466523545576436669356",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(alignment.sequences[2].seq), 4726)
-        self.assertEqual(
-            alignment.sequences[2].seq[3693 : 3693 + 37],
-            "ATTAGCAGTGAATGCTTTAATCCATAATGAGGAACCA",
-        )
-        self.assertEqual(
-            alignment[2],
-            "-TGGTTCCTCATTATG----GATTAAAGCATTCACTGCTAA--------T----------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999998999998879999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 2345)
-        self.assertEqual(alignment.sequences[3].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[3].seq[158036952 : 158036952 + 45],
-            "GAGAAAGCATTAGCAATAAACACTTTTATTTATAATGAGCAACAG",
-        )
-        self.assertEqual(
-            alignment[3],
-            "-CTGTTGCTCATTATA----AATAAAAGTGTTTATTGCTAA--------T--------------GCTTTCTC",
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 4)
-        self.assertEqual(alignment.sequences[4].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[4].seq[157514785 : 157514785 + 45],
-            "GAGAAAGCGTTAGCAATAAACACTTTTATTTATAATGAGGAACAG",
-        )
-        self.assertEqual(
-            alignment[4],
-            "-CTGTTCCTCATTATA----AATAAAAGTGTTTATTGCTAA--------C--------------GCTTTCTC",
-        )
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 4)
-        self.assertEqual(alignment.sequences[5].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[5].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[5].seq[155024731 : 155024731 + 45],
-            "GAGAAAGCGTTAGCAATAAACACTTTTATTTATAATGAGGAACAG",
-        )
-        self.assertEqual(
-            alignment[5],
-            "-CTGTTCCTCATTATA----AATAAAAGTGTTTATTGCTAA--------C--------------GCTTTCTC",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 4)
-        self.assertEqual(alignment.sequences[6].id, "calJac1.Contig6394")
-        self.assertEqual(len(alignment.sequences[6].seq), 133105)
-        self.assertEqual(
-            alignment.sequences[6].seq[11047 : 11047 + 43],
-            "CTGTTTCTCATTATAAATAAGTGTTTATTGCTAACGCTTTCTC",
-        )
-        self.assertEqual(
-            alignment[6],
-            "-CTGTTTCTCATTATA----AAT--AAGTGTTTATTGCTAA--------C--------------GCTTTCTC",
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 701)
-        self.assertEqual(alignment.sequences[7].id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(alignment.sequences[7].seq), 498454)
-        self.assertEqual(
-            alignment.sequences[7].seq[323206 : 323206 + 35],
-            "TTAGCAACAAACGCTATATTTATCATGAGGAGCAG",
-        )
-        self.assertEqual(
-            alignment[7],
-            "-CTGCTCCTCATGATA----AAT-ATAGCGTTTGTTGCTAA-------------------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[7].annotations["quality"],
-            "99999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[7].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[7].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[7].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[7].annotations["rightCount"], 10695)
-        self.assertEqual(alignment.sequences[8].id, "sorAra1.scaffold_2476")
-        self.assertEqual(len(alignment.sequences[8].seq), 4997)
-        self.assertEqual(
-            alignment.sequences[8].seq[1397 : 1397 + 48],
-            "GGAACCTGCTGGTCATAAACGCTCtttttttAATCTAAGAAGGAACAG",
-        )
-        self.assertEqual(
-            alignment[8],
-            "-CTGTTCCTTCTTAGATTaaaaaaaGAGCGTTTATGACCAG--------CA-------GGTTCC--------",
-        )
-        self.assertEqual(
-            alignment.sequences[8].annotations["quality"],
-            "999999999999999999999999999999999766975599999999",
-        )
-        self.assertEqual(alignment.sequences[8].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[8].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[8].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[8].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[9].id, "eriEur1.scaffold_266115")
-        self.assertEqual(len(alignment.sequences[9].seq), 4589)
-        self.assertEqual(
-            alignment.sequences[9].seq[677 : 677 + 35],
-            "CTCCTTGTTCTTGAAGCCGTTTTTTATTGTCAGTG",
-        )
-        self.assertEqual(
-            alignment[9],
-            "-CTCCTTGTTCTTGAAGC----------CGTTTTTTATTGT--------CA-------GTG-----------",
-        )
-        self.assertEqual(
-            alignment.sequences[9].annotations["quality"],
-            "98959997997999999999999999999989999",
-        )
-        self.assertEqual(alignment.sequences[9].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[9].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[9].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[9].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[10].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[10].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[10].seq[47544013 : 47544013 + 40],
-            "GACATTAGCAATAAATGCTTTTATTTATAATGAGAAACAG",
-        )
-        self.assertEqual(
-            alignment[10],
-            "-CTGTTTCTCATTATA----AATAAAAGCATTTATTGCTAA--------TG-------T------------C",
-        )
-        self.assertEqual(
-            alignment.sequences[10].annotations["quality"],
-            "9999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[10].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[10].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[10].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[11].id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(alignment.sequences[11].seq), 10470)
-        self.assertEqual(
-            alignment.sequences[11].seq[6836 : 6836 + 44],
-            "GAGGAGCCGTTAGCAGTAAATGCTTTTATTATAAAGAGGAACAG",
-        )
-        self.assertEqual(
-            alignment[11],
-            "-CTGTTCCTCTTTAT-----AATAAAAGCATTTACTGCTAA--------CGGCTCCTC--------------",
-        )
-        self.assertEqual(
-            alignment.sequences[11].annotations["quality"],
-            "99999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[11].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[11].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[11].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[11].annotations["rightCount"], 904)
-        self.assertEqual(alignment.sequences[12].id, "echTel1.scaffold_288249")
-        self.assertEqual(len(alignment.sequences[12].seq), 100002)
-        self.assertEqual(
-            alignment.sequences[12].seq[95587 : 95587 + 38],
-            "CTGATCCTCATTATAAATAAAAGTGTTTGTTACTAATG",
-        )
-        self.assertEqual(
-            alignment[12],
-            "-CTGATCCTCATTATA----AATAAAAGTGTTTGTTACTAA--------TG---------------------",
-        )
-        self.assertEqual(
-            alignment.sequences[12].annotations["quality"],
-            "99999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[12].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[12].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[12].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[12].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[13].id, "ornAna1.chr2")
-        self.assertEqual(len(alignment.sequences[13].seq), 54797317)
-        self.assertEqual(
-            alignment.sequences[13].seq[40040218 : 40040218 + 45],
-            "GGGGGATCTTTAGTAATAAAAGAGTCCCTGTACAATGAGGACAGT",
-        )
-        self.assertEqual(
-            alignment[13],
-            "ACTG-TCCTCATTGTA----CAGGGACTCTTTTATTACTAAAGATCCCCC----------------------",
-        )
-        self.assertEqual(alignment.sequences[13].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[13].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[13].annotations["rightCount"], 0)
+        assert alignment.score == 30254
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021421 : 3021421 + 44] == "ACGTTGCTCATTGTAATTGAAGCATTTATTACCAATGCCTTCCC"
+        assert alignment[0] == "-ACGTTGCTCATTGT-----AATTGAAGCATTTATTACCAA--------TG--------------CCTTCCC"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[69 : 69 + 47] == "CAGAGGGGCCGTCAGCAAAACATACTTTTATTTGTAACAAGGAACAG"
+        assert alignment[1] == "-CTGTTCCTTGTTACA----AATAAAAGTATGTTTTGCTGA--------CG-------G-----CCCCTCTG"
+        assert alignment.sequences[1].annotations["quality"] == "47675464566778886867867744466523545576436669356"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "C"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "oryCun1.scaffold_156751"
+        assert len(alignment.sequences[2].seq) == 4726
+        assert alignment.sequences[2].seq[3693 : 3693 + 37] == "ATTAGCAGTGAATGCTTTAATCCATAATGAGGAACCA"
+        assert alignment[2] == "-TGGTTCCTCATTATG----GATTAAAGCATTCACTGCTAA--------T----------------------"
+        assert alignment.sequences[2].annotations["quality"] == "9999999998999998879999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "C"
+        assert alignment.sequences[2].annotations["leftCount"] == 0
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 2345
+        assert alignment.sequences[3].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[3].seq) == 174210431
+        assert alignment.sequences[3].seq[158036952 : 158036952 + 45] == "GAGAAAGCATTAGCAATAAACACTTTTATTTATAATGAGCAACAG"
+        assert alignment[3] == "-CTGTTGCTCATTATA----AATAAAAGTGTTTATTGCTAA--------T--------------GCTTTCTC"
+        assert alignment.sequences[3].annotations["leftStatus"] == "C"
+        assert alignment.sequences[3].annotations["leftCount"] == 0
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 4
+        assert alignment.sequences[4].id == "panTro2.chr6"
+        assert len(alignment.sequences[4].seq) == 173908612
+        assert alignment.sequences[4].seq[157514785 : 157514785 + 45] == "GAGAAAGCGTTAGCAATAAACACTTTTATTTATAATGAGGAACAG"
+        assert alignment[4] == "-CTGTTCCTCATTATA----AATAAAAGTGTTTATTGCTAA--------C--------------GCTTTCTC"
+        assert alignment.sequences[4].annotations["quality"] == "999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "C"
+        assert alignment.sequences[4].annotations["leftCount"] == 0
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 4
+        assert alignment.sequences[5].id == "hg18.chr6"
+        assert len(alignment.sequences[5].seq) == 170899992
+        assert alignment.sequences[5].seq[155024731 : 155024731 + 45] == "GAGAAAGCGTTAGCAATAAACACTTTTATTTATAATGAGGAACAG"
+        assert alignment[5] == "-CTGTTCCTCATTATA----AATAAAAGTGTTTATTGCTAA--------C--------------GCTTTCTC"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 4
+        assert alignment.sequences[6].id == "calJac1.Contig6394"
+        assert len(alignment.sequences[6].seq) == 133105
+        assert alignment.sequences[6].seq[11047 : 11047 + 43] == "CTGTTTCTCATTATAAATAAGTGTTTATTGCTAACGCTTTCTC"
+        assert alignment[6] == "-CTGTTTCTCATTATA----AAT--AAGTGTTTATTGCTAA--------C--------------GCTTTCTC"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "I"
+        assert alignment.sequences[6].annotations["rightCount"] == 701
+        assert alignment.sequences[7].id == "tupBel1.scaffold_114895.1-498454"
+        assert len(alignment.sequences[7].seq) == 498454
+        assert alignment.sequences[7].seq[323206 : 323206 + 35] == "TTAGCAACAAACGCTATATTTATCATGAGGAGCAG"
+        assert alignment[7] == "-CTGCTCCTCATGATA----AAT-ATAGCGTTTGTTGCTAA-------------------------------"
+        assert alignment.sequences[7].annotations["quality"] == "99999999999999999999999999999999999"
+        assert alignment.sequences[7].annotations["leftStatus"] == "C"
+        assert alignment.sequences[7].annotations["leftCount"] == 0
+        assert alignment.sequences[7].annotations["rightStatus"] == "I"
+        assert alignment.sequences[7].annotations["rightCount"] == 10695
+        assert alignment.sequences[8].id == "sorAra1.scaffold_2476"
+        assert len(alignment.sequences[8].seq) == 4997
+        assert alignment.sequences[8].seq[1397 : 1397 + 48] == "GGAACCTGCTGGTCATAAACGCTCtttttttAATCTAAGAAGGAACAG"
+        assert alignment[8] == "-CTGTTCCTTCTTAGATTaaaaaaaGAGCGTTTATGACCAG--------CA-------GGTTCC--------"
+        assert alignment.sequences[8].annotations["quality"] == "999999999999999999999999999999999766975599999999"
+        assert alignment.sequences[8].annotations["leftStatus"] == "C"
+        assert alignment.sequences[8].annotations["leftCount"] == 0
+        assert alignment.sequences[8].annotations["rightStatus"] == "N"
+        assert alignment.sequences[8].annotations["rightCount"] == 0
+        assert alignment.sequences[9].id == "eriEur1.scaffold_266115"
+        assert len(alignment.sequences[9].seq) == 4589
+        assert alignment.sequences[9].seq[677 : 677 + 35] == "CTCCTTGTTCTTGAAGCCGTTTTTTATTGTCAGTG"
+        assert alignment[9] == "-CTCCTTGTTCTTGAAGC----------CGTTTTTTATTGT--------CA-------GTG-----------"
+        assert alignment.sequences[9].annotations["quality"] == "98959997997999999999999999999989999"
+        assert alignment.sequences[9].annotations["leftStatus"] == "C"
+        assert alignment.sequences[9].annotations["leftCount"] == 0
+        assert alignment.sequences[9].annotations["rightStatus"] == "N"
+        assert alignment.sequences[9].annotations["rightCount"] == 0
+        assert alignment.sequences[10].id == "canFam2.chr1"
+        assert len(alignment.sequences[10].seq) == 125616256
+        assert alignment.sequences[10].seq[47544013 : 47544013 + 40] == "GACATTAGCAATAAATGCTTTTATTTATAATGAGAAACAG"
+        assert alignment[10] == "-CTGTTTCTCATTATA----AATAAAAGCATTTATTGCTAA--------TG-------T------------C"
+        assert alignment.sequences[10].annotations["quality"] == "9999999999999999999999999999999999999999"
+        assert alignment.sequences[10].annotations["leftStatus"] == "C"
+        assert alignment.sequences[10].annotations["leftCount"] == 0
+        assert alignment.sequences[10].annotations["rightStatus"] == "C"
+        assert alignment.sequences[10].annotations["rightCount"] == 0
+        assert alignment.sequences[11].id == "dasNov1.scaffold_56749"
+        assert len(alignment.sequences[11].seq) == 10470
+        assert alignment.sequences[11].seq[6836 : 6836 + 44] == "GAGGAGCCGTTAGCAGTAAATGCTTTTATTATAAAGAGGAACAG"
+        assert alignment[11] == "-CTGTTCCTCTTTAT-----AATAAAAGCATTTACTGCTAA--------CGGCTCCTC--------------"
+        assert alignment.sequences[11].annotations["quality"] == "99999999999999999999999999999999999999999999"
+        assert alignment.sequences[11].annotations["leftStatus"] == "C"
+        assert alignment.sequences[11].annotations["leftCount"] == 0
+        assert alignment.sequences[11].annotations["rightStatus"] == "I"
+        assert alignment.sequences[11].annotations["rightCount"] == 904
+        assert alignment.sequences[12].id == "echTel1.scaffold_288249"
+        assert len(alignment.sequences[12].seq) == 100002
+        assert alignment.sequences[12].seq[95587 : 95587 + 38] == "CTGATCCTCATTATAAATAAAAGTGTTTGTTACTAATG"
+        assert alignment[12] == "-CTGATCCTCATTATA----AATAAAAGTGTTTGTTACTAA--------TG---------------------"
+        assert alignment.sequences[12].annotations["quality"] == "99999999999999999999999999999999999999"
+        assert alignment.sequences[12].annotations["leftStatus"] == "C"
+        assert alignment.sequences[12].annotations["leftCount"] == 0
+        assert alignment.sequences[12].annotations["rightStatus"] == "N"
+        assert alignment.sequences[12].annotations["rightCount"] == 0
+        assert alignment.sequences[13].id == "ornAna1.chr2"
+        assert len(alignment.sequences[13].seq) == 54797317
+        assert alignment.sequences[13].seq[40040218 : 40040218 + 45] == "GGGGGATCTTTAGTAATAAAAGAGTCCCTGTACAATGAGGACAGT"
+        assert alignment[13] == "ACTG-TCCTCATTGTA----CAGGGACTCTTTTATTACTAAAGATCCCCC----------------------"
+        assert alignment.sequences[13].annotations["leftStatus"] == "C"
+        assert alignment.sequences[13].annotations["leftCount"] == 0
+        assert alignment.sequences[13].annotations["rightStatus"] == "C"
+        assert alignment.sequences[13].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (45629, 11464))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (45629, 11464)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171035, 164755))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 14)
-        self.assertEqual(len(alignment.annotations["empty"]), 2)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171035, 164755)
+        assert status == "I"
+        assert len(alignment.sequences) == 14
+        assert len(alignment.annotations["empty"]) == 2
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -12708,10 +10182,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021421 -ACGTTGCTCATTGT-----AATTGAAGCATTTATTACCAA--------TG---------
 cavPor2.s       116 -CTGTTCCTTGTTACA----AATAAAAGTATGTTTTGCTGA--------CG-------G-
 oryCun1.s      3730 -TGGTTCCTCATTATG----GATTAAAGCATTCACTGCTAA--------T----------
@@ -12741,11 +10212,8 @@ canFam2.c  47544014 -----------C  47544013
 dasNov1.s      6836 ------------      6836
 echTel1.s     95625 ------------     95625
 ornAna1.c  40040218 ------------  40040218
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=30254.000000
 s mm9.chr10                         3021421    44 + 129993255 -ACGTTGCTCATTGT-----AATTGAAGCATTTATTACCAA--------TG--------------CCTTCCC
 s cavPor2.scaffold_216473              9910    47 -     10026 -CTGTTCCTTGTTACA----AATAAAAGTATGTTTTGCTGA--------CG-------G-----CCCCTCTG
@@ -12786,17 +10254,11 @@ i ornAna1.chr2                     C 0 C 0
 e felCat3.scaffold_205680             73725 34165 -    119354 I
 e otoGar1.scaffold_334.1-359464      188429  6280 -    359464 I
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (3329 aligned letters; 2398 identities; 931 mismatches; 1025 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (3329 aligned letters; 2398 identities; 931 mismatches; 1025 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 3329:
         identities = 2398,
@@ -12823,162 +10285,118 @@ AlignmentCounts object with
             right_deletions = 370:
                 open_right_deletions = 52,
                 extend_right_deletions = 318.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 13)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 94)
-        self.assertEqual(counts.right_deletions, 370)
-        self.assertEqual(counts.internal_insertions, 352)
-        self.assertEqual(counts.internal_deletions, 196)
-        self.assertEqual(counts.left_gaps, 13)
-        self.assertEqual(counts.right_gaps, 464)
-        self.assertEqual(counts.internal_gaps, 548)
-        self.assertEqual(counts.insertions, 459)
-        self.assertEqual(counts.deletions, 566)
-        self.assertEqual(counts.gaps, 1025)
-        self.assertEqual(counts.aligned, 3329)
-        self.assertEqual(counts.identities, 2398)
-        self.assertEqual(counts.mismatches, 931)
+"""
+        assert counts.left_insertions == 13
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 94
+        assert counts.right_deletions == 370
+        assert counts.internal_insertions == 352
+        assert counts.internal_deletions == 196
+        assert counts.left_gaps == 13
+        assert counts.right_gaps == 464
+        assert counts.internal_gaps == 548
+        assert counts.insertions == 459
+        assert counts.deletions == 566
+        assert counts.gaps == 1025
+        assert counts.aligned == 3329
+        assert counts.identities == 2398
+        assert counts.mismatches == 931
         alignment = next(alignments)
-        self.assertEqual(alignment.score, -9167)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021465 : 3021465 + 29],
-            "CCCTACACTGTCAAGTGGGAGGAGACAGT",
-        )
-        self.assertEqual(
-            alignment[0], "CCCT--ACACTGTC----AAGTGGGAGGAGACAGT--------------------"
-        )
-        self.assertEqual(alignment.sequences[1].id, "cavPor2.scaffold_216473")
-        self.assertEqual(len(alignment.sequences[1].seq), 10026)
-        self.assertEqual(
-            alignment.sequences[1].seq[41 : 41 + 28], "accatcccaccccacccccagtgtGGCT"
-        )
-        self.assertEqual(
-            alignment[1], "AGCC--acactgg-----gggtggggtgggatggt--------------------"
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "7667687856666544895554554677",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(alignment.sequences[2].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[2].seq[158036924 : 158036924 + 24],
-            "GCTGCTCCTATCGCCCCCACAGGG",
-        )
-        self.assertEqual(
-            alignment[2], "-------CCCTGTG----GGGGCGATAGGAGCAGC--------------------"
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 4)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[3].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[3].seq[157514757 : 157514757 + 24],
-            "GCTGCCCCTATCGCCCCCACATGG",
-        )
-        self.assertEqual(
-            alignment[3], "-------CCATGTG----GGGGCGATAGGGGCAGC--------------------"
-        )
-        self.assertEqual(
-            alignment.sequences[3].annotations["quality"], "999999999999999999999999"
-        )
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 4)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[4].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[4].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[4].seq[155024703 : 155024703 + 24],
-            "GCTGCCCCTATCGCCCCCACATGG",
-        )
-        self.assertEqual(
-            alignment[4], "-------CCATGTG----GGGGCGATAGGGGCAGC--------------------"
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 4)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 9)
-        self.assertEqual(alignment.sequences[5].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[5].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[5].seq[47543982 : 47543982 + 31],
-            "CACACACACACACCCCCCATGTGGTTCAGGG",
-        )
-        self.assertEqual(
-            alignment[5], "CCCTGAACCACATG----GGGGGTGTGTGTGTGTG--------------------"
-        )
-        self.assertEqual(
-            alignment.sequences[5].annotations["quality"],
-            "9999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 13)
-        self.assertEqual(alignment.sequences[6].id, "ornAna1.chr2")
-        self.assertEqual(len(alignment.sequences[6].seq), 54797317)
-        self.assertEqual(
-            alignment.sequences[6].seq[40040173 : 40040173 + 45],
-            "GCCAGCAAAGATGAAAGAGGGCTACATCCAAACTCCTATGACACA",
-        )
-        self.assertEqual(
-            alignment[6], "----------TGTGTCATAGGAGTTTGGATGTAGCCCTCTTTCATCTTTGCTGGC"
-        )
-        self.assertEqual(alignment.sequences[6].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[6].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[6].annotations["rightCount"], 0)
+        assert alignment.score == -9167
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021465 : 3021465 + 29] == "CCCTACACTGTCAAGTGGGAGGAGACAGT"
+        assert alignment[0] == "CCCT--ACACTGTC----AAGTGGGAGGAGACAGT--------------------"
+        assert alignment.sequences[1].id == "cavPor2.scaffold_216473"
+        assert len(alignment.sequences[1].seq) == 10026
+        assert alignment.sequences[1].seq[41 : 41 + 28] == "accatcccaccccacccccagtgtGGCT"
+        assert alignment[1] == "AGCC--acactgg-----gggtggggtgggatggt--------------------"
+        assert alignment.sequences[1].annotations["quality"] == "7667687856666544895554554677"
+        assert alignment.sequences[1].annotations["leftStatus"] == "C"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert alignment.sequences[2].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[2].seq) == 174210431
+        assert alignment.sequences[2].seq[158036924 : 158036924 + 24] == "GCTGCTCCTATCGCCCCCACAGGG"
+        assert alignment[2] == "-------CCCTGTG----GGGGCGATAGGAGCAGC--------------------"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 4
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 9
+        assert alignment.sequences[3].id == "panTro2.chr6"
+        assert len(alignment.sequences[3].seq) == 173908612
+        assert alignment.sequences[3].seq[157514757 : 157514757 + 24] == "GCTGCCCCTATCGCCCCCACATGG"
+        assert alignment[3] == "-------CCATGTG----GGGGCGATAGGGGCAGC--------------------"
+        assert alignment.sequences[3].annotations["quality"] == "999999999999999999999999"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 4
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 9
+        assert alignment.sequences[4].id == "hg18.chr6"
+        assert len(alignment.sequences[4].seq) == 170899992
+        assert alignment.sequences[4].seq[155024703 : 155024703 + 24] == "GCTGCCCCTATCGCCCCCACATGG"
+        assert alignment[4] == "-------CCATGTG----GGGGCGATAGGGGCAGC--------------------"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 4
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 9
+        assert alignment.sequences[5].id == "canFam2.chr1"
+        assert len(alignment.sequences[5].seq) == 125616256
+        assert alignment.sequences[5].seq[47543982 : 47543982 + 31] == "CACACACACACACCCCCCATGTGGTTCAGGG"
+        assert alignment[5] == "CCCTGAACCACATG----GGGGGTGTGTGTGTGTG--------------------"
+        assert alignment.sequences[5].annotations["quality"] == "9999999999999999999999999999999"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "I"
+        assert alignment.sequences[5].annotations["rightCount"] == 13
+        assert alignment.sequences[6].id == "ornAna1.chr2"
+        assert len(alignment.sequences[6].seq) == 54797317
+        assert alignment.sequences[6].seq[40040173 : 40040173 + 45] == "GCCAGCAAAGATGAAAGAGGGCTACATCCAAACTCCTATGACACA"
+        assert alignment[6] == "----------TGTGTCATAGGAGTTTGGATGTAGCCCTCTTTCATCTTTGCTGGC"
+        assert alignment.sequences[6].annotations["leftStatus"] == "C"
+        assert alignment.sequences[6].annotations["leftCount"] == 0
+        assert alignment.sequences[6].annotations["rightStatus"] == "C"
+        assert alignment.sequences[6].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(record.seq), 10470)
-        self.assertEqual(segment, (6836, 5932))
-        self.assertEqual(status, "I")
+        assert record.id == "dasNov1.scaffold_56749"
+        assert len(record.seq) == 10470
+        assert segment == (6836, 5932)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (45629, 11464))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (45629, 11464)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (11090, 11791))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (11090, 11791)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (323206, 312511))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (323206, 312511)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171035, 164755))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171035, 164755)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(record.seq), 4726)
-        self.assertEqual(segment, (3693, 1348))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 7)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "oryCun1.scaffold_156751"
+        assert len(record.seq) == 4726
+        assert segment == (3693, 1348)
+        assert status == "I"
+        assert len(alignment.sequences) == 7
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -13000,10 +10418,7 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021465 CCCT--ACACTGTC----AAGTGGGAGGAGACAGT--------------------
 cavPor2.s        69 AGCC--acactgg-----gggtggggtgggatggt--------------------
 ponAbe2.c 158036948 -------CCCTGTG----GGGGCGATAGGAGCAGC--------------------
@@ -13019,11 +10434,8 @@ panTro2.c 157514757
 hg18.chr6 155024703
 canFam2.c  47543982
 ornAna1.c  40040173
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=-9167.000000
 s mm9.chr10                         3021465    29 + 129993255 CCCT--ACACTGTC----AAGTGGGAGGAGACAGT--------------------
 s cavPor2.scaffold_216473              9957    28 -     10026 AGCC--acactgg-----gggtggggtgggatggt--------------------
@@ -13048,10 +10460,8 @@ e tupBel1.scaffold_114895.1-498454   175248 10695 -    498454 I
 e otoGar1.scaffold_334.1-359464      188429  6280 -    359464 I
 e oryCun1.scaffold_156751              1033  2345 -      4726 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['C', 'C', 'C', 'T', '-', '-', 'A', 'C', 'A', 'C', 'T', 'G', 'T',
@@ -13091,16 +10501,10 @@ np.array([['C', 'C', 'C', 'T', '-', '-', 'A', 'C', 'A', 'C', 'T', 'G', 'T',
            'G', 'G', 'C']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (495 aligned letters; 207 identities; 288 mismatches; 240 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (495 aligned letters; 207 identities; 288 mismatches; 240 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 495:
         identities = 207,
@@ -13127,135 +10531,109 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 21)
-        self.assertEqual(counts.left_deletions, 65)
-        self.assertEqual(counts.right_insertions, 120)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 33)
-        self.assertEqual(counts.internal_deletions, 1)
-        self.assertEqual(counts.left_gaps, 86)
-        self.assertEqual(counts.right_gaps, 120)
-        self.assertEqual(counts.internal_gaps, 34)
-        self.assertEqual(counts.insertions, 174)
-        self.assertEqual(counts.deletions, 66)
-        self.assertEqual(counts.gaps, 240)
-        self.assertEqual(counts.aligned, 495)
-        self.assertEqual(counts.identities, 207)
-        self.assertEqual(counts.mismatches, 288)
+"""
+        assert counts.left_insertions == 21
+        assert counts.left_deletions == 65
+        assert counts.right_insertions == 120
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 33
+        assert counts.internal_deletions == 1
+        assert counts.left_gaps == 86
+        assert counts.right_gaps == 120
+        assert counts.internal_gaps == 34
+        assert counts.insertions == 174
+        assert counts.deletions == 66
+        assert counts.gaps == 240
+        assert counts.aligned == 495
+        assert counts.identities == 207
+        assert counts.mismatches == 288
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 15763)
-        self.assertEqual(alignment.sequences[0].id, "mm9.chr10")
-        self.assertEqual(len(alignment.sequences[0].seq), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3021494 : 3021494 + 42],
-            "TGTTTAGTACCATGCTTAGGAATGATAAACTCACTTAGTGtt",
-        )
-        self.assertEqual(alignment[0], "TGTTTAGTACC----ATGCTTAGGAATGATAAACTCACTTAGTGtt")
-        self.assertEqual(alignment.sequences[1].id, "ponAbe2.chr6")
-        self.assertEqual(len(alignment.sequences[1].seq), 174210431)
-        self.assertEqual(
-            alignment.sequences[1].seq[158036869 : 158036869 + 46],
-            "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAAGGACATGCAACA",
-        )
-        self.assertEqual(alignment[1], "TGTTGCATGTCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT")
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 943)
-        self.assertEqual(alignment.sequences[2].id, "panTro2.chr6")
-        self.assertEqual(len(alignment.sequences[2].seq), 173908612)
-        self.assertEqual(
-            alignment.sequences[2].seq[157514702 : 157514702 + 46],
-            "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAAGGATATGCAACA",
-        )
-        self.assertEqual(alignment[2], "TGTTGCATATCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT")
-        self.assertEqual(
-            alignment.sequences[2].annotations["quality"],
-            "9999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[2].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[2].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[2].annotations["rightCount"], 10)
-        self.assertEqual(alignment.sequences[3].id, "hg18.chr6")
-        self.assertEqual(len(alignment.sequences[3].seq), 170899992)
-        self.assertEqual(
-            alignment.sequences[3].seq[155024648 : 155024648 + 46],
-            "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAACGACATGCAACA",
-        )
-        self.assertEqual(alignment[3], "TGTTGCATGTCGTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT")
-        self.assertEqual(alignment.sequences[3].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["leftCount"], 9)
-        self.assertEqual(alignment.sequences[3].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[3].annotations["rightCount"], 931)
-        self.assertEqual(alignment.sequences[4].id, "canFam2.chr1")
-        self.assertEqual(len(alignment.sequences[4].seq), 125616256)
-        self.assertEqual(
-            alignment.sequences[4].seq[47543923 : 47543923 + 46],
-            "ATGATGGAGTGAAGCTATCACTTTGAACAGCAAGTGAGACTTAACA",
-        )
-        self.assertEqual(alignment[4], "TGTTAAGTCTCACTTGCTGTTCAAAGTGATAGCTTCACTCCATCAT")
-        self.assertEqual(
-            alignment.sequences[4].annotations["quality"],
-            "9999999999999999999999999999999999999999999999",
-        )
-        self.assertEqual(alignment.sequences[4].annotations["leftStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["leftCount"], 13)
-        self.assertEqual(alignment.sequences[4].annotations["rightStatus"], "I")
-        self.assertEqual(alignment.sequences[4].annotations["rightCount"], 1)
-        self.assertEqual(alignment.sequences[5].id, "ornAna1.chr2")
-        self.assertEqual(len(alignment.sequences[5].seq), 54797317)
-        self.assertEqual(
-            alignment.sequences[5].seq[40040137 : 40040137 + 36],
-            "TCCAGTGAGTAGAAGTTCTAGCAATCATTTTAAACA",
-        )
-        self.assertEqual(alignment[5], "TGTTTAAAATG----ATTGCTAGAACTTCTA--CTCACTGGA----")
-        self.assertEqual(alignment.sequences[5].annotations["leftStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[5].annotations["rightStatus"], "C")
-        self.assertEqual(alignment.sequences[5].annotations["rightCount"], 0)
+        assert alignment.score == 15763
+        assert alignment.sequences[0].id == "mm9.chr10"
+        assert len(alignment.sequences[0].seq) == 129993255
+        assert alignment.sequences[0].seq[3021494 : 3021494 + 42] == "TGTTTAGTACCATGCTTAGGAATGATAAACTCACTTAGTGtt"
+        assert alignment[0] == "TGTTTAGTACC----ATGCTTAGGAATGATAAACTCACTTAGTGtt"
+        assert alignment.sequences[1].id == "ponAbe2.chr6"
+        assert len(alignment.sequences[1].seq) == 174210431
+        assert alignment.sequences[1].seq[158036869 : 158036869 + 46] == "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAAGGACATGCAACA"
+        assert alignment[1] == "TGTTGCATGTCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT"
+        assert alignment.sequences[1].annotations["leftStatus"] == "I"
+        assert alignment.sequences[1].annotations["leftCount"] == 9
+        assert alignment.sequences[1].annotations["rightStatus"] == "I"
+        assert alignment.sequences[1].annotations["rightCount"] == 943
+        assert alignment.sequences[2].id == "panTro2.chr6"
+        assert len(alignment.sequences[2].seq) == 173908612
+        assert alignment.sequences[2].seq[157514702 : 157514702 + 46] == "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAAGGATATGCAACA"
+        assert alignment[2] == "TGTTGCATATCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT"
+        assert alignment.sequences[2].annotations["quality"] == "9999999999999999999999999999999999999999999999"
+        assert alignment.sequences[2].annotations["leftStatus"] == "I"
+        assert alignment.sequences[2].annotations["leftCount"] == 9
+        assert alignment.sequences[2].annotations["rightStatus"] == "I"
+        assert alignment.sequences[2].annotations["rightCount"] == 10
+        assert alignment.sequences[3].id == "hg18.chr6"
+        assert len(alignment.sequences[3].seq) == 170899992
+        assert alignment.sequences[3].seq[155024648 : 155024648 + 46] == "AAGATTGGGTGAGCCTATCACGCCAAAGAATAAACGACATGCAACA"
+        assert alignment[3] == "TGTTGCATGTCGTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT"
+        assert alignment.sequences[3].annotations["leftStatus"] == "I"
+        assert alignment.sequences[3].annotations["leftCount"] == 9
+        assert alignment.sequences[3].annotations["rightStatus"] == "I"
+        assert alignment.sequences[3].annotations["rightCount"] == 931
+        assert alignment.sequences[4].id == "canFam2.chr1"
+        assert len(alignment.sequences[4].seq) == 125616256
+        assert alignment.sequences[4].seq[47543923 : 47543923 + 46] == "ATGATGGAGTGAAGCTATCACTTTGAACAGCAAGTGAGACTTAACA"
+        assert alignment[4] == "TGTTAAGTCTCACTTGCTGTTCAAAGTGATAGCTTCACTCCATCAT"
+        assert alignment.sequences[4].annotations["quality"] == "9999999999999999999999999999999999999999999999"
+        assert alignment.sequences[4].annotations["leftStatus"] == "I"
+        assert alignment.sequences[4].annotations["leftCount"] == 13
+        assert alignment.sequences[4].annotations["rightStatus"] == "I"
+        assert alignment.sequences[4].annotations["rightCount"] == 1
+        assert alignment.sequences[5].id == "ornAna1.chr2"
+        assert len(alignment.sequences[5].seq) == 54797317
+        assert alignment.sequences[5].seq[40040137 : 40040137 + 36] == "TCCAGTGAGTAGAAGTTCTAGCAATCATTTTAAACA"
+        assert alignment[5] == "TGTTTAAAATG----ATTGCTAGAACTTCTA--CTCACTGGA----"
+        assert alignment.sequences[5].annotations["leftStatus"] == "C"
+        assert alignment.sequences[5].annotations["leftCount"] == 0
+        assert alignment.sequences[5].annotations["rightStatus"] == "C"
+        assert alignment.sequences[5].annotations["rightCount"] == 0
         empty = alignment.annotations["empty"][0]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "dasNov1.scaffold_56749")
-        self.assertEqual(len(record.seq), 10470)
-        self.assertEqual(segment, (6836, 5932))
-        self.assertEqual(status, "I")
+        assert record.id == "dasNov1.scaffold_56749"
+        assert len(record.seq) == 10470
+        assert segment == (6836, 5932)
+        assert status == "I"
         empty = alignment.annotations["empty"][1]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "felCat3.scaffold_205680")
-        self.assertEqual(len(record.seq), 119354)
-        self.assertEqual(segment, (45629, 11464))
-        self.assertEqual(status, "I")
+        assert record.id == "felCat3.scaffold_205680"
+        assert len(record.seq) == 119354
+        assert segment == (45629, 11464)
+        assert status == "I"
         empty = alignment.annotations["empty"][2]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "calJac1.Contig6394")
-        self.assertEqual(len(record.seq), 133105)
-        self.assertEqual(segment, (11090, 11791))
-        self.assertEqual(status, "I")
+        assert record.id == "calJac1.Contig6394"
+        assert len(record.seq) == 133105
+        assert segment == (11090, 11791)
+        assert status == "I"
         empty = alignment.annotations["empty"][3]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "tupBel1.scaffold_114895.1-498454")
-        self.assertEqual(len(record.seq), 498454)
-        self.assertEqual(segment, (323206, 312511))
-        self.assertEqual(status, "I")
+        assert record.id == "tupBel1.scaffold_114895.1-498454"
+        assert len(record.seq) == 498454
+        assert segment == (323206, 312511)
+        assert status == "I"
         empty = alignment.annotations["empty"][4]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "otoGar1.scaffold_334.1-359464")
-        self.assertEqual(len(record.seq), 359464)
-        self.assertEqual(segment, (171035, 164755))
-        self.assertEqual(status, "I")
+        assert record.id == "otoGar1.scaffold_334.1-359464"
+        assert len(record.seq) == 359464
+        assert segment == (171035, 164755)
+        assert status == "I"
         empty = alignment.annotations["empty"][5]
         (record, segment, status) = empty
-        self.assertEqual(record.id, "oryCun1.scaffold_156751")
-        self.assertEqual(len(record.seq), 4726)
-        self.assertEqual(segment, (3693, 1348))
-        self.assertEqual(status, "I")
-        self.assertEqual(len(alignment.sequences), 6)
-        self.assertEqual(len(alignment.annotations["empty"]), 6)
-        self.assertTrue(
-            np.array_equal(
+        assert record.id == "oryCun1.scaffold_156751"
+        assert len(record.seq) == 4726
+        assert segment == (3693, 1348)
+        assert status == "I"
+        assert len(alignment.sequences) == 6
+        assert len(alignment.annotations["empty"]) == 6
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     # fmt: off
@@ -13275,21 +10653,15 @@ AlignmentCounts object with
                     # fmt: on
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 mm9.chr10   3021494 TGTTTAGTACC----ATGCTTAGGAATGATAAACTCACTTAGTGtt   3021536
 ponAbe2.c 158036915 TGTTGCATGTCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT 158036869
 panTro2.c 157514748 TGTTGCATATCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT 157514702
 hg18.chr6 155024694 TGTTGCATGTCGTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT 155024648
 canFam2.c  47543969 TGTTAAGTCTCACTTGCTGTTCAAAGTGATAGCTTCACTCCATCAT  47543923
 ornAna1.c  40040173 TGTTTAAAATG----ATTGCTAGAACTTCTA--CTCACTGGA----  40040137
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=15763.000000
 s mm9.chr10                         3021494    42 + 129993255 TGTTTAGTACC----ATGCTTAGGAATGATAAACTCACTTAGTGtt
 s ponAbe2.chr6                     16173516    46 - 174210431 TGTTGCATGTCCTTTATTCTTTGGCGTGATAGGCTCACCCAATCTT
@@ -13311,10 +10683,8 @@ e tupBel1.scaffold_114895.1-498454   175248 10695 -    498454 I
 e otoGar1.scaffold_334.1-359464      188429  6280 -    359464 I
 e oryCun1.scaffold_156751              1033  2345 -      4726 I
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'G', 'T', 'T', 'T', 'A', 'G', 'T', 'A', 'C', 'C', '-', '-',
@@ -13343,16 +10713,10 @@ np.array([['T', 'G', 'T', 'T', 'T', 'A', 'G', 'T', 'A', 'C', 'C', '-', '-',
            'G', 'G', 'A', '-', '-', '-', '-']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (624 aligned letters; 419 identities; 205 mismatches; 62 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (624 aligned letters; 419 identities; 205 mismatches; 62 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 624:
         identities = 419,
@@ -13379,34 +10743,36 @@ AlignmentCounts object with
             right_deletions = 20:
                 open_right_deletions = 5,
                 extend_right_deletions = 15.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 20)
-        self.assertEqual(counts.internal_insertions, 16)
-        self.assertEqual(counts.internal_deletions, 26)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 20)
-        self.assertEqual(counts.internal_gaps, 42)
-        self.assertEqual(counts.insertions, 16)
-        self.assertEqual(counts.deletions, 46)
-        self.assertEqual(counts.gaps, 62)
-        self.assertEqual(counts.aligned, 624)
-        self.assertEqual(counts.identities, 419)
-        self.assertEqual(counts.mismatches, 205)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 20
+        assert counts.internal_insertions == 16
+        assert counts.internal_deletions == 26
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 20
+        assert counts.internal_gaps == 42
+        assert counts.insertions == 16
+        assert counts.deletions == 46
+        assert counts.gaps == 62
+        assert counts.aligned == 624
+        assert counts.identities == 419
+        assert counts.mismatches == 205
+        with pytest.raises(StopIteration):
+            next(alignments)
 
     def test_reading_ucsc_mm9_chr10(self):
         """Test parsing MAF file ucsc_mm9_chr10.maf."""
         path = "MAF/ucsc_mm9_chr10.maf"
         alignments = Align.parse(path, "maf")
         self.check_reading_ucsc_mm9_chr10(alignments)
-        self.assertRaises(StopIteration, next, alignments)
+        with pytest.raises(StopIteration):
+            next(alignments)
         alignments = iter(alignments)
         self.check_reading_ucsc_mm9_chr10(alignments)
-        self.assertRaises(StopIteration, next, alignments)
+        with pytest.raises(StopIteration):
+            next(alignments)
         alignments = alignments[:]
         self.check_reading_ucsc_mm9_chr10(alignments)
         with open(path) as stream:
@@ -13420,68 +10786,49 @@ AlignmentCounts object with
     def test_reading_missing_signature(self):
         """Test parsing MAF file ucsc_mm9_chr10_big.maf with missing signature."""
         path = "MAF/ucsc_mm9_chr10_big.maf"
-        with self.assertRaises(ValueError) as cm:
+        with pytest.raises(ValueError) as cm:
             Align.parse(path, "maf")
-        self.assertEqual(str(cm.exception), "header line does not start with ##maf")
+        assert str(cm.value) == "header line does not start with ##maf"
 
     def test_reading_ucsc_mm9_chr10_bad(self):
         """Test parsing MAF file ucsc_mm9_chr10_bad.maf with incorrect sequence size."""
         path = "MAF/ucsc_mm9_chr10_bad.maf"
         alignments = Align.parse(path, "maf")
-        self.assertEqual(alignments.metadata["MAF Version"], "1")
-        self.assertEqual(alignments.metadata["Scoring"], "autoMZ.v1")
+        assert alignments.metadata["MAF Version"] == "1"
+        assert alignments.metadata["Scoring"] == "autoMZ.v1"
         next(alignments)
         next(alignments)
         next(alignments)
         next(alignments)
         next(alignments)
         next(alignments)
-        with self.assertRaises(ValueError) as cm:
+        with pytest.raises(ValueError) as cm:
             next(alignments)
-        self.assertEqual(
-            str(cm.exception), "sequence size is incorrect (found 219, expected 319)"
-        )
+        assert str(cm.value) == "sequence size is incorrect (found 219, expected 319)"
 
     def test_reading_length_coords_mismatch(self):
         """Test parsing inconsistent MAF file length_coords_mismatch.maf."""
         path = "MAF/length_coords_mismatch.maf"
         alignments = Align.parse(path, "maf")
-        self.assertEqual(alignments.metadata["MAF Version"], "1")
-        self.assertEqual(alignments.metadata["Scoring"], "autoMZ.v1")
+        assert alignments.metadata["MAF Version"] == "1"
+        assert alignments.metadata["Scoring"] == "autoMZ.v1"
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 6441)
-        self.assertEqual(len(alignment.sequences), 2)
-        self.assertEqual(alignment.sequences[0].id, "mm8.chr10")
-        self.assertEqual(len(alignment.sequences[0]), 129993255)
-        self.assertEqual(
-            alignment.sequences[0].seq[3009319 : 3009319 + 162],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[0],
-            "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT",
-        )
-        self.assertEqual(alignment.sequences[1].id, "oryCun1.scaffold_133159")
-        self.assertEqual(len(alignment.sequences[1]), 13221)
-        self.assertEqual(
-            alignment.sequences[1].seq[11087 : 11087 + 164],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment[1],
-            "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT",
-        )
-        self.assertEqual(
-            alignment.sequences[1].annotations["quality"],
-            "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999",
-        )
-        self.assertEqual(alignment.sequences[1].annotations["leftStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["leftCount"], 0)
-        self.assertEqual(alignment.sequences[1].annotations["rightStatus"], "N")
-        self.assertEqual(alignment.sequences[1].annotations["rightCount"], 0)
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.score == 6441
+        assert len(alignment.sequences) == 2
+        assert alignment.sequences[0].id == "mm8.chr10"
+        assert len(alignment.sequences[0]) == 129993255
+        assert alignment.sequences[0].seq[3009319 : 3009319 + 162] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACCCCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment[0] == "TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT"
+        assert alignment.sequences[1].id == "oryCun1.scaffold_133159"
+        assert len(alignment.sequences[1]) == 13221
+        assert alignment.sequences[1].seq[11087 : 11087 + 164] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment[1] == "TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT"
+        assert alignment.sequences[1].annotations["quality"] == "99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999"
+        assert alignment.sequences[1].annotations["leftStatus"] == "N"
+        assert alignment.sequences[1].annotations["leftCount"] == 0
+        assert alignment.sequences[1].annotations["rightStatus"] == "N"
+        assert alignment.sequences[1].annotations["rightCount"] == 0
+        assert str(alignment) == """\
 mm8.chr10   3009319 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAA
                   0 |||.||.||||||.|.||||||||||||||.|.|||||.||.....||..|.||||||..
 oryCun1.s     11087 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGG
@@ -13493,28 +10840,19 @@ oryCun1.s     11147 AATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCT
 mm8.chr10   3009437 CACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT 3009481
                 120 ....||||.|||.|||..|||..|.|..||.|||||.|||||||     164
 oryCun1.s     11207 TGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT   11251
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=6441.000000
 s mm8.chr10               3009319 162 + 129993255 TCATAGGTATTTATTTTTAAATATGGTTTGCTTTATGGCTAGAACACACCGATTACTTAAAATAGGATTAACC--CCCATACACTTTAAAAATGATTAAACAACATTTCTGCTGCTCGCTCACATTCTTCATAGAAGATGACATAATGTATTTTCCTTTTGGTT
 s oryCun1.scaffold_133159   11087 164 +     13221 TCACAGATATTTACTATTAAATATGGTTTGTTATATGGTTACGGTTCATAGGTTACTTGGAATTGGATTAACCTTCTTATTCATTGCAGAATTGGTTACACTGTGTTCTTGACCTTTGCTTGTTTTCTCCATGGAAACTGATGTCAAATACTTTCCCTTTGGTT
 q oryCun1.scaffold_133159                         99569899999998999999999999999999999999999999999999999999999999999999999757878999975999999999999999979999999999997899999999999997997999999869999996999988997997999999
 i oryCun1.scaffold_133159 N 0 N 0
 
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (162 aligned letters; 108 identities; 54 mismatches; 2 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 162:
         identities = 108,
@@ -13541,34 +10879,31 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 2)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 2)
-        self.assertEqual(counts.insertions, 2)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 2)
-        self.assertEqual(counts.aligned, 162)
-        self.assertEqual(counts.identities, 108)
-        self.assertEqual(counts.mismatches, 54)
-        with self.assertRaises(ValueError) as cm:
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 2
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 2
+        assert counts.insertions == 2
+        assert counts.deletions == 0
+        assert counts.gaps == 2
+        assert counts.aligned == 162
+        assert counts.identities == 108
+        assert counts.mismatches == 54
+        with pytest.raises(ValueError) as cm:
             next(alignments)
-        self.assertEqual(
-            str(cm.exception), "sequence size is incorrect (found 219, expected 319)"
-        )
+        assert str(cm.value) == "sequence size is incorrect (found 219, expected 319)"
 
     def test_reading_bug2453(self):
         """Test parsing bug2453.maf."""
         path = "MAF/bug2453.maf"
         alignments = Align.parse(path, "maf")
-        self.assertEqual(len(alignments.metadata), 3)
+        assert len(alignments.metadata) == 3
         self.check_alignments(alignments)
 
     def test_reading_ucsc_test(self):
@@ -13583,77 +10918,55 @@ AlignmentCounts object with
         with Align.parse(path, "maf") as alignments:
             self.check_header(alignments)
             self.check_alignments(alignments)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(path, "maf") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
 
     def check_header(self, alignments):
-        self.assertEqual(len(alignments.metadata), 9)
-        self.assertEqual(alignments.metadata["name"], "euArc")
-        self.assertEqual(alignments.metadata["visibility"], "pack")
-        self.assertEqual(alignments.metadata["mafDot"], "off")
-        self.assertEqual(alignments.metadata["frames"], "multiz28wayFrames")
-        self.assertEqual(
-            alignments.metadata["speciesOrder"],
-            ["hg16", "panTro1", "baboon", "mm4", "rn3"],
-        )
-        self.assertEqual(alignments.metadata["description"], "A sample alignment")
+        assert len(alignments.metadata) == 9
+        assert alignments.metadata["name"] == "euArc"
+        assert alignments.metadata["visibility"] == "pack"
+        assert alignments.metadata["mafDot"] == "off"
+        assert alignments.metadata["frames"] == "multiz28wayFrames"
+        assert alignments.metadata["speciesOrder"] == ["hg16", "panTro1", "baboon", "mm4", "rn3"]
+        assert alignments.metadata["description"] == "A sample alignment"
 
     def check_alignments(self, alignments):
-        self.assertEqual(alignments.metadata["MAF Version"], "1")
-        self.assertEqual(alignments.metadata["Scoring"], "tba.v8")
-        self.assertEqual(
-            alignments.metadata["Comments"],
-            [
+        assert alignments.metadata["MAF Version"] == "1"
+        assert alignments.metadata["Scoring"] == "tba.v8"
+        assert alignments.metadata["Comments"] == [
                 "tba.v8 (((human chimp) baboon) (mouse rat))",
                 "multiz.v7",
                 "maf_project.v5 _tba_right.maf3 mouse _tba_C",
                 "single_cov2.v4 single_cov2 /dev/stdin",
-            ],
-        )
+            ]
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 23262)
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertEqual(alignment.sequences[0].id, "hg16.chr7")
-        self.assertEqual(len(alignment.sequences[0]), 158545518)
-        self.assertEqual(
-            alignment.sequences[0].seq[27578828 : 27578828 + 38],
-            "AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGTG",
-        )
-        self.assertEqual(alignment[0], "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG")
-        self.assertEqual(alignment.sequences[1].id, "panTro1.chr6")
-        self.assertEqual(len(alignment.sequences[1]), 161576975)
-        self.assertEqual(
-            alignment.sequences[1].seq[28741140 : 28741140 + 38],
-            "AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGTG",
-        )
-        self.assertEqual(alignment[1], "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG")
-        self.assertEqual(alignment.sequences[2].id, "baboon")
-        self.assertEqual(len(alignment.sequences[2]), 4622798)
-        self.assertEqual(
-            alignment.sequences[2].seq[116834 : 116834 + 38],
-            "AAAGGGAATGTTAACCAAATGAGTTGTCTCTTATGGTG",
-        )
-        self.assertEqual(alignment[2], "AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG")
-        self.assertEqual(alignment.sequences[3].id, "mm4.chr6")
-        self.assertEqual(len(alignment.sequences[3]), 151104725)
-        self.assertEqual(
-            alignment.sequences[3].seq[53215344 : 53215344 + 38],
-            "AATGGGAATGTTAAGCAAACGAATTGTCTCTCAGTGTG",
-        )
-        self.assertEqual(alignment[3], "-AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG")
-        self.assertEqual(alignment.sequences[4].id, "rn3.chr4")
-        self.assertEqual(len(alignment.sequences[4]), 187371129)
-        self.assertEqual(
-            alignment.sequences[4].seq[81344243 : 81344243 + 40],
-            "AAGGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG",
-        )
-        self.assertEqual(alignment[4], "-AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 23262
+        assert len(alignment.sequences) == 5
+        assert alignment.sequences[0].id == "hg16.chr7"
+        assert len(alignment.sequences[0]) == 158545518
+        assert alignment.sequences[0].seq[27578828 : 27578828 + 38] == "AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGTG"
+        assert alignment[0] == "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG"
+        assert alignment.sequences[1].id == "panTro1.chr6"
+        assert len(alignment.sequences[1]) == 161576975
+        assert alignment.sequences[1].seq[28741140 : 28741140 + 38] == "AAAGGGAATGTTAACCAAATGAATTGTCTCTTACGGTG"
+        assert alignment[1] == "AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG"
+        assert alignment.sequences[2].id == "baboon"
+        assert len(alignment.sequences[2]) == 4622798
+        assert alignment.sequences[2].seq[116834 : 116834 + 38] == "AAAGGGAATGTTAACCAAATGAGTTGTCTCTTATGGTG"
+        assert alignment[2] == "AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG"
+        assert alignment.sequences[3].id == "mm4.chr6"
+        assert len(alignment.sequences[3]) == 151104725
+        assert alignment.sequences[3].seq[53215344 : 53215344 + 38] == "AATGGGAATGTTAAGCAAACGAATTGTCTCTCAGTGTG"
+        assert alignment[3] == "-AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG"
+        assert alignment.sequences[4].id == "rn3.chr4"
+        assert len(alignment.sequences[4]) == 187371129
+        assert alignment.sequences[4].seq[81344243 : 81344243 + 40] == "AAGGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG"
+        assert alignment[4] == "-AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -13667,20 +10980,14 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 hg16.chr7  27578828 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 27578866
 panTro1.c  28741140 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG 28741178
 baboon       116834 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGTG   116872
 mm4.chr6   53215344 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG 53215382
 rn3.chr4   81344243 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG 81344283
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=23262.000000
 s hg16.chr7    27578828 38 + 158545518 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
 s panTro1.chr6 28741140 38 + 161576975 AAA-GGGAATGTTAACCAAATGA---ATTGTCTCTTACGGTG
@@ -13688,10 +10995,8 @@ s baboon         116834 38 +   4622798 AAA-GGGAATGTTAACCAAATGA---GTTGTCTCTTATGGT
 s mm4.chr6     53215344 38 + 151104725 -AATGGGAATGTTAAGCAAACGA---ATTGTCTCTCAGTGTG
 s rn3.chr4     81344243 40 + 187371129 -AA-GGGGATGCTAAGCCAATGAGTTGTTGTCTCTCAATGTG
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['A', 'A', 'A', '-', 'G', 'G', 'G', 'A', 'A', 'T', 'G', 'T', 'T',
@@ -13716,16 +11021,10 @@ np.array([['A', 'A', 'A', '-', 'G', 'G', 'G', 'A', 'A', 'T', 'G', 'T', 'T',
            'G', 'T', 'G']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (373 aligned letters; 324 identities; 49 mismatches; 22 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (373 aligned letters; 324 identities; 49 mismatches; 22 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 373:
         identities = 324,
@@ -13752,48 +11051,46 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 6)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 15)
-        self.assertEqual(counts.internal_deletions, 1)
-        self.assertEqual(counts.left_gaps, 6)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 16)
-        self.assertEqual(counts.insertions, 15)
-        self.assertEqual(counts.deletions, 7)
-        self.assertEqual(counts.gaps, 22)
-        self.assertEqual(counts.aligned, 373)
-        self.assertEqual(counts.identities, 324)
-        self.assertEqual(counts.mismatches, 49)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 6
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 15
+        assert counts.internal_deletions == 1
+        assert counts.left_gaps == 6
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 16
+        assert counts.insertions == 15
+        assert counts.deletions == 7
+        assert counts.gaps == 22
+        assert counts.aligned == 373
+        assert counts.identities == 324
+        assert counts.mismatches == 49
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 5062.0)
-        self.assertEqual(len(alignment.sequences), 5)
-        self.assertEqual(alignment.sequences[0].id, "hg16.chr7")
-        self.assertEqual(len(alignment.sequences[0]), 158545518)
-        self.assertEqual(alignment.sequences[0].seq[27699739 : 27699739 + 6], "TAAAGA")
-        self.assertEqual(alignment[0], "TAAAGA")
-        self.assertEqual(alignment.sequences[1].id, "panTro1.chr6")
-        self.assertEqual(len(alignment.sequences[1]), 161576975)
-        self.assertEqual(alignment.sequences[1].seq[28862317 : 28862317 + 6], "TAAAGA")
-        self.assertEqual(alignment[1], "TAAAGA")
-        self.assertEqual(alignment.sequences[2].id, "baboon")
-        self.assertEqual(len(alignment.sequences[2]), 4622798)
-        self.assertEqual(alignment.sequences[2].seq[241163 : 241163 + 6], "TAAAGA")
-        self.assertEqual(alignment[2], "TAAAGA")
-        self.assertEqual(alignment.sequences[3].id, "mm4.chr6")
-        self.assertEqual(len(alignment.sequences[3]), 151104725)
-        self.assertEqual(alignment.sequences[3].seq[53303881 : 53303881 + 6], "TAAAGA")
-        self.assertEqual(alignment[3], "TAAAGA")
-        self.assertEqual(alignment.sequences[4].id, "rn3.chr4")
-        self.assertEqual(len(alignment.sequences[4]), 187371129)
-        self.assertEqual(alignment.sequences[4].seq[81444246 : 81444246 + 6], "taagga")
-        self.assertEqual(alignment[4], "taagga")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 5062.0
+        assert len(alignment.sequences) == 5
+        assert alignment.sequences[0].id == "hg16.chr7"
+        assert len(alignment.sequences[0]) == 158545518
+        assert alignment.sequences[0].seq[27699739 : 27699739 + 6] == "TAAAGA"
+        assert alignment[0] == "TAAAGA"
+        assert alignment.sequences[1].id == "panTro1.chr6"
+        assert len(alignment.sequences[1]) == 161576975
+        assert alignment.sequences[1].seq[28862317 : 28862317 + 6] == "TAAAGA"
+        assert alignment[1] == "TAAAGA"
+        assert alignment.sequences[2].id == "baboon"
+        assert len(alignment.sequences[2]) == 4622798
+        assert alignment.sequences[2].seq[241163 : 241163 + 6] == "TAAAGA"
+        assert alignment[2] == "TAAAGA"
+        assert alignment.sequences[3].id == "mm4.chr6"
+        assert len(alignment.sequences[3]) == 151104725
+        assert alignment.sequences[3].seq[53303881 : 53303881 + 6] == "TAAAGA"
+        assert alignment[3] == "TAAAGA"
+        assert alignment.sequences[4].id == "rn3.chr4"
+        assert len(alignment.sequences[4]) == 187371129
+        assert alignment.sequences[4].seq[81444246 : 81444246 + 6] == "taagga"
+        assert alignment[4] == "taagga"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -13807,20 +11104,14 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 hg16.chr7  27699739 TAAAGA 27699745
 panTro1.c  28862317 TAAAGA 28862323
 baboon       241163 TAAAGA   241169
 mm4.chr6   53303881 TAAAGA 53303887
 rn3.chr4   81444246 taagga 81444252
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=5062.000000
 s hg16.chr7    27699739 6 + 158545518 TAAAGA
 s panTro1.chr6 28862317 6 + 161576975 TAAAGA
@@ -13828,10 +11119,8 @@ s baboon         241163 6 +   4622798 TAAAGA
 s mm4.chr6     53303881 6 + 151104725 TAAAGA
 s rn3.chr4     81444246 6 + 187371129 taagga
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['T', 'A', 'A', 'A', 'G', 'A'],
@@ -13841,16 +11130,10 @@ np.array([['T', 'A', 'A', 'A', 'G', 'A'],
           ['t', 'a', 'a', 'g', 'g', 'a']], dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (60 aligned letters; 36 identities; 24 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (60 aligned letters; 36 identities; 24 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 60:
         identities = 36,
@@ -13877,52 +11160,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 60)
-        self.assertEqual(counts.identities, 36)
-        self.assertEqual(counts.mismatches, 24)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 60
+        assert counts.identities == 36
+        assert counts.mismatches == 24
         alignment = next(alignments)
-        self.assertEqual(alignment.score, 6636.0)
-        self.assertEqual(len(alignment.sequences), 4)
-        self.assertEqual(alignment.sequences[0].id, "hg16.chr7")
-        self.assertEqual(len(alignment.sequences[0]), 158545518)
-        self.assertEqual(
-            alignment.sequences[0].seq[27707221 : 27707221 + 13], "gcagctgaaaaca"
-        )
-        self.assertEqual(alignment[0], "gcagctgaaaaca")
-        self.assertEqual(alignment.sequences[1].id, "panTro1.chr6")
-        self.assertEqual(len(alignment.sequences[1]), 161576975)
-        self.assertEqual(
-            alignment.sequences[1].seq[28869787 : 28869787 + 13], "gcagctgaaaaca"
-        )
-        self.assertEqual(alignment[1], "gcagctgaaaaca")
-        self.assertEqual(alignment.sequences[2].id, "baboon")
-        self.assertEqual(len(alignment.sequences[2]), 4622798)
-        self.assertEqual(
-            alignment.sequences[2].seq[249182 : 249182 + 13], "gcagctgaaaaca"
-        )
-        self.assertEqual(alignment[2], "gcagctgaaaaca")
-        self.assertEqual(alignment.sequences[3].id, "mm4.chr6")
-        self.assertEqual(len(alignment.sequences[3]), 151104725)
-        self.assertEqual(
-            alignment.sequences[3].seq[53310102 : 53310102 + 13], "ACAGCTGAAAATA"
-        )
-        self.assertEqual(alignment[3], "ACAGCTGAAAATA")
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.score == 6636.0
+        assert len(alignment.sequences) == 4
+        assert alignment.sequences[0].id == "hg16.chr7"
+        assert len(alignment.sequences[0]) == 158545518
+        assert alignment.sequences[0].seq[27707221 : 27707221 + 13] == "gcagctgaaaaca"
+        assert alignment[0] == "gcagctgaaaaca"
+        assert alignment.sequences[1].id == "panTro1.chr6"
+        assert len(alignment.sequences[1]) == 161576975
+        assert alignment.sequences[1].seq[28869787 : 28869787 + 13] == "gcagctgaaaaca"
+        assert alignment[1] == "gcagctgaaaaca"
+        assert alignment.sequences[2].id == "baboon"
+        assert len(alignment.sequences[2]) == 4622798
+        assert alignment.sequences[2].seq[249182 : 249182 + 13] == "gcagctgaaaaca"
+        assert alignment[2] == "gcagctgaaaaca"
+        assert alignment.sequences[3].id == "mm4.chr6"
+        assert len(alignment.sequences[3]) == 151104725
+        assert alignment.sequences[3].seq[53310102 : 53310102 + 13] == "ACAGCTGAAAATA"
+        assert alignment[3] == "ACAGCTGAAAATA"
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array(
                     [
@@ -13935,29 +11208,21 @@ AlignmentCounts object with
                     ]
                 ),
             )
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert str(alignment) == """\
 hg16.chr7  27707221 gcagctgaaaaca 27707234
 panTro1.c  28869787 gcagctgaaaaca 28869800
 baboon       249182 gcagctgaaaaca   249195
 mm4.chr6   53310102 ACAGCTGAAAATA 53310115
-""",
-        )
-        self.assertEqual(
-            format(alignment, "maf"),
-            """\
+"""
+        assert format(alignment, "maf") == """\
 a score=6636.000000
 s hg16.chr7    27707221 13 + 158545518 gcagctgaaaaca
 s panTro1.chr6 28869787 13 + 161576975 gcagctgaaaaca
 s baboon         249182 13 +   4622798 gcagctgaaaaca
 s mm4.chr6     53310102 13 + 151104725 ACAGCTGAAAATA
 
-""",
-        )
-        self.assertTrue(
-            np.array_equal(
+"""
+        assert np.array_equal(
                 np.array(alignment, "U"),
                 # fmt: off
 np.array([['g', 'c', 'a', 'g', 'c', 't', 'g', 'a', 'a', 'a', 'a', 'c', 'a'],
@@ -13967,16 +11232,10 @@ np.array([['g', 'c', 'a', 'g', 'c', 't', 'g', 'a', 'a', 'a', 'a', 'c', 'a'],
          dtype='U')
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (78 aligned letters; 39 identities; 39 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (78 aligned letters; 39 identities; 39 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 78:
         identities = 39,
@@ -14003,24 +11262,24 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 78)
-        self.assertEqual(counts.identities, 39)
-        self.assertEqual(counts.mismatches, 39)
-        self.assertRaises(StopIteration, next, alignments)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 78
+        assert counts.identities == 39
+        assert counts.mismatches == 39
+        with pytest.raises(StopIteration):
+            next(alignments)
 
 
 class TestAlign_writing(unittest.TestCase):
@@ -14034,22 +11293,16 @@ class TestAlign_writing(unittest.TestCase):
         with open(path) as stream:
             line1 = next(output)
             line2 = next(stream)
-            self.assertEqual(
-                line1,
-                'track name=euArc visibility=pack mafDot=off frames=multiz28wayFrames speciesOrder="hg16 panTro1 baboon mm4 rn3" description="A sample alignment"\n',
-            )
-            self.assertEqual(
-                line2,
-                'track name=euArc visibility=pack mafDot=off frames="multiz28wayFrames" speciesOrder="hg16 panTro1 baboon mm4 rn3" description="A sample alignment"\n',
-            )
+            assert line1 == 'track name=euArc visibility=pack mafDot=off frames=multiz28wayFrames speciesOrder="hg16 panTro1 baboon mm4 rn3" description="A sample alignment"\n'
+            assert line2 == 'track name=euArc visibility=pack mafDot=off frames="multiz28wayFrames" speciesOrder="hg16 panTro1 baboon mm4 rn3" description="A sample alignment"\n'
             for line1, line2 in zip(output, stream):
                 if line1.startswith("a score="):
                     prefix1, score1 = line1.split("=")
                     prefix2, score2 = line2.split("=")
-                    self.assertEqual(prefix1, prefix2)
-                    self.assertAlmostEqual(float(score1), float(score2))
+                    assert prefix1 == prefix2
+                    assert float(score1) == pytest.approx(float(score2), abs=5e-8)
                 else:
-                    self.assertEqual(line1.strip(), line2.strip())
+                    assert line1.strip() == line2.strip()
 
     def test_writing_bug2453(self):
         """Test reading and writing bug2453.maf."""
@@ -14057,17 +11310,17 @@ class TestAlign_writing(unittest.TestCase):
         alignments = Align.parse(path, "maf")
         output = StringIO()
         n = Align.write(alignments, output, "maf")
-        self.assertEqual(n, 3)
+        assert n == 3
         output.seek(0)
         with open(path) as stream:
             for line1, line2 in zip(output, stream):
                 if line1.startswith("a score="):
                     prefix1, score1 = line1.split("=")
                     prefix2, score2 = line2.split("=")
-                    self.assertEqual(prefix1, prefix2)
-                    self.assertAlmostEqual(float(score1), float(score2))
+                    assert prefix1 == prefix2
+                    assert float(score1) == pytest.approx(float(score2), abs=5e-8)
                 else:
-                    self.assertEqual(line1.strip(), line2.strip())
+                    assert line1.strip() == line2.strip()
 
     def test_writing_bundle_without_target(self):
         """Test reading and writing bundle_without_target.maf."""
@@ -14075,11 +11328,11 @@ class TestAlign_writing(unittest.TestCase):
         alignments = Align.parse(path, "maf")
         output = StringIO()
         n = Align.write(alignments, output, "maf")
-        self.assertEqual(n, 1)
+        assert n == 1
         output.seek(0)
         with open(path) as stream:
             for line1, line2 in zip(output, stream):
-                self.assertEqual(line1, line2)
+                assert line1 == line2
 
     def test_writing_ucsc_mm9_chr10(self):
         """Test reading and writing ucsc_mm9_chr10.maf."""
@@ -14087,7 +11340,7 @@ class TestAlign_writing(unittest.TestCase):
         alignments = Align.parse(path, "maf")
         output = StringIO()
         n = Align.write(alignments, output, "maf")
-        self.assertEqual(n, 48)
+        assert n == 48
         output.seek(0)
         with open(path) as stream:
             for line1, line2 in zip(output, stream):
@@ -14121,18 +11374,17 @@ class TestAlign_writing(unittest.TestCase):
                         size2 = int(size2)
                         length1 = int(length1)
                         length2 = int(length2)
-                        self.assertEqual(prefix1, "e")
-                        self.assertEqual(prefix2, "e")
-                        self.assertEqual(name1, name2)
-                        self.assertEqual(status1, status2)
-                        self.assertEqual(size1, size2)
-                        self.assertEqual(length1, length2)
-                        self.assertEqual(start1, length2 - start2 - size2)
-                        self.assertEqual(start2, length1 - start1 - size1)
+                        assert prefix1 == "e"
+                        assert prefix2 == "e"
+                        assert name1 == name2
+                        assert status1 == status2
+                        assert size1 == size2
+                        assert length1 == length2
+                        assert start1 == length2 - start2 - size2
+                        assert start2 == length1 - start1 - size1
                         continue
-                self.assertEqual(words1, words2)
+                assert words1 == words2
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

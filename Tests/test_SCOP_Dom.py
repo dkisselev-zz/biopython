@@ -9,6 +9,7 @@ This test requires the mini DOM file 'testDom.txt'
 """
 
 import unittest
+import pytest
 
 from Bio.SCOP import Dom
 
@@ -23,7 +24,7 @@ class DomTests(unittest.TestCase):
         with open(self.filename) as f:
             for record in Dom.parse(f):
                 count += 1
-        self.assertEqual(count, 10)
+        assert count == 10
 
     def testStr(self):
         """Test if we can convert each record to a string correctly."""
@@ -31,24 +32,24 @@ class DomTests(unittest.TestCase):
             for line in f:
                 record = Dom.Record(line)
                 # End of line is platform dependent. Strip it off
-                self.assertEqual(str(record).rstrip(), line.rstrip())
+                assert str(record).rstrip() == line.rstrip()
 
     def testError(self):
         """Test if a corrupt record raises the appropriate exception."""
         corruptDom = "49xxx268\tsp\tb.1.2.1\t-\n"
-        self.assertRaises(ValueError, Dom.Record, corruptDom)
+        with pytest.raises(ValueError):
+            Dom.Record(corruptDom)
 
     def testRecord(self):
         """Test one record in detail."""
         recLine = "d7hbib_\t7hbi\tb:\t1.001.001.001.001.001"
 
         rec = Dom.Record(recLine)
-        self.assertEqual(rec.sid, "d7hbib_")
-        self.assertEqual(rec.residues.pdbid, "7hbi")
-        self.assertEqual(rec.residues.fragments, (("b", "", ""),))
-        self.assertEqual(rec.hierarchy, "1.001.001.001.001.001")
+        assert rec.sid == "d7hbib_"
+        assert rec.residues.pdbid == "7hbi"
+        assert rec.residues.fragments == (("b", "", ""),)
+        assert rec.hierarchy == "1.001.001.001.001.001"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -9,6 +9,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 
 # Biopython Bio.KEGG.KGML (?)
 from Bio.KEGG.KGML.KGML_parser import read
@@ -99,15 +100,12 @@ class KGMLPathwayTest(unittest.TestCase):
             with open(p.infilename) as f:
                 pathway = read(f)
                 # Do we have the correct number of elements of each type
-                self.assertEqual(
-                    (
+                assert (
                         len(pathway.entries),
                         len(pathway.orthologs),
                         len(pathway.compounds),
                         len(pathway.maps),
-                    ),
-                    p.element_counts,
-                )
+                    ) == p.element_counts
             # Test writing file
             with open(p.outfilename, "w") as f:
                 f.write(pathway.get_KGML())
@@ -115,17 +113,13 @@ class KGMLPathwayTest(unittest.TestCase):
             with open(p.outfilename) as f:
                 pathway = read(f)
                 # Do we have the correct number of elements of each type
-                self.assertEqual(
-                    (
+                assert (
                         len(pathway.entries),
                         len(pathway.orthologs),
                         len(pathway.compounds),
                         len(pathway.maps),
-                    ),
-                    p.element_counts,
-                )
+                    ) == p.element_counts
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

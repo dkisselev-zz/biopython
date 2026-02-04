@@ -5,8 +5,8 @@
 """Run BioSQL tests using MySQL."""
 
 import unittest
+import pytest
 
-import requires_internet
 
 # Really do want "import *" to get all the test clases:
 from common_BioSQL import *  # noqa: F403
@@ -17,7 +17,8 @@ from common_BioSQL import load_biosql_ini
 from common_BioSQL_online import *  # noqa: F403
 from common_BioSQL_online import share_config
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 DBDRIVER = "MySQLdb"
 DBTYPE = "mysql"
@@ -29,6 +30,4 @@ check_config(DBDRIVER, DBTYPE, DBHOST, DBUSER, DBPASSWD, TESTDB)
 share_config(DBDRIVER, DBTYPE, DBHOST, DBUSER, DBPASSWD, TESTDB)
 
 if __name__ == "__main__":
-    # Run the test cases
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

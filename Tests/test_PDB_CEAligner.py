@@ -7,16 +7,9 @@
 """Unit tests for the Bio.PDB.CEAligner module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import CEAligner
 from Bio.PDB import MMCIFParser
 
@@ -43,7 +36,7 @@ class CEAlignerTests(unittest.TestCase):
         aligner.set_reference(s1)
         aligner.align(s2, final_optimization=False)
 
-        self.assertAlmostEqual(aligner.rms, 3.83, places=2)
+        assert aligner.rms == pytest.approx(3.83, abs=0.005)
 
         # Assert the transformation was done right by comparing
         # the moved coordinates to a 'ground truth' reference.
@@ -54,7 +47,7 @@ class CEAlignerTests(unittest.TestCase):
 
         diff = refe_coords - s2_f_coords
         rmsd = np.sqrt((diff * diff).sum() / len(refe_coords))
-        self.assertAlmostEqual(rmsd, 0.0, places=2)
+        assert rmsd == pytest.approx(0.0, abs=0.005)
 
     def test_cealigner_no_transform(self):
         """Test aligning 7CFN on 6WQA without transforming 7CFN."""
@@ -72,8 +65,8 @@ class CEAlignerTests(unittest.TestCase):
         aligner.align(s2, transform=False, final_optimization=False)
         s2_coords_final = [list(a.coord) for a in s2.get_atoms()]
 
-        self.assertAlmostEqual(aligner.rms, 3.83, places=2)
-        self.assertEqual(s2_original_coords, s2_coords_final)
+        assert aligner.rms == pytest.approx(3.83, abs=0.005)
+        assert s2_original_coords == s2_coords_final
 
     def test_ce_aligner_final_optimization(self):
         """Test aligning 7CFN on 6WQA with the final optimization."""
@@ -88,7 +81,7 @@ class CEAlignerTests(unittest.TestCase):
         aligner.set_reference(s1)
         aligner.align(s2)
 
-        self.assertAlmostEqual(aligner.rms, 3.75, places=2)
+        assert aligner.rms == pytest.approx(3.75, abs=0.005)
 
     def test_cealigner_nucleic(self):
         """Test aligning 1LCD on 1LCD."""
@@ -103,9 +96,8 @@ class CEAlignerTests(unittest.TestCase):
         aligner.set_reference(s1)
         aligner.align(s2)
 
-        self.assertAlmostEqual(aligner.rms, 0.0, places=3)
+        assert aligner.rms == pytest.approx(0.0, abs=0.0005)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

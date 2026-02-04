@@ -9,17 +9,10 @@
 import copy
 import re
 import unittest
+import pytest
 import warnings
 
-try:
-    import numpy as np  # noqa F401
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+import numpy as np  # noqa F401
 from io import StringIO
 
 from Bio.File import as_handle
@@ -65,13 +58,13 @@ class Rebuild(unittest.TestCase):
     def test_mmtf(self):
         chain = next(self.mmtf_1A8O.get_chains())
         ic_chain = IC_Chain(chain)
-        self.assertEqual(len(ic_chain.ordered_aa_ic_list), 70)
+        assert len(ic_chain.ordered_aa_ic_list) == 70
 
     def test_rebuild_1a8o(self):
         """Duplicate tutorial doctests which fail under linux."""
         IC_Chain.MaxPeptideBond = 4.0
         r = structure_rebuild_test(self.pdb_1A8O, False)
-        self.assertTrue(r["pass"])
+        assert r["pass"]
 
         cic = list(self.pdb_1A8O.get_chains())[0].internal_coord
         distances = cic.distance_plot()
@@ -93,14 +86,14 @@ class Rebuild(unittest.TestCase):
         """Convert multichain missing atom struct to, from internal coords."""
         # 2XHE has regions of missing chain, last residue has only N
         r = structure_rebuild_test(self.pdb_2XHE, False)
-        self.assertEqual(r["residues"], 787)
-        self.assertEqual(r["rCount"], 835)
-        self.assertEqual(r["rMatchCount"], 835)
-        self.assertEqual(r["aCount"], 6267)
-        self.assertEqual(r["disAtmCount"], 0)
-        self.assertEqual(r["aCoordMatchCount"], 6267)
-        self.assertEqual(len(r["chains"]), 2)
-        self.assertTrue(r["pass"])
+        assert r["residues"] == 787
+        assert r["rCount"] == 835
+        assert r["rMatchCount"] == 835
+        assert r["aCount"] == 6267
+        assert r["disAtmCount"] == 0
+        assert r["aCoordMatchCount"] == 6267
+        assert len(r["chains"]) == 2
+        assert r["pass"]
 
     def test_rebuild_disordered_atoms_residues(self):
         """Convert disordered protein to internal coordinates and back."""
@@ -111,21 +104,21 @@ class Rebuild(unittest.TestCase):
             warnings.simplefilter("always", PDBConstructionWarning)
             r = structure_rebuild_test(self.cif_3JQH, False)
         # print(r)
-        self.assertEqual(r["residues"], 26)
-        self.assertEqual(r["rCount"], 47)
-        self.assertEqual(r["rMatchCount"], 47)
-        self.assertEqual(r["aCount"], 217)
-        self.assertEqual(r["disAtmCount"], 50)
-        self.assertEqual(r["aCoordMatchCount"], 217)
-        self.assertEqual(len(r["chains"]), 1)
-        self.assertTrue(r["pass"])
+        assert r["residues"] == 26
+        assert r["rCount"] == 47
+        assert r["rMatchCount"] == 47
+        assert r["aCount"] == 217
+        assert r["disAtmCount"] == 50
+        assert r["aCoordMatchCount"] == 217
+        assert len(r["chains"]) == 1
+        assert r["pass"]
 
         IC_Residue.no_altloc = True
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always", PDBConstructionWarning)
             r = structure_rebuild_test(self.cif_3JQH2, verbose=False, quick=True)
-        self.assertEqual(r["aCoordMatchCount"], 167, msg="no_altloc fail")
-        self.assertTrue(r["pass"], msg="no_altloc fail")
+        assert r["aCoordMatchCount"] == 167, "no_altloc fail"
+        assert r["pass"], "no_altloc fail"
         IC_Residue.no_altloc = False
 
     def test_no_crosstalk(self):
@@ -174,9 +167,9 @@ class Rebuild(unittest.TestCase):
                     # test Dihedron.bits()
                     pfd = IC_Residue.picFlagsDict
                     if ricTarg.rbase[2] == "P" and ang == "omg":
-                        self.assertEqual(edr.bits(), (pfd["omg"] | pfd["pomg"]))
+                        assert edr.bits() == (pfd["omg"] | pfd["pomg"])
                     else:
-                        self.assertEqual(edr.bits(), pfd[ang])
+                        assert edr.bits() == pfd[ang]
 
             except AttributeError:
                 pass  # skip if residue does not have e.g. chi5
@@ -200,36 +193,36 @@ class Rebuild(unittest.TestCase):
             try:
                 andx = ricTarg.pick_angle(ang).ndx
                 if ang == "tau":
-                    self.assertAlmostEqual(hdelta[andx], tdelta, places=4)
+                    assert hdelta[andx] == pytest.approx(tdelta, abs=5e-05)
                     hdelta[andx] = 0.0
                     # some other angle has to change to accommodate tau change
                     # N-Ca-Cb is artifact of choices in ic_data
                     # expected change so clear relevant hdelta here
                     adjAngNdx = ricTarg.pick_angle("N:CA:CB").ndx
-                    self.assertNotAlmostEqual(hdelta[adjAngNdx], 0.0, places=1)
+                    assert hdelta[adjAngNdx] != pytest.approx(0.0, abs=0.05)
                     hdelta[adjAngNdx] = 0.0
                 else:
-                    self.assertAlmostEqual(ddelta[andx], delta, places=4)
+                    assert ddelta[andx] == pytest.approx(delta, abs=5e-05)
                     ddelta[andx] = 0.0
             except AttributeError:
                 pass  # if residue does not have e.g. chi5
 
         hsum = hdelta.sum()
-        self.assertEqual(hsum, 0.0)
+        assert hsum == 0.0
         dsum = ddelta.sum()
-        self.assertEqual(dsum, 0.0)
+        assert dsum == 0.0
 
         # test hedron len12, angle, len23 setters and getters
         hed = list(cic0.hedra.values())[10]
         val = hed.len12 + 0.5
         hed.len12 = val
-        self.assertEqual(hed.len12, val)
+        assert hed.len12 == val
         val = hed.len23 + 0.5
         hed.len23 = val
-        self.assertEqual(hed.len23, val)
+        assert hed.len23 == val
         val = hed.angle + 1
         hed.angle = val
-        self.assertEqual(hed.angle, val)
+        assert hed.angle == val
         dihed = list(cic0.dihedra.values())[10]
         val = dihed.angle + 196
         dihed.angle = val
@@ -237,7 +230,7 @@ class Rebuild(unittest.TestCase):
             val -= 360.0
         if val < -180.0:
             val += 360.0
-        self.assertEqual(dihed.angle, val)
+        assert dihed.angle == val
 
     def test_model_change_internal_coords(self):
         """Get model internal coords, modify psi and chi1 values and check."""
@@ -325,34 +318,34 @@ class Rebuild(unittest.TestCase):
                 if ric.rprev != [] and tau is not None:
                     ttcount += 1
                     # print(str(r), "tau", tau, nvt[str(r)])
-                    self.assertAlmostEqual(tau, nvt[str(r)], places=3)
+                    assert tau == pytest.approx(nvt[str(r)], abs=0.0005)
                     l2tcount += 1
                     l2 = ric.get_length("N:CA")
-                    self.assertAlmostEqual(l2, nvlen2[str(r)], places=3)
+                    assert l2 == pytest.approx(nvlen2[str(r)], abs=0.0005)
                 chi1 = ric.get_angle("chi1")
                 if chi1 is not None:
                     c1tcount += 1
                     # print(str(r), "chi1", chi1, nvc1[str(r)])
-                    self.assertAlmostEqual(chi1, nvc1[str(r)], places=3)
+                    assert chi1 == pytest.approx(nvc1[str(r)], abs=0.0005)
                 psi = ric.get_angle("psi")
                 if psi is not None:
                     psitcount += 1
                     # print(str(r), "psi", psi, nvpsi[str(r)])
-                    self.assertAlmostEqual(psi, nvpsi[str(r)], places=3)
+                    assert psi == pytest.approx(nvpsi[str(r)], abs=0.0005)
                 leng = ric.get_length("CA:CB")
                 if leng is not None:
                     ltcount += 1
-                    self.assertAlmostEqual(leng, nvlen[str(r)], places=3)
+                    assert leng == pytest.approx(nvlen[str(r)], abs=0.0005)
 
-        self.assertEqual(tcount, ttcount)
-        self.assertEqual(l2count, l2tcount)
-        self.assertEqual(c1count, c1tcount)
-        self.assertEqual(psicount, psitcount)
-        self.assertEqual(lcount, ltcount)
-        self.assertGreater(ttcount, 0)
-        self.assertGreater(c1count, 0)
-        self.assertGreater(psicount, 0)
-        self.assertGreater(lcount, 0)
+        assert tcount == ttcount
+        assert l2count == l2tcount
+        assert c1count == c1tcount
+        assert psicount == psitcount
+        assert lcount == ltcount
+        assert ttcount > 0
+        assert c1count > 0
+        assert psicount > 0
+        assert lcount > 0
 
     def test_write_SCAD(self):
         """Check SCAD output plus MaxPeptideBond and Gly CB.
@@ -376,9 +369,9 @@ class Rebuild(unittest.TestCase):
                     m = re.search(r"\[\s+(\d+\.\d+)\,", aline)
                     if m:
                         # test correctly scaled atom bond length
-                        self.assertAlmostEqual(float(m.group(1)), 15.30582, places=3)
+                        assert float(m.group(1)) == pytest.approx(15.30582, abs=0.0005)
                     else:
-                        self.fail("scaled atom bond length not found")
+                        raise AssertionError("scaled atom bond length not found")
                 elif '[ 1, "1857M",' in aline:
                     next_one = True
                 elif next_one:
@@ -392,9 +385,9 @@ class Rebuild(unittest.TestCase):
                     )
                     if ms:
                         for i in range(3):
-                            self.assertAlmostEqual(float(ms[i]), target[i], places=0)
+                            assert float(ms[i]) == pytest.approx(target[i], abs=0.5)
                     else:
-                        self.fail("transform not found")
+                        raise AssertionError("transform not found")
 
         sf.seek(0)
         IC_Residue.gly_Cbeta = True
@@ -438,9 +431,9 @@ class Rebuild(unittest.TestCase):
                     ms = re.findall(r"\s+(-?\d+\.\d+)", aline)
                     if ms:
                         for i in range(3):
-                            self.assertAlmostEqual(float(ms[i]), target[i], places=0)
+                            assert float(ms[i]) == pytest.approx(target[i], abs=0.5)
                     else:
-                        self.fail("Cbeta internal coords not found")
+                        raise AssertionError("Cbeta internal coords not found")
                 if "8_K_CA" in aline:
                     startPass = False
                 if "572_N_CA" in aline:
@@ -450,13 +443,13 @@ class Rebuild(unittest.TestCase):
                 if 'HBond, "R", 16, "CACO"' in aline:
                     hbPass = True
 
-        self.assertTrue(allBondsPass, msg="missing extra ring close bonds")
-        self.assertTrue(glyCbetaFound, msg="gly CB not created")
-        self.assertTrue(maxPeptideBondPass, msg="ignored maxPeptideBond setting")
-        self.assertTrue(startPass, msg="writeSCAD wrote residue before start")
-        self.assertTrue(finPass, msg="writeSCAD wrote residue past fin")
-        self.assertTrue(flexPass, msg="writeSCAD residue 12 not flexible")
-        self.assertTrue(hbPass, msg="writeSCAD residue 16 no hbond")
+        assert allBondsPass, "missing extra ring close bonds"
+        assert glyCbetaFound, "gly CB not created"
+        assert maxPeptideBondPass, "ignored maxPeptideBond setting"
+        assert startPass, "writeSCAD wrote residue before start"
+        assert finPass, "writeSCAD wrote residue past fin"
+        assert flexPass, "writeSCAD residue 12 not flexible"
+        assert hbPass, "writeSCAD residue 16 no hbond"
 
     def test_i2a_start_fin(self):
         """Test assemble start/fin, default NCaC coordinates, IC_duplicate."""
@@ -464,7 +457,7 @@ class Rebuild(unittest.TestCase):
         cpy = IC_duplicate(chn)[2]["A"]  # generates internal coords as needed
         cpy.internal_to_atom_coordinates(start=31, fin=45)
         cdict = compare_residues(chn, cpy, quick=True)
-        self.assertFalse(cdict["pass"])
+        assert not cdict["pass"]
         # transform source coordinates to put res 31 tau at origin like
         # fragment
         res = chn[31]
@@ -472,15 +465,15 @@ class Rebuild(unittest.TestCase):
         cst = np.transpose(psi.cst)
         chn.internal_coord.atomArray[:] = chn.internal_coord.atomArray.dot(cst)
         cdict = compare_residues(chn, cpy, rtol=1e-03, atol=1e-05)
-        self.assertEqual(cdict["residues"], 51)
-        self.assertEqual(cdict["rMatchCount"], 77)
-        self.assertEqual(cdict["aCount"], 497)
-        self.assertEqual(cdict["disAtmCount"], 0)
-        self.assertEqual(cdict["aCoordMatchCount"], 140)
-        self.assertEqual(cdict["aFullIdMatchCount"], 140)
-        self.assertEqual(len(cdict["chains"]), 1)
-        self.assertEqual(cdict["rCount"], 77)
-        self.assertFalse(cdict["pass"])
+        assert cdict["residues"] == 51
+        assert cdict["rMatchCount"] == 77
+        assert cdict["aCount"] == 497
+        assert cdict["disAtmCount"] == 0
+        assert cdict["aCoordMatchCount"] == 140
+        assert cdict["aFullIdMatchCount"] == 140
+        assert len(cdict["chains"]) == 1
+        assert cdict["rCount"] == 77
+        assert not cdict["pass"]
 
     def test_distplot_rebuild(self):
         """Build identical structure from distplot and chirality data."""
@@ -497,12 +490,7 @@ class Rebuild(unittest.TestCase):
             if k.akl[atmNameNdx] == "CA"
         ]
         dplot0 = _chn1.internal_coord.distance_plot(filter=CaSelect)
-        self.assertAlmostEqual(
-            dplot0[3, 9],
-            16.296,
-            places=3,
-            msg="fail generate distance plot with filter",
-        )
+        assert dplot0[3, 9] == pytest.approx(16.296, abs=0.0005), "fail generate distance plot with filter"
         dplot1 = _chn1.internal_coord.distance_plot()
         dsigns = _chn1.internal_coord.dihedral_signs()
 
@@ -534,7 +522,7 @@ class Rebuild(unittest.TestCase):
         dp2 = cic2.distance_plot()
         dpdiff = np.abs(dplot1 - dp2)
         # print(np.amax(dpdiff))
-        self.assertTrue(np.amax(dpdiff) < 0.000001)
+        assert np.amax(dpdiff) < 0.000001
 
     def test_seq_as_PIC(self):
         """Read seq as PIC data, extend chain, set each chi angle, check various."""
@@ -560,9 +548,7 @@ class Rebuild(unittest.TestCase):
 
         pdb_structure.internal_to_atom_coordinates()
 
-        self.assertEqual(
-            len(cic.atomArrayValid), 168, msg="wrong number atoms from sequence"
-        )
+        assert len(cic.atomArrayValid) == 168, "wrong number atoms from sequence"
 
         # test make_extended and each sequential chi rotation places selected
         # atom from each sidechain where expected.
@@ -593,58 +579,45 @@ class Rebuild(unittest.TestCase):
             atm = AtomKey(k)
             ndx = cic.atomArrayIndex[atm]
             coord = np.round(cic.atomArray[ndx], 3)
-            self.assertTrue(np.array_equal(coord, v), msg=f"position error on atom {k}")
+            assert np.array_equal(coord, v), f"position error on atom {k}"
 
         cic.update_dCoordSpace()
         rt = cic.ordered_aa_ic_list[5]  # pick a residue
         chi1 = rt.pick_angle("chi1")  # chi1 coord space puts CA at origin
         rt.applyMtx(chi1.cst)
         coord = rt.residue.child_dict["CA"].coord  # Biopython API Atom coords
-        self.assertTrue(
-            np.allclose(coord, [0.0, 0.0, 0.0]), msg="dCoordSpace transform error"
-        )
+        assert np.allclose(coord, [0.0, 0.0, 0.0]), "dCoordSpace transform error"
 
         # test Dihedron repr and all that leads into it
         psi = rt.pick_angle("psi")
 
-        self.assertEqual(
-            psi.__repr__(),
-            "4-6_M_N:6_M_CA:6_M_C:7_F_N MNMCAMCFN 123.0 ('1RND', 0, 'A', (' ', 6, ' '))",
-            msg="dihedron __repr__ error for M6 psi",
-        )
+        assert psi.__repr__() == "4-6_M_N:6_M_CA:6_M_C:7_F_N MNMCAMCFN 123.0 ('1RND', 0, 'A', (' ', 6, ' '))", "dihedron __repr__ error for M6 psi"
 
         m = "Edron rich comparison failed"
-        self.assertTrue(chi1 != psi, msg=m)
-        self.assertFalse(chi1 == psi, msg=m)
-        self.assertTrue(psi < chi1, msg=m)
-        self.assertTrue(psi <= chi1, msg=m)
-        self.assertTrue(chi1 > psi, msg=m)
-        self.assertTrue(chi1 >= psi, msg=m)
+        assert chi1 != psi, m
+        assert not chi1 == psi, m
+        assert psi < chi1, m
+        assert psi <= chi1, m
+        assert chi1 > psi, m
+        assert chi1 >= psi, m
 
-        self.assertTrue(
-            chi1.cre_class == "NsbCsbCsbCsb",
-            msg="covalent radii assignment error for chi1",
-        )
+        assert chi1.cre_class == "NsbCsbCsbCsb", "covalent radii assignment error for chi1"
 
         # dihedron atomkeys are all in residue atomkeys as expected, including
         # i+1 N for psi.
-        self.assertTrue(all(ak in rt for ak in chi1.atomkeys))
-        self.assertFalse(all(ak in rt for ak in psi.atomkeys))
+        assert all(ak in rt for ak in chi1.atomkeys)
+        assert not all(ak in rt for ak in psi.atomkeys)
 
         # test Hedron repr and all that leads into it
         tau = rt.pick_angle("tau")
-        self.assertEqual(
-            tau.__repr__(),
-            "3-6_M_N:6_M_CA:6_M_C MNMCAMC 1.46091 110.97184 1.52499",
-            msg="hedron __repr__ error for M11 tau",
-        )
+        assert tau.__repr__() == "3-6_M_N:6_M_CA:6_M_C MNMCAMC 1.46091 110.97184 1.52499", "hedron __repr__ error for M11 tau"
 
         # some specific AtomKey comparisons missed in other tests
         a0, a1 = tau.atomkeys[0], tau.atomkeys[1]
         m = "AtomKey rich comparison failed"
-        self.assertTrue(a1 > a0, msg=m)
-        self.assertTrue(a1 >= a0, msg=m)
-        self.assertTrue(a0 <= a1, msg=m)
+        assert a1 > a0, m
+        assert a1 >= a0, m
+        assert a0 <= a1, m
 
     def test_angle_fns(self):
         """Test angle_dif and angle_avg across +/-180 boundaries."""
@@ -660,5 +633,4 @@ class Rebuild(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

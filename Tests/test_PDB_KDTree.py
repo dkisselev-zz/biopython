@@ -12,6 +12,7 @@
 """Unit tests for those parts of the Bio.PDB module using Bio.PDB.kdtrees."""
 
 import unittest
+import pytest
 
 try:
     from numpy import argsort
@@ -20,20 +21,14 @@ try:
     from numpy import sqrt
     from numpy.random import random
 except ImportError:
-    from Bio import MissingExternalDependencyError
 
-    raise MissingExternalDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
+    pytest.skip("Install NumPy if you want to use Bio.PDB.", allow_module_level=True)
 
 try:
     from Bio.PDB import kdtrees
 except ImportError:
-    from Bio import MissingExternalDependencyError
 
-    raise MissingExternalDependencyError(
-        "C module Bio.PDB.kdtrees not compiled"
-    ) from None
+    pytest.skip("C module Bio.PDB.kdtrees not compiled", allow_module_level=True)
 
 from Bio.PDB.NeighborSearch import NeighborSearch
 
@@ -56,14 +51,14 @@ class NeighborTest(unittest.TestCase):
             atoms = [RandomAtom() for j in range(100)]
             ns = NeighborSearch(atoms)
             hits = ns.search_all(5.0)
-            self.assertIsInstance(hits, list)
-            self.assertGreaterEqual(len(hits), 0)
+            assert isinstance(hits, list)
+            assert len(hits) >= 0
         x = array([250, 250, 250])  # Far away from our random atoms
-        self.assertEqual([], ns.search(x, 5.0, "A"))
-        self.assertEqual([], ns.search(x, 5.0, "R"))
-        self.assertEqual([], ns.search(x, 5.0, "C"))
-        self.assertEqual([], ns.search(x, 5.0, "M"))
-        self.assertEqual([], ns.search(x, 5.0, "S"))
+        assert [] == ns.search(x, 5.0, "A")
+        assert [] == ns.search(x, 5.0, "R")
+        assert [] == ns.search(x, 5.0, "C")
+        assert [] == ns.search(x, 5.0, "M")
+        assert [] == ns.search(x, 5.0, "S")
 
 
 class KDTreeTest(unittest.TestCase):
@@ -76,14 +71,12 @@ class KDTreeTest(unittest.TestCase):
         nr_points = self.nr_points
         radius = self.radius
         coords = random((nr_points, 3)) * 100000000000000
-        with self.assertRaises(Exception) as context:
+        with pytest.raises(Exception) as context:
             kdt = kdtrees.KDTree(coords, bucket_size)
-        self.assertIn(
-            "coordinate values should lie between -1e6 and 1e6", str(context.exception)
-        )
-        with self.assertRaises(Exception) as context:
+        assert "coordinate values should lie between -1e6 and 1e6" in str(context.value)
+        with pytest.raises(Exception) as context:
             kdt = kdtrees.KDTree(random((nr_points, 3 - 2)), bucket_size)
-        self.assertIn("expected a Nx3 numpy array", str(context.exception))
+        assert "expected a Nx3 numpy array" in str(context.value)
 
     def test_KDTree_point_search(self):
         """Test searching all points within a certain radius of center.
@@ -111,10 +104,10 @@ class KDTreeTest(unittest.TestCase):
                         point2 = kdtrees.Point(i, r)
                         points2.append(point2)
                 # compare results
-                self.assertEqual(len(points1), len(points2))
+                assert len(points1) == len(points2)
                 for point1, point2 in zip(points1, points2):
-                    self.assertEqual(point1.index, point2.index)
-                    self.assertAlmostEqual(point1.radius, point2.radius)
+                    assert point1.index == point2.index
+                    assert point1.radius == pytest.approx(point2.radius, abs=5e-8)
 
     def test_KDTree_neighbor_search_simple(self):
         """Test all fixed radius neighbor search.
@@ -134,14 +127,14 @@ class KDTreeTest(unittest.TestCase):
             # same search, using a simple but slow algorithm
             neighbors2 = kdt.neighbor_simple_search(radius)
             # compare results
-            self.assertEqual(len(neighbors1), len(neighbors2))
+            assert len(neighbors1) == len(neighbors2)
             key = lambda neighbor: (neighbor.index1, neighbor.index2)  # noqa: E731
             neighbors1.sort(key=key)
             neighbors2.sort(key=key)
             for neighbor1, neighbor2 in zip(neighbors1, neighbors2):
-                self.assertEqual(neighbor1.index1, neighbor2.index1)
-                self.assertEqual(neighbor1.index2, neighbor2.index2)
-                self.assertAlmostEqual(neighbor1.radius, neighbor2.radius)
+                assert neighbor1.index1 == neighbor2.index1
+                assert neighbor1.index2 == neighbor2.index2
+                assert neighbor1.radius == pytest.approx(neighbor2.radius, abs=5e-8)
 
     def test_KDTree_neighbor_search_manual(self):
         """Test all fixed radius neighbor search.
@@ -177,16 +170,15 @@ class KDTreeTest(unittest.TestCase):
                                 i1, i2 = index2, index1
                             neighbor = kdtrees.Neighbor(i1, i2, r)
                             neighbors2.append(neighbor)
-                self.assertEqual(len(neighbors1), len(neighbors2))
+                assert len(neighbors1) == len(neighbors2)
                 key = lambda neighbor: (neighbor.index1, neighbor.index2)  # noqa: E731
                 neighbors1.sort(key=key)
                 neighbors2.sort(key=key)
                 for neighbor1, neighbor2 in zip(neighbors1, neighbors2):
-                    self.assertEqual(neighbor1.index1, neighbor2.index1)
-                    self.assertEqual(neighbor1.index2, neighbor2.index2)
-                    self.assertAlmostEqual(neighbor1.radius, neighbor2.radius)
+                    assert neighbor1.index1 == neighbor2.index1
+                    assert neighbor1.index2 == neighbor2.index2
+                    assert neighbor1.radius == pytest.approx(neighbor2.radius, abs=5e-8)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -10,16 +10,9 @@
 """Unit tests for the Bio.PDB.Superimposer module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import PDBParser
 from Bio.PDB import Selection
 from Bio.PDB import Superimposer
@@ -42,9 +35,9 @@ class SuperimposerTests(unittest.TestCase):
             atom.transform(rot, tran)
         sup = Superimposer()
         sup.set_atoms(fixed, moving)
-        self.assertTrue(np.allclose(sup.rotran[0], np.identity(3)))
-        self.assertTrue(np.allclose(sup.rotran[1], np.array([-1.0, -2.0, -3.0])))
-        self.assertAlmostEqual(sup.rms, 0.0, places=3)
+        assert np.allclose(sup.rotran[0], np.identity(3))
+        assert np.allclose(sup.rotran[1], np.array([-1.0, -2.0, -3.0]))
+        assert sup.rms == pytest.approx(0.0, abs=0.0005)
         # Turn black code style off
         # fmt: off
         atom_list = ["N", "C", "C", "O", "C", "C", "SE", "C", "N", "C", "C",
@@ -112,9 +105,8 @@ class SuperimposerTests(unittest.TestCase):
         atom_moved = []
         for aa in moving:
             atom_moved.append(aa.element)
-        self.assertEqual(atom_moved, atom_list)
+        assert atom_moved == atom_list
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

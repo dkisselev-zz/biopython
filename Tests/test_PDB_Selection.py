@@ -5,6 +5,7 @@ Currently only tests unfold_entities.
 """
 
 import unittest
+import pytest
 
 from Bio.PDB import PDBParser
 from Bio.PDB.PDBExceptions import PDBException
@@ -138,17 +139,16 @@ class UnfoldEntitiesTests(unittest.TestCase):
             assert at1 is at2
 
     def test_invalid_level(self):
-        with self.assertRaises(PDBException):
+        with pytest.raises(PDBException):
             unfold_entities(self.structure, "Z")
 
     def test_entities_not_homogenous(self):
         structure_atom = next(self.structure.get_atoms())
         structure_chain = next(self.structure.get_chains())
 
-        with self.assertRaises(PDBException):
+        with pytest.raises(PDBException):
             unfold_entities([structure_atom, structure_chain], "A")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

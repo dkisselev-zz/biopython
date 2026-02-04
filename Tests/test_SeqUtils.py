@@ -7,6 +7,7 @@
 
 import os
 import unittest
+import pytest
 
 from Bio import SeqIO
 from Bio.Seq import MutableSeq
@@ -57,7 +58,7 @@ class SeqUtilsTests(unittest.TestCase):
                 # TODO - Use any cds_start option if/when added to deal with the met
                 a = "M" + seq[3:].translate(table)
                 b = feature.qualifiers["translation"][0] + "*"
-                self.assertEqual(a, b)
+                assert a == b
                 records.append(
                     SeqRecord(
                         seq,
@@ -68,24 +69,20 @@ class SeqUtilsTests(unittest.TestCase):
 
         cai = CodonAdaptationIndex(records)
         # Now check codon usage index (CAI) using this species
-        self.assertEqual(
-            record.annotations["source"], "Yersinia pestis biovar Microtus str. 91001"
-        )
+        assert record.annotations["source"] == "Yersinia pestis biovar Microtus str. 91001"
         value = cai.calculate("ATGCGTATCGATCGCGATACGATTAGGCGGATG")
-        self.assertAlmostEqual(value, 0.70246, places=5)
+        assert value == pytest.approx(0.70246, abs=5e-06)
         optimized_sequence = cai.optimize(
             "ATGCGTATCGATCGCGATACGATTAGGCGGATG", strict=False
         )
         optimized_value = cai.calculate(optimized_sequence)
-        self.assertEqual(optimized_value, 1.0)
+        assert optimized_value == 1.0
         aa_initial = Seq("ATGCGTATCGATCGCGATACGATTAGGCGGATG").translate()
         aa_optimized = optimized_sequence.translate()
-        self.assertEqual(aa_initial, aa_optimized)
-        with self.assertRaises(KeyError):
+        assert aa_initial == aa_optimized
+        with pytest.raises(KeyError):
             cai.optimize("CAU", "protein", strict=False)
-        self.assertEqual(
-            str(cai),
-            """\
+        assert str(cai) == """\
 AAA	1.000
 AAC	0.385
 AAG	0.344
@@ -150,8 +147,7 @@ TTA	0.455
 TTC	1.000
 TTG	0.212
 TTT	0.886
-""",
-        )
+"""
 
     def test_codon_adaptation_index_calculation(self):
         """Test Codon Adaptation Index (CAI) calculation for an mRNA."""
@@ -224,35 +220,27 @@ TTT	0.886
         rpsU = Seq(
             "CCGGTAATTAAAGTACGTGAAAACGAGCCGTTCGACGTAGCTCTGCGTCGCTTCAAGCGTTCCTGCGAAAAAGCAGGTGTTCTGGCGGAAGTTCGTCGTCGTGAGTTCTATGAAAAACCGACTACCGAACGTAAGCGCGCTAAAGCTTCTGCAGTGAAACGTCACGCGAAGAAACTGGCTCGCGAAAACGCACGCCGCACTCGTCTGTAC"
         )
-        self.assertAlmostEqual(cai.calculate(rpsU), 0.726, places=3)
+        assert cai.calculate(rpsU) == pytest.approx(0.726, abs=0.0005)
         rpoD = Seq(
             "ATGGAGCAAAACCCGCAGTCACAGCTGAAACTTCTTGTCACCCGTGGTAAGGAGCAAGGCTATCTGACCTATGCCGAGGTCAATGACCATCTGCCGGAAGATATCGTCGATTCAGATCAGATCGAAGACATCATCCAAATGATCAACGACATGGGCATTCAGGTGATGGAAGAAGCACCGGATGCCGATGATCTGATGCTGGCTGAAAACACCGCGGACGAAGATGCTGCCGAAGCCGCCGCGCAGGTGCTTTCCAGCGTGGAATCTGAAATCGGGCGCACGACTGACCCGGTACGCATGTACATGCGTGAAATGGGCACCGTTGAACTGTTGACCCGCGAAGGCGAAATTGACATCGCTAAGCGTATTGAAGACGGGATCAACCAGGTTCAATGCTCCGTTGCTGAATATCCGGAAGCGATCACCTATCTGCTGGAACAGTACGATCGTGTTGAAGCAGAAGAAGCGCGTCTGTCCGATCTGATCACCGGCTTTGTTGACCCGAACGCAGAAGAAGATCTGGCACCTACCGCCACTCACGTCGGTTCTGAGCTTTCCCAGGAAGATCTGGACGATGACGAAGATGAAGACGAAGAAGATGGCGATGACGACAGCGCCGATGATGACAACAGCATCGACCCGGAACTGGCTCGCGAAAAATTTGCGGAACTACGCGCTCAGTACGTTGTAACGCGTGACACCATCAAAGCGAAAGGTCGCAGTCACGCTACCGCTCAGGAAGAGATCCTGAAACTGTCTGAAGTATTCAAACAGTTCCGCCTGGTGCCGAAGCAGTTTGACTACCTGGTCAACAGCATGCGCGTCATGATGGACCGCGTTCGTACGCAAGAACGTCTGATCATGAAGCTCTGCGTTGAGCAGTGCAAAATGCCGAAGAAAAACTTCATTACCCTGTTTACCGGCAACGAAACCAGCGATACCTGGTTCAACGCGGCAATTGCGATGAACAAGCCGTGGTCGGAAAAACTGCACGATGTCTCTGAAGAAGTGCATCGCGCCCTGCAAAAACTGCAGCAGATTGAAGAAGAAACCGGCCTGACCATCGAGCAGGTTAAAGATATCAACCGTCGTATGTCCATCGGTGAAGCGAAAGCCCGCCGTGCGAAGAAAGAGATGGTTGAAGCGAACTTACGTCTGGTTATTTCTATCGCTAAGAAATACACCAACCGTGGCTTGCAGTTCCTTGACCTGATTCAGGAAGGCAACATCGGTCTGATGAAAGCGGTTGATAAATTCGAATACCGCCGTGGTTACAAGTTCTCCACCTACGCAACCTGGTGGATCCGTCAGGCGATCACCCGCTCTATCGCGGATCAGGCGCGCACCATCCGTATTCCGGTGCATATGATTGAGACCATCAACAAGCTCAACCGTATTTCTCGCCAGATGCTGCAAGAGATGGGCCGTGAACCGACGCCGGAAGAACTGGCTGAACGTATGCTGATGCCGGAAGACAAGATCCGCAAAGTGCTGAAGATCGCCAAAGAGCCAATCTCCATGGAAACGCCGATCGGTGATGATGAAGATTCGCATCTGGGGGATTTCATCGAGGATACCACCCTCGAGCTGCCGCTGGATTCTGCGACCACCGAAAGCCTGCGTGCGGCAACGCACGACGTGCTGGCTGGCCTGACCGCGCGTGAAGCAAAAGTTCTGCGTATGCGTTTCGGTATCGATATGAACACCGACTACACGCTGGAAGAAGTGGGTAAACAGTTCGACGTTACCCGCGAACGTATCCGTCAGATCGAAGCGAAGGCGCTGCGCAAACTGCGTCACCCGAGCCGTTCTGAAGTGCTGCGTAGCTTCCTGGACGAT"
         )
-        self.assertAlmostEqual(cai.calculate(rpoD), 0.582, places=2)
+        assert cai.calculate(rpoD) == pytest.approx(0.582, abs=0.005)
         dnaG = "ATGGCTGGACGAATCCCACGCGTATTCATTAATGATCTGCTGGCACGCACTGACATCGTCGATCTGATCGATGCCCGTGTGAAGCTGAAAAAGCAGGGCAAGAATTTCCACGCGTGTTGTCCATTCCACAACGAGAAAACCCCGTCCTTCACCGTTAACGGTGAGAAACAGTTTTACCACTGCTTTGGATGTGGCGCGCACGGCAACGCGATCGACTTCCTGATGAACTACGACAAGCTCGAGTTCGTCGAAACGGTCGAAGAGCTGGCAGCAATGCACAATCTTGAAGTGCCATTTGAAGCAGGCAGCGGCCCCAGCCAGATCGAGCGCCATCAGAGGCAAACGCTTTATCAGTTGATGGACGGTCTGAATACGTTTTACCAACAATCTTTACAACAACCTGTTGCCACGTCTGCGCGCCAGTATCTGGAAAAACGCGGATTAAGCCACGAGGTTATCGCTCGCTTTGCGATTGGTTTTGCGCCCCCCGGCTGGGACAACGTCCTGAAGCGGTTTGGCGGCAATCCAGAAAATCGCCAGTCATTGATTGATGCGGGGATGTTGGTCACTAACGATCAGGGACGCAGTTACGATCGTTTCCGCGAGCGGGTGATGTTCCCCATTCGCGATAAACGCGGTCGGGTGATTGGTTTTGGCGGGCGCGTGCTGGGCAACGATACCCCCAAATACCTGAACTCGCCGGAAACAGACATTTTCCATAAAGGCCGCCAGCTTTACGGTCTTTATGAAGCGCAGCAGGATAACGCTGAACCCAATCGTCTGCTTGTGGTCGAAGGCTATATGGACGTGGTGGCGCTGGCGCAATACGGCATTAATTACGCCGTTGCGTCGTTAGGTACGTCAACCACCGCCGATCACATACAACTGTTGTTCCGCGCGACCAACAATGTCATTTGCTGTTATGACGGCGACCGTGCAGGCCGCGATGCCGCCTGGCGAGCGCTGGAAACGGCGCTGCCTTACATGACAGACGGCCGTCAGCTACGCTTTATGTTTTTGCCTGATGGCGAAGACCCTGACACGCTAGTACGAAAAGAAGGTAAAGAAGCGTTTGAAGCGCGGATGGAGCAGGCGATGCCACTCTCCGCATTTCTGTTTAACAGTCTGATGCCGCAAGTTGATCTGAGTACCCCTGACGGGCGCGCACGTTTGAGTACGCTGGCACTACCATTGATATCGCAAGTGCCGGGCGAAACGCTGCGAATATATCTTCGTCAGGAATTAGGCAACAAATTAGGCATACTTGATGACAGCCAGCTTGAACGATTAATGCCAAAAGCGGCAGAGAGCGGCGTTTCTCGCCCTGTTCCGCAGCTAAAACGCACGACCATGCGTATACTTATAGGGTTGCTGGTGCAAAATCCAGAATTAGCGACGTTGGTCCCGCCGCTTGAGAATCTGGATGAAAATAAGCTCCCTGGACTTGGCTTATTCAGAGAACTGGTCAACACTTGTCTCTCCCAGCCAGGTCTGACCACCGGGCAACTTTTAGAGCACTATCGTGGTACAAATAATGCTGCCACCCTTGAAAAACTGTCGATGTGGGACGATATAGCAGATAAGAATATTGCTGAGCAAACCTTCACCGACTCACTCAACCATATGTTTGATTCGCTGCTTGAACTGCGCCAGGAAGAGTTAATCGCTCGTGAGCGCACGCATGGTTTAAGCAACGAAGAACGCCTGGAGCTCTGGACATTAAACCAGGAGCTGGCGAAAAAG"
-        self.assertAlmostEqual(cai.calculate(dnaG), 0.271, places=3)
+        assert cai.calculate(dnaG) == pytest.approx(0.271, abs=0.0005)
         lacI = "GTGAAACCAGTAACGTTATACGATGTCGCAGAGTATGCCGGTGTCTCTTATCAGACCGTTTCCCGCGTGGTGAACCAGGCCAGCCACGTTTCTGCGAAAACGCGGGAAAAAGTGGAAGCGGCGATGGCGGAGCTGAATTACATTCCCAACCGCGTGGCACAACAACTGGCGGGCAAACAGTCGTTGCTGATTGGCGTTGCCACCTCCAGTCTGGCCCTGCACGCGCCGTCGCAAATTGTCGCGGCGATTAAATCTCGCGCCGATCAACTGGGTGCCAGCGTGGTGGTGTCGATGGTAGAACGAAGCGGCGTCGAAGCCTGTAAAGCGGCGGTGCACAATCTTCTCGCGCAACGCGTCAGTGGGCTGATCATTAACTATCCGCTGGATGACCAGGATGCCATTGCTGTGGAAGCTGCCTGCACTAATGTTCCGGCGTTATTTCTTGATGTCTCTGACCAGACACCCATCAACAGTATTATTTTCTCCCATGAAGACGGTACGCGACTGGGCGTGGAGCATCTGGTCGCATTGGGTCACCAGCAAATCGCGCTGTTAGCGGGCCCATTAAGTTCTGTCTCGGCGCGTCTGCGTCTGGCTGGCTGGCATAAATATCTCACTCGCAATCAAATTCAGCCGATAGCGGAACGGGAAGGCGACTGGAGTGCCATGTCCGGTTTTCAACAAACCATGCAAATGCTGAATGAGGGCATCGTTCCCACTGCGATGCTGGTTGCCAACGATCAGATGGCGCTGGGCGCAATGCGCGCCATTACCGAGTCCGGGCTGCGCGTTGGTGCGGATATCTCGGTAGTGGGATACGACGATACCGAAGACAGCTCATGTTATATCCCGCCGTTAACCACCATCAAACAGGATTTTCGCCTGCTGGGGCAAACCAGCGTGGACCGCTTGCTGCAACTCTCTCAGGGCCAGGCGGTGAAGGGCAATCAGCTGTTGCCCGTCTCACTGGTGAAAAGAAAAACCACCCTGGCGCCCAATACGCAAACCGCCTCTCCCCGCGCGTTGGCCGATTCATTAATGCAGCTGGCACGACAGGTTTCCCGACTGGAAAGCGGGCAG"
-        self.assertAlmostEqual(cai.calculate(lacI), 0.296, places=2)
+        assert cai.calculate(lacI) == pytest.approx(0.296, abs=0.005)
         trpR = "ATGGCCCAACAATCACCCTATTCAGCAGCGATGGCAGAACAGCGTCACCAGGAGTGGTTACGTTTTGTCGACCTGCTTAAGAATGCCTACCAAAACGATCTCCATTTACCGTTGTTAAACCTGATGCTGACGCCAGATGAGCGCGAAGCGTTGGGGACTCGCGTGCGTATTGTCGAAGAGCTGTTGCGCGGCGAAATGAGCCAGCGTGAGTTAAAAAATGAACTCGGCGCAGGCATCGCGACGATTACGCGTGGATCTAACAGCCTGAAAGCCGCGCCCGTCGAGCTGCGCCAGTGGCTGGAAGAGGTGTTGCTGAAAAGCGAT"
-        self.assertAlmostEqual(cai.calculate(trpR), 0.267, places=2)
+        assert cai.calculate(trpR) == pytest.approx(0.267, abs=0.005)
         lpp = "ATGAAAGCTACTAAACTGGTACTGGGCGCGGTAATCCTGGGTTCTACTCTGCTGGCAGGTTGCTCCAGCAACGCTAAAATCGATCAGCTGTCTTCTGACGTTCAGACTCTGAACGCTAAAGTTGACCAGCTGAGCAACGACGTGAACGCAATGCGTTCCGACGTTCAGGCTGCTAAAGATGACGCAGCTCGTGCTAACCAGCGTCTGGACAACATGGCTACTAAATACCGCAAG"
-        self.assertAlmostEqual(cai.calculate(lpp), 0.849, places=3)
+        assert cai.calculate(lpp) == pytest.approx(0.849, abs=0.0005)
 
     def test_crc_checksum_collision(self):
         # Explicit testing of crc64 collision:
-        self.assertNotEqual(self.str_light_chain_one, self.str_light_chain_two)
-        self.assertNotEqual(
-            crc32(self.str_light_chain_one), crc32(self.str_light_chain_two)
-        )
-        self.assertEqual(
-            crc64(self.str_light_chain_one), crc64(self.str_light_chain_two)
-        )
-        self.assertNotEqual(
-            gcg(self.str_light_chain_one), gcg(self.str_light_chain_two)
-        )
-        self.assertNotEqual(
-            seguid(self.str_light_chain_one), seguid(self.str_light_chain_two)
-        )
+        assert self.str_light_chain_one != self.str_light_chain_two
+        assert crc32(self.str_light_chain_one) != crc32(self.str_light_chain_two)
+        assert crc64(self.str_light_chain_one) == crc64(self.str_light_chain_two)
+        assert gcg(self.str_light_chain_one) != gcg(self.str_light_chain_two)
+        assert seguid(self.str_light_chain_one) != seguid(self.str_light_chain_two)
 
     def seq_checksums(
         self,
@@ -265,15 +253,15 @@ TTT	0.886
         exp_window_LCC,
     ):
         for s in [seq_str, Seq(seq_str), MutableSeq(seq_str)]:
-            self.assertEqual(exp_crc32, crc32(s))
-            self.assertEqual(exp_crc64, crc64(s))
-            self.assertEqual(exp_gcg, gcg(s))
-            self.assertEqual(exp_seguid, seguid(s))
-            self.assertAlmostEqual(exp_simple_LCC, lcc_simp(s), places=4)
+            assert exp_crc32 == crc32(s)
+            assert exp_crc64 == crc64(s)
+            assert exp_gcg == gcg(s)
+            assert exp_seguid == seguid(s)
+            assert exp_simple_LCC == pytest.approx(lcc_simp(s), abs=5e-05)
             values = lcc_mult(s, 20)
-            self.assertEqual(len(exp_window_LCC), len(values), values)
+            assert len(exp_window_LCC) == len(values), values
             for value1, value2 in zip(exp_window_LCC, values):
-                self.assertAlmostEqual(value1, value2, places=2)
+                assert value1 == pytest.approx(value2, abs=0.005)
 
     def test_checksum1(self):
         self.seq_checksums(
@@ -352,81 +340,80 @@ TTT	0.886
 
     def test_gc_fraction(self):
         """Tests gc_fraction function."""
-        self.assertAlmostEqual(gc_fraction("", "ignore"), 0, places=3)
-        self.assertAlmostEqual(gc_fraction("", "weighted"), 0, places=3)
-        self.assertAlmostEqual(gc_fraction("", "remove"), 0, places=3)
+        assert gc_fraction("", "ignore") == pytest.approx(0, abs=0.0005)
+        assert gc_fraction("", "weighted") == pytest.approx(0, abs=0.0005)
+        assert gc_fraction("", "remove") == pytest.approx(0, abs=0.0005)
 
         seq = "ACGGGCTACCGTATAGGCAAGAGATGATGCCC"
-        self.assertAlmostEqual(gc_fraction(seq, "ignore"), 0.5625, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "weighted"), 0.5625, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "remove"), 0.5625, places=3)
+        assert gc_fraction(seq, "ignore") == pytest.approx(0.5625, abs=0.0005)
+        assert gc_fraction(seq, "weighted") == pytest.approx(0.5625, abs=0.0005)
+        assert gc_fraction(seq, "remove") == pytest.approx(0.5625, abs=0.0005)
 
         seq = "ACTGSSSS"
-        self.assertAlmostEqual(gc_fraction(seq, "ignore"), 0.75, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "weighted"), 0.75, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "remove"), 0.75, places=3)
+        assert gc_fraction(seq, "ignore") == pytest.approx(0.75, abs=0.0005)
+        assert gc_fraction(seq, "weighted") == pytest.approx(0.75, abs=0.0005)
+        assert gc_fraction(seq, "remove") == pytest.approx(0.75, abs=0.0005)
 
         # Test RNA sequence
 
         seq = "GGAUCUUCGGAUCU"
-        self.assertAlmostEqual(gc_fraction(seq, "ignore"), 0.5, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "weighted"), 0.5, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "remove"), 0.5, places=3)
+        assert gc_fraction(seq, "ignore") == pytest.approx(0.5, abs=0.0005)
+        assert gc_fraction(seq, "weighted") == pytest.approx(0.5, abs=0.0005)
+        assert gc_fraction(seq, "remove") == pytest.approx(0.5, abs=0.0005)
 
         # Test ambiguous nucleotide behaviour
 
         seq = "CCTGNN"
-        self.assertAlmostEqual(gc_fraction(seq, "ignore"), 0.5, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "weighted"), 0.667, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "remove"), 0.75, places=3)
+        assert gc_fraction(seq, "ignore") == pytest.approx(0.5, abs=0.0005)
+        assert gc_fraction(seq, "weighted") == pytest.approx(0.667, abs=0.0005)
+        assert gc_fraction(seq, "remove") == pytest.approx(0.75, abs=0.0005)
 
         seq = "GDVV"
-        self.assertAlmostEqual(gc_fraction(seq, "ignore"), 0.25, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "weighted"), 0.6667, places=3)
-        self.assertAlmostEqual(gc_fraction(seq, "remove"), 1.00, places=3)
+        assert gc_fraction(seq, "ignore") == pytest.approx(0.25, abs=0.0005)
+        assert gc_fraction(seq, "weighted") == pytest.approx(0.6667, abs=0.0005)
+        assert gc_fraction(seq, "remove") == pytest.approx(1.00, abs=0.0005)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             gc_fraction(seq, "other string")
 
     def test_GC_skew(self):
         s = "A" * 50
         seq = Seq(s)
         record = SeqRecord(seq)
-        self.assertEqual(GC_skew(s)[0], 0)
-        self.assertEqual(GC_skew(seq)[0], 0)
-        self.assertEqual(GC_skew(record)[0], 0)
+        assert GC_skew(s)[0] == 0
+        assert GC_skew(seq)[0] == 0
+        assert GC_skew(record)[0] == 0
 
     def test_seq1_seq3(self):
         s3 = "MetAlaTyrtrpcysthrLYSLEUILEGlYPrOGlNaSnaLapRoTyRLySSeRHisTrpLysThr"
         s1 = "MAYWCTKLIGPQNAPYKSHWKT"
-        self.assertEqual(seq1(s3), s1)
-        self.assertEqual(seq3(s1).upper(), s3.upper())
-        self.assertEqual(seq1(seq3(s1)), s1)
-        self.assertEqual(seq3(seq1(s3)).upper(), s3.upper())
+        assert seq1(s3) == s1
+        assert seq3(s1).upper() == s3.upper()
+        assert seq1(seq3(s1)) == s1
+        assert seq3(seq1(s3)).upper() == s3.upper()
 
     def test_lcc_simp(self):
         s = "ACGATAGC"
         seq = Seq(s)
         record = SeqRecord(seq)
-        self.assertAlmostEqual(lcc_simp(s), 0.9528, places=4)
-        self.assertAlmostEqual(lcc_simp(seq), 0.9528, places=4)
-        self.assertAlmostEqual(lcc_simp(record), 0.9528, places=4)
+        assert lcc_simp(s) == pytest.approx(0.9528, abs=5e-05)
+        assert lcc_simp(seq) == pytest.approx(0.9528, abs=5e-05)
+        assert lcc_simp(record) == pytest.approx(0.9528, abs=5e-05)
 
     def test_lcc_mult(self):
         s = "ACGATAGC"
         seq = Seq(s)
         record = SeqRecord(seq)
         llc_lst = lcc_mult(s, len(s))
-        self.assertEqual(len(llc_lst), 1)
-        self.assertAlmostEqual(llc_lst[0], 0.9528, places=4)
+        assert len(llc_lst) == 1
+        assert llc_lst[0] == pytest.approx(0.9528, abs=5e-05)
         llc_lst = lcc_mult(seq, len(seq))
-        self.assertEqual(len(llc_lst), 1)
-        self.assertAlmostEqual(llc_lst[0], 0.9528, places=4)
+        assert len(llc_lst) == 1
+        assert llc_lst[0] == pytest.approx(0.9528, abs=5e-05)
         llc_lst = lcc_mult(record, len(record))
-        self.assertEqual(len(llc_lst), 1)
-        self.assertAlmostEqual(llc_lst[0], 0.9528, places=4)
+        assert len(llc_lst) == 1
+        assert llc_lst[0] == pytest.approx(0.9528, abs=5e-05)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

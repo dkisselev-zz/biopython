@@ -8,8 +8,8 @@
 import os
 import sys
 import unittest
+import pytest
 
-from Bio import MissingExternalDependencyError
 from Bio.Phylo.PAML import baseml
 from Bio.Phylo.PAML import codeml
 from Bio.Phylo.PAML import yn00
@@ -56,9 +56,7 @@ else:
     binaries = ["codeml", "baseml", "yn00"]
 for binary in binaries:
     if which(binary) is None:
-        raise MissingExternalDependencyError(
-            "Install PAML if you want to use the Bio.Phylo.PAML wrapper."
-        )
+        pytest.skip("Install PAML if you want to use the Bio.Phylo.PAML wrapper.", allow_module_level=True)
 
 
 class Common(unittest.TestCase):
@@ -89,10 +87,10 @@ class CodemlTest(Common):
         self.cml.out_file = os.path.join("PAML", "temp.out")
         self.cml.working_dir = os.path.join("PAML", "codeml_test")
         results = self.cml.run()
-        self.assertGreater(results["version"], "4.0")
-        self.assertIn("NSsites", results)
-        self.assertEqual(len(results["NSsites"]), 1)
-        self.assertEqual(len(results["NSsites"][0]), 5)
+        assert results["version"] > "4.0"
+        assert "NSsites" in results
+        assert len(results["NSsites"]) == 1
+        assert len(results["NSsites"][0]) == 5
 
 
 class BasemlTest(Common):
@@ -110,9 +108,9 @@ class BasemlTest(Common):
         self.bml.out_file = os.path.join("PAML", "temp.out")
         self.bml.working_dir = os.path.join("PAML", "baseml_test")
         results = self.bml.run()
-        self.assertGreater(results["version"], "4.0")
-        self.assertIn("parameters", results)
-        self.assertEqual(len(results["parameters"]), 5)
+        assert results["version"] > "4.0"
+        assert "parameters" in results
+        assert len(results["parameters"]) == 5
 
 
 class Yn00Test(Common):
@@ -132,9 +130,8 @@ class Yn00Test(Common):
         self.yn.out_file = os.path.join("PAML", "temp.out")
         self.yn.working_dir = os.path.join("PAML", "yn00_test")
         results = self.yn.run()
-        self.assertEqual(len(results), 5)
+        assert len(results) == 5
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

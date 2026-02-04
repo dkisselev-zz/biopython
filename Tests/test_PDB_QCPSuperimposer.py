@@ -6,17 +6,9 @@
 """Tests for QCPSuperimposer module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.QCPSuperimposer."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import PDBParser
 from Bio.PDB import Selection
 from Bio.PDB.qcprot import QCPSuperimposer
@@ -49,13 +41,13 @@ class QCPSuperimposerTest(unittest.TestCase):
         sup = QCPSuperimposer()
         sup.set(self.x, self.y)
 
-        self.assertTrue(np.allclose(sup.reference_coords, self.x, atol=1e-6))
-        self.assertTrue(np.allclose(sup.coords, self.y, atol=1e-6))
-        self.assertIsNone(sup.transformed_coords)
-        self.assertIsNone(sup.rot)
-        self.assertIsNone(sup.tran)
-        self.assertIsNone(sup.rms)
-        self.assertIsNone(sup.init_rms)
+        assert np.allclose(sup.reference_coords, self.x, atol=1e-6)
+        assert np.allclose(sup.coords, self.y, atol=1e-6)
+        assert sup.transformed_coords is None
+        assert sup.rot is None
+        assert sup.tran is None
+        assert sup.rms is None
+        assert sup.init_rms is None
 
     def test_run(self):
         """Test QCP on dummy data."""
@@ -63,9 +55,9 @@ class QCPSuperimposerTest(unittest.TestCase):
         sup.set(self.x, self.y)
 
         sup.run()
-        self.assertTrue(np.allclose(sup.reference_coords, self.x, atol=1e-6))
-        self.assertTrue(np.allclose(sup.coords, self.y, atol=1e-6))
-        self.assertIsNone(sup.transformed_coords)
+        assert np.allclose(sup.reference_coords, self.x, atol=1e-6)
+        assert np.allclose(sup.coords, self.y, atol=1e-6)
+        assert sup.transformed_coords is None
 
         calc_rot = [
             [0.683, 0.537, 0.495],
@@ -74,13 +66,13 @@ class QCPSuperimposerTest(unittest.TestCase):
         ]
         calc_tran = [38.786, -20.655, -15.422]
 
-        self.assertTrue(np.allclose(np.array(calc_rot), sup.rot, atol=1e-3))
-        self.assertTrue(np.allclose(np.array(calc_tran), sup.tran, atol=1e-3))
+        assert np.allclose(np.array(calc_rot), sup.rot, atol=1e-3)
+        assert np.allclose(np.array(calc_tran), sup.tran, atol=1e-3)
 
         # We can reduce precision here since we do a similar calculation
         # for a full structure down below.
-        self.assertAlmostEqual(sup.rms, 0.003, places=3)
-        self.assertIsNone(sup.init_rms)
+        assert sup.rms == pytest.approx(0.003, abs=0.0005)
+        assert sup.init_rms is None
 
     def test_compare_to_svd(self):
         """Compare results of QCP to SVD."""
@@ -92,12 +84,10 @@ class QCPSuperimposerTest(unittest.TestCase):
         svd_sup.set(self.x, self.y)
         svd_sup.run()
 
-        self.assertAlmostEqual(svd_sup.get_rms(), sup.rms, places=3)
-        self.assertTrue(np.allclose(svd_sup.rot, sup.rot, atol=1e-3))
-        self.assertTrue(np.allclose(svd_sup.tran, sup.tran, atol=1e-3))
-        self.assertTrue(
-            np.allclose(svd_sup.get_transformed(), sup.get_transformed(), atol=1e-3)
-        )
+        assert svd_sup.get_rms() == pytest.approx(sup.rms, abs=0.0005)
+        assert np.allclose(svd_sup.rot, sup.rot, atol=1e-3)
+        assert np.allclose(svd_sup.tran, sup.tran, atol=1e-3)
+        assert np.allclose(svd_sup.get_transformed(), sup.get_transformed(), atol=1e-3)
 
     def test_compare_to_svd_lines(self):
         """Compare results of QCP to SVD using simple lines."""
@@ -112,10 +102,8 @@ class QCPSuperimposerTest(unittest.TestCase):
         svd_sup.set(ref, mob)
         svd_sup.run()
 
-        self.assertAlmostEqual(svd_sup.get_rms(), sup.rms, places=3)
-        self.assertTrue(
-            np.allclose(svd_sup.get_transformed(), sup.get_transformed(), atol=1e-3)
-        )
+        assert svd_sup.get_rms() == pytest.approx(sup.rms, abs=0.0005)
+        assert np.allclose(svd_sup.get_transformed(), sup.get_transformed(), atol=1e-3)
 
     def test_get_transformed(self):
         """Test transformation of coordinates after QCP."""
@@ -130,9 +118,7 @@ class QCPSuperimposerTest(unittest.TestCase):
             [50.220, -0.019, 52.853],
         ]
 
-        self.assertTrue(
-            np.allclose(sup.get_transformed(), np.array(transformed_coords), atol=1e-3)
-        )
+        assert np.allclose(sup.get_transformed(), np.array(transformed_coords), atol=1e-3)
 
     def test_get_init_rms(self):
         """Test initial RMS calculation."""
@@ -141,10 +127,10 @@ class QCPSuperimposerTest(unittest.TestCase):
 
         sup = QCPSuperimposer()
         sup.set(x, y)
-        self.assertIsNone(sup.init_rms)
+        assert sup.init_rms is None
 
         expected_init_rms = 1.0
-        self.assertAlmostEqual(sup.get_init_rms(), expected_init_rms, places=6)
+        assert sup.get_init_rms() == pytest.approx(expected_init_rms, abs=5e-07)
 
     def test_on_pdb(self):
         """Align a PDB to itself."""
@@ -162,9 +148,9 @@ class QCPSuperimposerTest(unittest.TestCase):
 
         sup = QCPSuperimposer()
         sup.set_atoms(fixed, moving)
-        self.assertTrue(np.allclose(sup.rotran[0], rot, atol=1e-3))
-        self.assertTrue(np.allclose(sup.rotran[1], -tran, atol=1e-3))
-        self.assertAlmostEqual(sup.rms, 0.0, places=6)
+        assert np.allclose(sup.rotran[0], rot, atol=1e-3)
+        assert np.allclose(sup.rotran[1], -tran, atol=1e-3)
+        assert sup.rms == pytest.approx(0.0, abs=5e-07)
 
     def test_compare_rmsd_to_transformed(self):
         """Compare RMSD from QCP algorithm to that from transformed"""
@@ -177,9 +163,8 @@ class QCPSuperimposerTest(unittest.TestCase):
         rms = sup.get_rms()
         mob_fitted = sup.get_transformed()
         rms_fitted = np.sqrt(((ref - mob_fitted) ** 2).sum() / ref.shape[0])
-        self.assertAlmostEqual(rms, rms_fitted, places=6)
+        assert rms == pytest.approx(rms_fitted, abs=5e-07)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

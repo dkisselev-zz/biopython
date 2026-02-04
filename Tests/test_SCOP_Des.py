@@ -6,6 +6,7 @@
 """Unit test for Des."""
 
 import unittest
+import pytest
 
 from Bio.SCOP import Des
 
@@ -21,7 +22,7 @@ class DesTests(unittest.TestCase):
             records = Des.parse(f)
             for record in records:
                 count += 1
-        self.assertEqual(count, 20)
+        assert count == 20
 
     def testStr(self):
         """Test if we can convert each record to a string correctly."""
@@ -29,12 +30,13 @@ class DesTests(unittest.TestCase):
             for line in f:
                 record = Des.Record(line)
                 # End of line is platform dependent. Strip it off
-                self.assertEqual(str(record).rstrip(), line.rstrip())
+                assert str(record).rstrip() == line.rstrip()
 
     def testError(self):
         """Test if a corrupt record raises the appropriate exception."""
         corruptRec = "49268\tsp\tb.1.2.1\t-\n"
-        self.assertRaises(ValueError, Des.Record, corruptRec)
+        with pytest.raises(ValueError):
+            Des.Record(corruptRec)
 
     def testRecord(self):
         """Test one record in detail."""
@@ -42,13 +44,12 @@ class DesTests(unittest.TestCase):
         recFields = (49268, "sp", "b.1.2.1", "", "Human (Homo sapiens)")
 
         record = Des.Record(recLine)
-        self.assertEqual(record.sunid, recFields[0])
-        self.assertEqual(record.nodetype, recFields[1])
-        self.assertEqual(record.sccs, recFields[2])
-        self.assertEqual(record.name, recFields[3])
-        self.assertEqual(record.description, recFields[4])
+        assert record.sunid == recFields[0]
+        assert record.nodetype == recFields[1]
+        assert record.sccs == recFields[2]
+        assert record.name == recFields[3]
+        assert record.description == recFields[4]
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

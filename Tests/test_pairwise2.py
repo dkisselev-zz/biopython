@@ -10,6 +10,7 @@ If you want to add more tests, do this over there.
 """
 
 import unittest
+import pytest
 
 # Import all test classes deliberately:
 from pairwise2_testCases import *  # noqa: F401, F403
@@ -18,11 +19,9 @@ from pairwise2_testCases import *  # noqa: F401, F403
 from Bio import pairwise2
 
 if pairwise2.rint == pairwise2._python_rint:
-    from Bio import MissingExternalDependencyError
 
-    raise MissingExternalDependencyError("Missing or non-compiled file: 'cpairwise2'")
+    pytest.skip("Missing or non-compiled file: 'cpairwise2'", allow_module_level=True)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

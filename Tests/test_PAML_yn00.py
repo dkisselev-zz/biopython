@@ -9,6 +9,7 @@ import glob
 import os
 import os.path
 import unittest
+import pytest
 
 from Bio.Phylo.PAML import yn00
 
@@ -44,36 +45,43 @@ class ModTest(unittest.TestCase):
         self.yn00 = yn00.Yn00()
 
     def testAlignmentFileIsValid(self):
-        self.assertRaises((AttributeError, TypeError, OSError), yn00.Yn00, alignment=[])
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            yn00.Yn00(alignment=[])
         self.yn00.alignment = []
         self.yn00.out_file = self.out_file
-        self.assertRaises((AttributeError, TypeError, OSError), self.yn00.run)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.yn00.run()
 
     def testAlignmentExists(self):
-        self.assertRaises(
-            (EnvironmentError, IOError), yn00.Yn00, alignment="nonexistent"
-        )
+        with pytest.raises((EnvironmentError, IOError)):
+            yn00.Yn00(alignment="nonexistent")
         self.yn00.alignment = "nonexistent"
         self.yn00.out_file = self.out_file
-        self.assertRaises(IOError, self.yn00.run)
+        with pytest.raises(IOError):
+            self.yn00.run()
 
     def testWorkingDirValid(self):
         self.yn00.alignment = self.align_file
         self.yn00.out_file = self.out_file
         self.yn00.working_dir = []
-        self.assertRaises((AttributeError, TypeError, OSError), self.yn00.run)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.yn00.run()
 
     def testOptionExists(self):
-        self.assertRaises((AttributeError, KeyError), self.yn00.set_options, xxxx=1)
-        self.assertRaises((AttributeError, KeyError), self.yn00.get_option, "xxxx")
+        with pytest.raises((AttributeError, KeyError)):
+            self.yn00.set_options(xxxx=1)
+        with pytest.raises((AttributeError, KeyError)):
+            self.yn00.get_option("xxxx")
 
     def testAlignmentSpecified(self):
         self.yn00.out_file = self.out_file
-        self.assertRaises((AttributeError, ValueError), self.yn00.run)
+        with pytest.raises((AttributeError, ValueError)):
+            self.yn00.run()
 
     def testOutputFileSpecified(self):
         self.yn00.alignment = self.align_file
-        self.assertRaises((AttributeError, ValueError), self.yn00.run)
+        with pytest.raises((AttributeError, ValueError)):
+            self.yn00.run()
 
     # def testPamlErrorsCaught(self):
     #     self.yn00.alignment = self.align_file
@@ -84,23 +92,22 @@ class ModTest(unittest.TestCase):
     def testCtlFileValidOnRun(self):
         self.yn00.alignment = self.align_file
         self.yn00.out_file = self.out_file
-        self.assertRaises(
-            (AttributeError, TypeError, OSError), self.yn00.run, ctl_file=[]
-        )
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.yn00.run(ctl_file=[])
 
     def testCtlFileExistsOnRun(self):
         self.yn00.alignment = self.align_file
         self.yn00.out_file = self.out_file
-        self.assertRaises(IOError, self.yn00.run, ctl_file="nonexistent")
+        with pytest.raises(IOError):
+            self.yn00.run(ctl_file="nonexistent")
 
     def testCtlFileValidOnRead(self):
-        self.assertRaises(
-            (AttributeError, TypeError, OSError), self.yn00.read_ctl_file, []
-        )
-        self.assertRaises(
-            (AttributeError, KeyError), self.yn00.read_ctl_file, self.bad_ctl_file1
-        )
-        self.assertRaises(AttributeError, self.yn00.read_ctl_file, self.bad_ctl_file2)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.yn00.read_ctl_file([])
+        with pytest.raises((AttributeError, KeyError)):
+            self.yn00.read_ctl_file(self.bad_ctl_file1)
+        with pytest.raises(AttributeError):
+            self.yn00.read_ctl_file(self.bad_ctl_file2)
         target_options = {
             "verbose": 1,
             "icode": 0,
@@ -109,70 +116,67 @@ class ModTest(unittest.TestCase):
             "ndata": 1,
         }
         self.yn00.read_ctl_file(self.ctl_file)
-        self.assertEqual(self.yn00._options, target_options)
+        assert self.yn00._options == target_options
 
     def testCtlFileExistsOnRead(self):
-        self.assertRaises(IOError, self.yn00.read_ctl_file, ctl_file="nonexistent")
+        with pytest.raises(IOError):
+            self.yn00.read_ctl_file(ctl_file="nonexistent")
 
     def testResultsValid(self):
-        self.assertRaises((AttributeError, TypeError, OSError), yn00.read, [])
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            yn00.read([])
 
     def testResultsExist(self):
-        self.assertRaises((EnvironmentError, IOError), yn00.read, "nonexistent")
+        with pytest.raises((EnvironmentError, IOError)):
+            yn00.read("nonexistent")
 
     def testResultsParsable(self):
-        self.assertRaises(ValueError, yn00.read, self.results_file)
+        with pytest.raises(ValueError):
+            yn00.read(self.results_file)
 
     def testParseAllVersions(self):
         pattern = os.path.join(self.results_dir, "yn00", "yn00-*")
         for results_file in glob.glob(pattern):
             results = yn00.read(results_file)
-            self.assertEqual(len(results), 5)
-            self.assertEqual(len(results["Homo_sapie"]), 4)
-            self.assertEqual(len(results["Homo_sapie"]["Pan_troglo"]), 5)
+            assert len(results) == 5
+            assert len(results["Homo_sapie"]) == 4
+            assert len(results["Homo_sapie"]["Pan_troglo"]) == 5
 
     def testParseLongNames(self):
         pattern = os.path.join(self.results_dir, "yn00", "yn00_long-*")
         for results_file in glob.glob(pattern):
             results = yn00.read(results_file)
             # Expect seven taxa...
-            self.assertEqual(len(results), 7)
+            assert len(results) == 7
             # ...each of which is compared to the other six.
-            self.assertEqual({len(v) for v in results.values()}, {6})
+            assert {len(v) for v in results.values()} == {6}
             # ...each of which has five measures.
-            self.assertEqual(
-                {len(v) for taxa in results.values() for v in taxa.values()}, {5}
-            )
+            assert {len(v) for taxa in results.values() for v in taxa.values()} == {5}
 
     def testParseDottedNames(self):
         pattern = os.path.join(self.results_dir, "yn00", "yn00_dotted-*")
         for results_file in glob.glob(pattern):
             results = yn00.read(results_file)
             # Expect seven taxa...
-            self.assertEqual(len(results), 5)
+            assert len(results) == 5
             # ...each of which is compared to the other six.
-            self.assertEqual({len(v) for v in results.values()}, {4})
+            assert {len(v) for v in results.values()} == {4}
             # ...each of which has five measures.
-            self.assertEqual(
-                {len(v) for taxa in results.values() for v in taxa.values()}, {5}
-            )
-            self.assertEqual(len(results["Homo.sapie"]), 4)
-            self.assertEqual(len(results["Homo.sapie"]["Pan.troglo"]), 5)
+            assert {len(v) for taxa in results.values() for v in taxa.values()} == {5}
+            assert len(results["Homo.sapie"]) == 4
+            assert len(results["Homo.sapie"]["Pan.troglo"]) == 5
 
     def testParseDottedNumNames(self):
         pattern = os.path.join(self.results_dir, "yn00", "yn00_dottednum-*")
         for results_file in glob.glob(pattern):
             results = yn00.read(results_file)
             # Expect seven taxa...
-            self.assertEqual(len(results), 7)
+            assert len(results) == 7
             # ...each of which is compared to the other six.
-            self.assertEqual({len(v) for v in results.values()}, {6})
+            assert {len(v) for v in results.values()} == {6}
             # ...each of which has five measures.
-            self.assertEqual(
-                {len(v) for taxa in results.values() for v in taxa.values()}, {5}
-            )
+            assert {len(v) for taxa in results.values() for v in taxa.values()} == {5}
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -9,16 +9,14 @@
 import os
 import tempfile
 import unittest
+import pytest
 
 import Bio.Phylo as bp
-from Bio import MissingExternalDependencyError
 
 try:
     from Bio.Phylo import CDAOIO
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install RDFlib if you want to use the CDAO tree format."
-    ) from None
+    pytest.skip("Install RDFlib if you want to use the CDAO tree format.", allow_module_level=True)
 
 # Example CDAO files
 cdao_files = ("test.cdao",)
@@ -71,9 +69,9 @@ def _test_write_factory(source):
                 pass
             else:
                 # Can't sort lists with None on Python 3 ...
-                self.assertNotIn(None, p1, f"Bad input values for {prop_name}: {p1!r}")
-                self.assertNotIn(None, p2, f"Bad output values for {prop_name}: {p2!r}")
-                self.assertEqual(sorted(p1), sorted(p2))
+                assert None not in p1, f"Bad input values for {prop_name}: {p1!r}"
+                assert None not in p2, f"Bad output values for {prop_name}: {p2!r}"
+                assert sorted(p1) == sorted(p2)
 
     test_write.__doc__ = f"Write and re-parse the phylogenies in {source}."
     return test_write
@@ -100,8 +98,4 @@ for n, ex in enumerate(cdao_files):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
-    # Clean up the temporary file
-    if os.path.exists(DUMMY):
-        os.remove(DUMMY)
+    pytest.main([__file__, "-v"])

@@ -26,6 +26,7 @@ correct position.
 """
 
 import unittest
+import pytest
 from io import BytesIO
 from unittest import mock
 from urllib.error import HTTPError
@@ -263,17 +264,17 @@ class TestQblast(unittest.TestCase):
                 )
         except HTTPError:
             # e.g. a proxy error
-            raise MissingExternalDependencyError("internet connection failed") from None
+            pytest.skip("internet connection failed", allow_module_level=True)
 
         record = NCBIXML.read(handle)
 
         if record.query == "No definition line":
             # We used a sequence as the query
-            self.assertEqual(len(query), record.query_letters)
+            assert len(query) == record.query_letters
         elif query.startswith(">"):
             # We used a FASTA record as the query
             expected = query[1:].split("\n", 1)[0]
-            self.assertEqual(expected, record.query)
+            assert expected == record.query
         elif (
             record.query_id.startswith("Query_") and len(query) == record.query_letters
         ):
@@ -281,45 +282,38 @@ class TestQblast(unittest.TestCase):
             pass
         else:
             # We used an identifier as the query
-            self.assertIn(
-                query,
-                record.query_id.split("|"),
-                f"Expected {query!r} within query_id {record.query_id!r}",
-            )
+            assert query in record.query_id.split("|"), f"Expected {query!r} within query_id {record.query_id!r}"
 
         # Check the recorded input parameters agree with those requested
-        self.assertEqual(float(record.expect), e_value)
-        self.assertEqual(record.application.lower(), program)
-        self.assertLessEqual(len(record.alignments), 10)
-        self.assertLessEqual(len(record.descriptions), 10)
+        assert float(record.expect) == e_value
+        assert record.application.lower() == program
+        assert len(record.alignments) <= 10
+        assert len(record.descriptions) <= 10
 
         # Check the expected result(s) are found in the alignments
         if expected_hits is None:
-            self.assertEqual(len(record.alignments), 0)  # Expected no alignments!
+            assert len(record.alignments) == 0  # Expected no alignments!
         else:
-            self.assertGreater(len(record.alignments), 0)  # Expected some alignments!
+            assert len(record.alignments) > 0  # Expected some alignments!
             found_result = False
             for expected_hit in expected_hits:
                 for alignment in record.alignments:
                     if expected_hit in alignment.hit_id.split("|"):
                         found_result = True
                         break
-            self.assertTrue(
-                found_result,
-                "Missing all expected hits (%s), instead have: %s"
+            assert found_result, ("Missing all expected hits (%s), instead have: %s"
                 % (
                     ", ".join(expected_hits),
                     ", ".join(a.hit_id for a in record.alignments),
-                ),
-            )
+                ))
 
         # Check the expected result(s) are found in the descriptions
         if expected_hits is None:
             # Expected no descriptions!
-            self.assertEqual(len(record.descriptions), 0)
+            assert len(record.descriptions) == 0
         else:
             # Expected some descriptions!
-            self.assertGreater(len(record.descriptions), 0)
+            assert len(record.descriptions) > 0
             found_result = False
             for expected_hit in expected_hits:
                 for descr in record.descriptions:
@@ -330,12 +324,13 @@ class TestQblast(unittest.TestCase):
                         found_result = True
                         break
             msg = f"Missing all of {expected_hit} in descriptions"
-            self.assertTrue(found_result, msg=msg)
+            assert found_result, msg
 
     def test_parse_qblast_ref_page(self):
         with open("Blast/html_msgid_29_blastx_001.html", "rb") as f:
             handle = BytesIO(f.read())
-        self.assertRaises(ValueError, NCBIWWW._parse_qblast_ref_page, handle)
+        with pytest.raises(ValueError):
+            NCBIWWW._parse_qblast_ref_page(handle)
 
     def test_short_query(self):
         """Test SHORT_QUERY_ADJUST parameter."""
@@ -343,7 +338,7 @@ class TestQblast(unittest.TestCase):
         my_search = NCBIWWW.qblast("blastp", "nr", "ICWENRMP", hitlist_size=5)
         my_hits = NCBIXML.read(my_search)
         my_search.close()
-        self.assertEqual(len(my_hits.alignments), 0)
+        assert len(my_hits.alignments) == 0
 
         # Should give hits:
         my_search = NCBIWWW.qblast(
@@ -351,7 +346,7 @@ class TestQblast(unittest.TestCase):
         )
         my_hits = NCBIXML.read(my_search)
         my_search.close()
-        self.assertNotEqual(len(my_hits.alignments), 0)
+        assert len(my_hits.alignments) != 0
 
         # Disabled for 1.81 release
         # Query does not seem to be returning anything so
@@ -373,15 +368,9 @@ class TestQblast(unittest.TestCase):
 
     def test_error_conditions(self):
         """Test if exceptions were properly handled."""
-        self.assertRaises(
-            ValueError,
-            NCBIWWW.qblast,
-            "megablast",
-            "nt",
-            "ATGCGTACGCAGCTAAAGTAAACCTATCGCGTCTCCT",
-        )
+        with pytest.raises(ValueError):
+            NCBIWWW.qblast("megablast", "nt", "ATGCGTACGCAGCTAAAGTAAACCTATCGCGTCTCCT")
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

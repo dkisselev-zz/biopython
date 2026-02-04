@@ -5,6 +5,7 @@
 """Tests for AlignIO module."""
 
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
@@ -33,26 +34,23 @@ class TestAlignIO_exceptions(unittest.TestCase):
             SeqRecord(Seq("AAAA"), id="other_sequence"),
         ]
         alignment = MultipleSeqAlignment(sequences)
-        with self.assertRaises(ValueError) as cm:
+        with pytest.raises(ValueError) as cm:
             AlignIO.write(alignment, handle, "phylip")
-        self.assertEqual(
-            "Repeated name 'longsequen' (originally 'longsequencename2'), possibly due to truncation",
-            str(cm.exception),
-        )
+        assert "Repeated name 'longsequen' (originally 'longsequencename2'), possibly due to truncation" == str(cm.value)
 
     def test_parsing_empty_files(self):
         """Check that parsing an empty file returns an empty list."""
         for t_format in AlignIO._FormatToIterator:
             handle = StringIO()
             alignments = list(AlignIO.parse(handle, t_format))
-            self.assertEqual(alignments, [])
+            assert alignments == []
 
     def test_writing_empty_files(self):
         """Check that writers can cope with no alignments."""
         for t_format in self.t_formats:
             handle = StringIO()
             number = AlignIO.write([], handle, t_format)
-            self.assertEqual(number, 0)
+            assert number == 0
 
     def test_writing_not_alignments(self):
         """Check that writers reject records that are not alignments."""
@@ -60,22 +58,21 @@ class TestAlignIO_exceptions(unittest.TestCase):
         records = list(AlignIO.read(path, "clustal"))
         for t_format in self.t_formats:
             handle = StringIO()
-            self.assertRaises(
-                (AttributeError, TypeError), AlignIO.write, [records], handle, t_format
-            )
+            with pytest.raises((AttributeError, TypeError)):
+                AlignIO.write([records], handle, t_format)
 
 
 class TestAlignIO_reading(unittest.TestCase):
     def simple_alignment_comparison(self, alignments, alignments2, fmt):
-        self.assertEqual(len(alignments), len(alignments2))
+        assert len(alignments) == len(alignments2)
         for a1, a2 in zip(alignments, alignments2):
-            self.assertEqual(a1.get_alignment_length(), a2.get_alignment_length())
-            self.assertEqual(len(a1), len(a2))
+            assert a1.get_alignment_length() == a2.get_alignment_length()
+            assert len(a1) == len(a2)
             for r1, r2 in zip(a1, a2):
                 # Check the bare minimum (ID and sequence) as
                 # many formats can't store more than that.
                 # Check the sequence:
-                self.assertEqual(r1.seq, r2.seq)
+                assert r1.seq == r2.seq
                 # Beware of different quirks and limitations in the
                 # valid character sets and the identifier lengths!
                 if fmt in ["phylip", "phylip-sequential"]:
@@ -91,7 +88,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 else:
                     id1 = r1.id
                 id2 = r2.id
-                self.assertEqual(id1, id2)
+                assert id1 == id2
 
     def check_reverse_write_read(self, alignments, indent=" "):
         alignments.reverse()
@@ -111,15 +108,12 @@ class TestAlignIO_reading(unittest.TestCase):
             handle = StringIO()
 
             if fmt == "nexus":
-                with self.assertRaises(ValueError) as cm:
+                with pytest.raises(ValueError) as cm:
                     c = AlignIO.write(alignments, handle=handle, format=fmt)
-                self.assertEqual(
-                    "We can only write one Alignment to a Nexus file.",
-                    str(cm.exception),
-                )
+                assert "We can only write one Alignment to a Nexus file." == str(cm.value)
                 continue
             c = AlignIO.write(alignments, handle=handle, format=fmt)
-            self.assertEqual(c, len(alignments))
+            assert c == len(alignments)
 
             # First, try with the seq_count
             if records_per_alignment:
@@ -142,16 +136,16 @@ class TestAlignIO_reading(unittest.TestCase):
             # Try writing just one Alignment (not a list)
             handle = StringIO()
             AlignIO.write(alignments[0:1], handle, fmt)
-            self.assertEqual(handle.getvalue(), format(alignments[0], fmt))
+            assert handle.getvalue() == format(alignments[0], fmt)
 
     def check_iterator_for_loop_handle(self, path, fmt, length, m=None):
         # Try using the iterator with a for loop and a handle
         with open(path) as handle:
             alignments = list(AlignIO.parse(handle, format=fmt))
-            self.assertEqual(len(alignments), length)
+            assert len(alignments) == length
         if m is not None:
             for alignment in alignments:
-                self.assertEqual(len(alignment), m)
+                assert len(alignment) == m
         return alignments
 
     def check_iterator_for_loop_filename(self, path, fmt, length):
@@ -159,7 +153,7 @@ class TestAlignIO_reading(unittest.TestCase):
         counter = 0
         for record in AlignIO.parse(path, format=fmt):
             counter += 1
-        self.assertEqual(counter, length)
+        assert counter == length
 
     def check_iterator_next(self, path, fmt, length):
         # Try using the iterator with the next() method
@@ -170,9 +164,9 @@ class TestAlignIO_reading(unittest.TestCase):
                 alignment = next(alignments)
             except StopIteration:
                 break
-            self.assertIsNotNone(alignment)
+            assert alignment is not None
             counter += 1
-        self.assertEqual(counter, length)
+        assert counter == length
 
     def check_iterator_next_and_list(self, path, fmt, length):
         # Try a mixture of next() and list
@@ -181,7 +175,7 @@ class TestAlignIO_reading(unittest.TestCase):
         alignment = next(alignments)
         counter = 1
         counter += len(list(alignments))
-        self.assertEqual(counter, length)
+        assert counter == length
 
     def check_iterator_next_for_loop(self, path, fmt, length):
         # Try a mixture of next() and for loop
@@ -190,7 +184,7 @@ class TestAlignIO_reading(unittest.TestCase):
         counter = 1
         for alignment in alignments:
             counter += 1
-        self.assertEqual(counter, length)
+        assert counter == length
 
     def check_write_three_times_and_read(self, path, fmt, m):
         with open(path) as handle:
@@ -198,23 +192,22 @@ class TestAlignIO_reading(unittest.TestCase):
         handle = StringIO()
         handle.write(data + "\n\n" + data + "\n\n" + data)
         handle.seek(0)
-        self.assertEqual(
-            len(list(AlignIO.parse(handle=handle, format=fmt, seq_count=m))), 3
-        )
+        assert len(list(AlignIO.parse(handle=handle, format=fmt, seq_count=m))) == 3
         handle.close()
 
     def check_read(self, path, fmt, m, k):
         # Check Bio.AlignIO.read(...)
         with open(path) as handle:
             alignment = AlignIO.read(handle, format=fmt)
-        self.assertIsInstance(alignment, MultipleSeqAlignment)
-        self.assertEqual(len(alignment), m)
-        self.assertEqual(alignment.get_alignment_length(), k)
+        assert isinstance(alignment, MultipleSeqAlignment)
+        assert len(alignment) == m
+        assert alignment.get_alignment_length() == k
         return alignment
 
     def check_read_fails(self, path, fmt):
         with open(path) as handle:
-            self.assertRaises(ValueError, AlignIO.read, handle, format=fmt)
+            with pytest.raises(ValueError):
+                AlignIO.read(handle, format=fmt)
 
     def check_alignment_rows(self, alignment, sequences, column_annotations=None):
         max_len = 40
@@ -226,19 +219,19 @@ class TestAlignIO_reading(unittest.TestCase):
                 sequence = sequence[: max_len - 6] + "..." + sequence[-3:]
             item = (name, sequence)
             items.append(item)
-        self.assertEqual(sequences, sorted(items))
+        assert sequences == sorted(items)
         if column_annotations is None:
-            self.assertEqual(alignment.column_annotations, {})
+            assert alignment.column_annotations == {}
         else:
-            self.assertEqual(alignment.column_annotations, column_annotations)
+            assert alignment.column_annotations == column_annotations
 
     def check_alignment_columns(self, alignment, columns):
         alignment_len = alignment.get_alignment_length()
         # Compare each sequence column
         for index in range(min(5, alignment_len)):
-            self.assertEqual(alignment[:, index], columns[index])
+            assert alignment[:, index] == columns[index]
         if alignment_len > 5:
-            self.assertEqual(alignment[:, -1], columns[-1])
+            assert alignment[:, -1] == columns[-1]
 
     def test_reading_alignments_clustal1(self):
         path = "Clustalw/clustalw.aln"
@@ -407,11 +400,8 @@ class TestAlignIO_reading(unittest.TestCase):
 
     def test_reading_alignments_msf1(self):
         path = "msf/DOA_prot.msf"
-        with self.assertRaisesRegex(
-            ValueError,
-            "GCG MSF header said alignment length 62, "
-            "but 11 of 12 sequences said Len: 250",
-        ):
+        with pytest.raises(ValueError, match="GCG MSF header said alignment length 62, "
+            "but 11 of 12 sequences said Len: 250"):
             AlignIO.read(path, "msf")
 
     def test_reading_alignments_msf2(self):
@@ -424,10 +414,7 @@ class TestAlignIO_reading(unittest.TestCase):
             self.check_iterator_next_for_loop(path, "msf", 1)
             alignment = self.check_read(path, "msf", 11, 99)
         warning_msgs = {str(_.message) for _ in w}
-        self.assertIn(
-            "One of more alignment sequences were truncated and have been gap padded",
-            warning_msgs,
-        )
+        assert "One of more alignment sequences were truncated and have been gap padded" in warning_msgs
         self.check_alignment_columns(
             alignment,
             [
@@ -685,11 +672,11 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_for_loop(path, "emboss", 5)
         self.check_read_fails(path, "emboss")
         # Show the alignment
-        self.assertEqual(alignments[0].get_alignment_length(), 124)
-        self.assertEqual(alignments[1].get_alignment_length(), 119)
-        self.assertEqual(alignments[2].get_alignment_length(), 120)
-        self.assertEqual(alignments[3].get_alignment_length(), 118)
-        self.assertEqual(alignments[4].get_alignment_length(), 125)
+        assert alignments[0].get_alignment_length() == 124
+        assert alignments[1].get_alignment_length() == 119
+        assert alignments[2].get_alignment_length() == 120
+        assert alignments[3].get_alignment_length() == 118
+        assert alignments[4].get_alignment_length() == 125
         self.check_alignment_rows(
             alignments[0],
             [
@@ -792,11 +779,11 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "emboss", 5)
         self.check_iterator_next_for_loop(path, "emboss", 5)
         self.check_read_fails(path, "emboss")
-        self.assertEqual(alignments[0].get_alignment_length(), 145)
-        self.assertEqual(alignments[1].get_alignment_length(), 13)
-        self.assertEqual(alignments[2].get_alignment_length(), 18)
-        self.assertEqual(alignments[3].get_alignment_length(), 10)
-        self.assertEqual(alignments[4].get_alignment_length(), 10)
+        assert alignments[0].get_alignment_length() == 145
+        assert alignments[1].get_alignment_length() == 13
+        assert alignments[2].get_alignment_length() == 18
+        assert alignments[3].get_alignment_length() == 10
+        assert alignments[4].get_alignment_length() == 10
         self.check_alignment_rows(
             alignments[0],
             [
@@ -850,7 +837,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "fasta-m10", 4)
         self.check_iterator_next_for_loop(path, "fasta-m10", 4)
         self.check_read_fails(path, "fasta-m10")
-        self.assertEqual(alignments[0].get_alignment_length(), 108)
+        assert alignments[0].get_alignment_length() == 108
         self.check_alignment_rows(
             alignments[0],
             [
@@ -864,7 +851,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 64)
+        assert alignments[1].get_alignment_length() == 64
         self.check_alignment_rows(
             alignments[1],
             [
@@ -878,7 +865,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[2].get_alignment_length(), 38)
+        assert alignments[2].get_alignment_length() == 38
         self.check_alignment_rows(
             alignments[2],
             [
@@ -892,7 +879,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[3].get_alignment_length(), 43)
+        assert alignments[3].get_alignment_length() == 43
         self.check_alignment_rows(
             alignments[3],
             [
@@ -916,7 +903,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "fasta-m10", 6)
         self.check_iterator_next_for_loop(path, "fasta-m10", 6)
         self.check_read_fails(path, "fasta-m10")
-        self.assertEqual(alignments[0].get_alignment_length(), 88)
+        assert alignments[0].get_alignment_length() == 88
         self.check_alignment_rows(
             alignments[0],
             [
@@ -930,7 +917,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 53)
+        assert alignments[1].get_alignment_length() == 53
         self.check_alignment_rows(
             alignments[1],
             [
@@ -944,7 +931,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[2].get_alignment_length(), 92)
+        assert alignments[2].get_alignment_length() == 92
         self.check_alignment_rows(
             alignments[2],
             [
@@ -958,7 +945,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[5].get_alignment_length(), 157)
+        assert alignments[5].get_alignment_length() == 157
         self.check_alignment_rows(
             alignments[5],
             [
@@ -982,7 +969,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "fasta-m10", 3)
         self.check_iterator_next_for_loop(path, "fasta-m10", 3)
         self.check_read_fails(path, "fasta-m10")
-        self.assertEqual(alignments[0].get_alignment_length(), 55)
+        assert alignments[0].get_alignment_length() == 55
         self.check_alignment_rows(
             alignments[0],
             [
@@ -996,7 +983,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 22)
+        assert alignments[1].get_alignment_length() == 22
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1004,7 +991,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("gi|152973840|ref|YP_001338877.1|", "DDAEHLFRTLSSR-LDALQDGN"),
             ],
         )
-        self.assertEqual(alignments[2].get_alignment_length(), 63)
+        assert alignments[2].get_alignment_length() == 63
         self.check_alignment_rows(
             alignments[2],
             [
@@ -1091,7 +1078,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "fasta-m10", 9)
         self.check_iterator_next_for_loop(path, "fasta-m10", 9)
         self.check_read_fails(path, "fasta-m10")
-        self.assertEqual(alignments[0].get_alignment_length(), 108)
+        assert alignments[0].get_alignment_length() == 108
         self.check_alignment_rows(
             alignments[0],
             [
@@ -1105,7 +1092,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 64)
+        assert alignments[1].get_alignment_length() == 64
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1119,7 +1106,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[2].get_alignment_length(), 45)
+        assert alignments[2].get_alignment_length() == 45
         self.check_alignment_rows(
             alignments[2],
             [
@@ -1133,7 +1120,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ),
             ],
         )
-        self.assertEqual(alignments[8].get_alignment_length(), 64)
+        assert alignments[8].get_alignment_length() == 64
         self.check_alignment_rows(
             alignments[8],
             [
@@ -1157,7 +1144,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "fasta-m10", 12)
         self.check_iterator_next_for_loop(path, "fasta-m10", 12)
         self.check_read_fails(path, "fasta-m10")
-        self.assertEqual(alignments[0].get_alignment_length(), 65)
+        assert alignments[0].get_alignment_length() == 65
         self.check_alignment_rows(
             alignments[0],
             [
@@ -1168,7 +1155,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("sp|Q9NSY1|BMP2K_HUMAN", "LQHRHPHQQQQQQQQQQQQQQQQQQQQQQQQQQQ...QML"),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 201)
+        assert alignments[1].get_alignment_length() == 201
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1179,7 +1166,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("sp|Q9NSY1|BMP2K_HUMAN", "GPEIL---LGQ-GPPQQPPQQHRVLQQLQQGDWR...NRS"),
             ],
         )
-        self.assertEqual(alignments[2].get_alignment_length(), 348)
+        assert alignments[2].get_alignment_length() == 348
         self.check_alignment_rows(
             alignments[2],
             [
@@ -1190,7 +1177,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("sp|P08100|OPSD_HUMAN", "MNGTEGPNFYVPFSNATGVVRSPFEYPQYYLAEP...APA"),
             ],
         )
-        self.assertEqual(alignments[11].get_alignment_length(), 31)
+        assert alignments[11].get_alignment_length() == 31
         self.check_alignment_rows(
             alignments[11],
             [
@@ -1252,7 +1239,7 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "maf", 2)
         self.check_iterator_next_for_loop(path, "maf", 2)
         self.check_read_fails(path, "maf")
-        self.assertEqual(alignments[0].get_alignment_length(), 5486)
+        assert alignments[0].get_alignment_length() == 5486
         self.check_alignment_rows(
             alignments[0],
             [
@@ -1261,7 +1248,7 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("rn3", "gcacagcctttactccctgactgcgtttatattc...CCG"),
             ],
         )
-        self.assertEqual(alignments[1].get_alignment_length(), 5753)
+        assert alignments[1].get_alignment_length() == 5753
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1280,18 +1267,18 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "maf", 3)
         self.check_iterator_next_for_loop(path, "maf", 3)
         self.check_read_fails(path, "maf")
-        self.assertEqual(len(alignments[0]), 5)
-        self.assertEqual(alignments[0].get_alignment_length(), 42)
+        assert len(alignments[0]) == 5
+        assert alignments[0].get_alignment_length() == 42
         self.check_alignment_columns(
             alignments[0], ["AAA--", "AAAAA", "AAAAA", "---T-", "GGGGG", "GGGGG"]
         )
-        self.assertEqual(len(alignments[1]), 5)
-        self.assertEqual(alignments[1].get_alignment_length(), 6)
+        assert len(alignments[1]) == 5
+        assert alignments[1].get_alignment_length() == 6
         self.check_alignment_columns(
             alignments[1], ["TTTTt", "AAAAa", "AAAAa", "AAAAg", "GGGGg", "AAAAa"]
         )
-        self.assertEqual(len(alignments[2]), 4)
-        self.assertEqual(alignments[2].get_alignment_length(), 13)
+        assert len(alignments[2]) == 4
+        assert alignments[2].get_alignment_length() == 13
         self.check_alignment_rows(
             alignments[2],
             [
@@ -1311,18 +1298,18 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "maf", 3)
         self.check_iterator_next_for_loop(path, "maf", 3)
         self.check_read_fails(path, "maf")
-        self.assertEqual(len(alignments[0]), 5)
-        self.assertEqual(alignments[0].get_alignment_length(), 42)
+        assert len(alignments[0]) == 5
+        assert alignments[0].get_alignment_length() == 42
         self.check_alignment_columns(
             alignments[0], ["AAA--", "AAAAA", "AAAAA", "---T-", "GGGGG", "GGGGG"]
         )
-        self.assertEqual(len(alignments[1]), 5)
-        self.assertEqual(alignments[1].get_alignment_length(), 6)
+        assert len(alignments[1]) == 5
+        assert alignments[1].get_alignment_length() == 6
         self.check_alignment_columns(
             alignments[1], ["TTTTt", "AAAAa", "AAAAa", "AAAAg", "GGGGg", "AAAAa"]
         )
-        self.assertEqual(len(alignments[2]), 4)
-        self.assertEqual(alignments[2].get_alignment_length(), 13)
+        assert len(alignments[2]) == 4
+        assert alignments[2].get_alignment_length() == 13
         self.check_alignment_columns(
             alignments[2], ["gggA", "cccC", "aaaA", "gggG", "cccC", "aaaA"]
         )
@@ -1336,8 +1323,8 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "maf", 48)
         self.check_iterator_next_for_loop(path, "maf", 48)
         self.check_read_fails(path, "maf")
-        self.assertEqual(len(alignments[0]), 2)
-        self.assertEqual(alignments[0].get_alignment_length(), 164)
+        assert len(alignments[0]) == 2
+        assert alignments[0].get_alignment_length() == 164
         self.check_alignment_rows(
             alignments[0],
             [
@@ -1345,8 +1332,8 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("oryCun1.scaffold_133159", "TCACAGATATTTACTATTAAATATGGTTTGTTAT...GTT"),
             ],
         )
-        self.assertEqual(len(alignments[1]), 4)
-        self.assertEqual(alignments[1].get_alignment_length(), 466)
+        assert len(alignments[1]) == 4
+        assert alignments[1].get_alignment_length() == 466
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1356,13 +1343,13 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("ponAbe2.chr6", "AGTCTTCATAAGTGGAAATATAAGTTTTAATTAT...TTC"),
             ],
         )
-        self.assertEqual(len(alignments[2]), 5)
-        self.assertEqual(alignments[2].get_alignment_length(), 127)
+        assert len(alignments[2]) == 5
+        assert alignments[2].get_alignment_length() == 127
         self.check_alignment_columns(
             alignments[2], ["TTTTT", "GGGGG", "GGGGG", "GGGGG", "TTTTC", "CCCCC"]
         )
-        self.assertEqual(len(alignments[47]), 6)
-        self.assertEqual(alignments[47].get_alignment_length(), 46)
+        assert len(alignments[47]) == 6
+        assert alignments[47].get_alignment_length() == 46
         self.check_alignment_columns(
             alignments[47], ["TTTTTT", "GGGGGG", "TTTTTT", "TTTTTT", "TGGGAT", "tTTTT-"]
         )
@@ -1376,8 +1363,8 @@ class TestAlignIO_reading(unittest.TestCase):
         self.check_iterator_next_and_list(path, "mauve", 5)
         self.check_iterator_next_for_loop(path, "mauve", 5)
         self.check_read_fails(path, "mauve")
-        self.assertEqual(len(alignments[0]), 2)
-        self.assertEqual(alignments[0].get_alignment_length(), 5670)
+        assert len(alignments[0]) == 2
+        assert alignments[0].get_alignment_length() == 5670
         self.check_alignment_rows(
             alignments[0],
             [
@@ -1385,8 +1372,8 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("2/0-5670", "ATATTAGGTTTTTACCTACCCAGGAAAAGCCAAC...AAT"),
             ],
         )
-        self.assertEqual(len(alignments[1]), 2)
-        self.assertEqual(alignments[1].get_alignment_length(), 4420)
+        assert len(alignments[1]) == 2
+        assert alignments[1].get_alignment_length() == 4420
         self.check_alignment_rows(
             alignments[1],
             [
@@ -1394,16 +1381,16 @@ class TestAlignIO_reading(unittest.TestCase):
                 ("2/7140-11410", "GAACATCAGCACCTGAGTTGCTAAAGTCATTTAG...CTC"),
             ],
         )
-        self.assertEqual(len(alignments[2]), 1)
-        self.assertEqual(alignments[2].get_alignment_length(), 4970)
+        assert len(alignments[2]) == 1
+        assert alignments[2].get_alignment_length() == 4970
         self.check_alignment_rows(
             alignments[2],
             [("1/9940-14910", "TCTACCAACCACCACAGACATCAATCACTTCTGC...GAC")],
         )
-        self.assertEqual(len(alignments[3]), 1)
-        self.assertEqual(alignments[3].get_alignment_length(), 1470)
-        self.assertEqual(len(alignments[4]), 1)
-        self.assertEqual(alignments[4].get_alignment_length(), 1470)
+        assert len(alignments[3]) == 1
+        assert alignments[3].get_alignment_length() == 1470
+        assert len(alignments[4]) == 1
+        assert alignments[4].get_alignment_length() == 1470
         self.check_alignment_rows(
             alignments[4],
             [("2/11410-12880", "ATTCGCACATAAGAATGTACCTTGCTGTAATTTA...ATA")],
@@ -1412,5 +1399,4 @@ class TestAlignIO_reading(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

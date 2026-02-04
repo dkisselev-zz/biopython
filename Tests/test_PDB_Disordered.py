@@ -11,6 +11,7 @@ import os
 import sys
 import tempfile
 import unittest
+import pytest
 import warnings
 
 import numpy as np
@@ -38,28 +39,28 @@ class TestDisordered(unittest.TestCase):
         resi27 = self.structure[0]["A"][27]
         resi27_copy = resi27.copy()
 
-        self.assertNotEqual(id(resi27), id(resi27_copy))  # did we really copy
+        assert id(resi27) != id(resi27_copy)  # did we really copy
 
         resi27_atoms = resi27.get_unpacked_list()
         resi27_copy_atoms = resi27.get_unpacked_list()
-        self.assertEqual(len(resi27_atoms), len(resi27_copy_atoms))
+        assert len(resi27_atoms) == len(resi27_copy_atoms)
 
         for ai, aj in zip(resi27_atoms, resi27_copy_atoms):
-            self.assertEqual(ai.name, aj.name)
+            assert ai.name == aj.name
 
     def test_copy_entire_chain(self):
         """Copy propagates throughout SMCRA object."""
         s = self.structure
         s_copy = s.copy()
 
-        self.assertNotEqual(id(s), id(s_copy))  # did we really copy
+        assert id(s) != id(s_copy)  # did we really copy
 
         atoms = self.unpack_all_atoms(s)
         copy_atoms = self.unpack_all_atoms(s_copy)
-        self.assertEqual(len(atoms), len(copy_atoms))
+        assert len(atoms) == len(copy_atoms)
 
         for ai, aj in zip(atoms, copy_atoms):
-            self.assertEqual(ai.name, aj.name)
+            assert ai.name == aj.name
 
     # Transforming
     def test_transform_disordered(self):
@@ -76,9 +77,9 @@ class TestDisordered(unittest.TestCase):
 
         atoms = self.unpack_all_atoms(s)
         copy_atoms = self.unpack_all_atoms(s_copy)
-        self.assertEqual(len(atoms), len(copy_atoms))
+        assert len(atoms) == len(copy_atoms)
         for ai, aj in zip(atoms, copy_atoms):
-            self.assertEqual(ai - aj, 20.0)  # check distance == 20.0
+            assert ai - aj == 20.0  # check distance == 20.0
 
     # Extract and write
     def test_copy_and_write_disordered(self):
@@ -103,9 +104,9 @@ class TestDisordered(unittest.TestCase):
             # Do we have the same stuff?
             atoms1 = self.unpack_all_atoms(s)
             atoms2 = self.unpack_all_atoms(s2)
-            self.assertEqual(len(atoms1), len(atoms2))
+            assert len(atoms1) == len(atoms2)
             for ai, aj in zip(atoms1, atoms2):
-                self.assertEqual(ai.name, aj.name)
+                assert ai.name == aj.name
 
         finally:
             os.remove(filename)
@@ -119,7 +120,7 @@ class TestDisordered(unittest.TestCase):
 
         com = s.center_of_mass()
 
-        self.assertTrue(np.allclose(com, [54.545, 19.868, 31.212], atol=1e-3))
+        assert np.allclose(com, [54.545, 19.868, 31.212], atol=1e-3)
 
     def test_disordered_cog(self):
         """Calculate DisorderedAtom center of geometry."""
@@ -135,16 +136,16 @@ class TestDisordered(unittest.TestCase):
                 arg27.detach_child(atom.name)
 
         res_cog = arg27.center_of_mass()
-        self.assertTrue(np.allclose(res_cog, [59.555, 21.033, 25.954], atol=1e-3))
+        assert np.allclose(res_cog, [59.555, 21.033, 25.954], atol=1e-3)
 
         # Now compare to DisorderedAtom.center_of_mass
         da_cog = arg27["NH1"].center_of_mass()
-        self.assertTrue(np.allclose(res_cog, da_cog, atol=1e-3))
+        assert np.allclose(res_cog, da_cog, atol=1e-3)
 
     def test_empty_disordered(self):
         """Raise ValueError on center of mass calculation of empty DisorderedAtom."""
         da = DisorderedAtom("dummy")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             da.center_of_mass()
 
     # disordered_remove
@@ -156,20 +157,20 @@ class TestDisordered(unittest.TestCase):
 
         # Residue 10 of chain A is disordered
         disres = s[1]["A"][(" ", 10, " ")]
-        self.assertEqual(disres.is_disordered(), 2)
-        self.assertEqual(len(disres.child_dict), 2)  # GLY and SER
+        assert disres.is_disordered() == 2
+        assert len(disres.child_dict) == 2  # GLY and SER
 
         disres.disordered_remove("GLY")
-        self.assertEqual(len(disres.child_dict), 1)
-        self.assertEqual(disres.resname, "SER")  # selects new child?
+        assert len(disres.child_dict) == 1
+        assert disres.resname == "SER"  # selects new child?
 
         disres.disordered_remove("SER")
-        self.assertEqual(len(disres.child_dict), 0)
-        self.assertIsNone(disres.selected_child)
-        with self.assertRaises(AttributeError):
+        assert len(disres.child_dict) == 0
+        assert disres.selected_child is None
+        with pytest.raises(AttributeError):
             _ = disres.resname
 
-        self.assertEqual(str(disres), "<Empty DisorderedResidue>")
+        assert str(disres) == "<Empty DisorderedResidue>"
 
         # Should still be in chain with the same id though
         # Up to the user to detach the DisorderedResidue from its parent.
@@ -183,10 +184,10 @@ class TestDisordered(unittest.TestCase):
 
         # Residue 3 of chain A is disordered
         disres = s[1]["A"][(" ", 3, " ")]
-        self.assertEqual(disres.is_disordered(), 1)
+        assert disres.is_disordered() == 1
 
         disatom = disres["N"]
-        self.assertEqual(len(disatom.child_dict), 2)  # "A" and " "
+        assert len(disatom.child_dict) == 2  # "A" and " "
 
         # Add new atom with bogus occupancy to test selection on removal
         atom = disatom.child_dict["A"].copy()
@@ -195,24 +196,23 @@ class TestDisordered(unittest.TestCase):
         disatom.disordered_add(atom)
 
         disatom.disordered_remove(" ")
-        self.assertEqual(len(disatom.child_dict), 2)
-        self.assertEqual(disatom.altloc, "B")
+        assert len(disatom.child_dict) == 2
+        assert disatom.altloc == "B"
 
         # Remove all children
         disatom.disordered_remove("A")
         disatom.disordered_remove("B")
 
-        self.assertEqual(len(disatom.child_dict), 0)
-        self.assertIsNone(disatom.selected_child)
-        self.assertEqual(disatom.last_occupancy, -sys.maxsize)
-        with self.assertRaises(AttributeError):
+        assert len(disatom.child_dict) == 0
+        assert disatom.selected_child is None
+        assert disatom.last_occupancy == -sys.maxsize
+        with pytest.raises(AttributeError):
             _ = disatom.altloc
 
-        self.assertEqual(str(disatom), "<Empty DisorderedAtom N>")
+        assert str(disatom) == "<Empty DisorderedAtom N>"
 
         disatm = s[1]["A"][(" ", 3, " ")]["N"]
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

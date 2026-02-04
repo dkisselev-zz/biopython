@@ -8,6 +8,7 @@
 import os
 import os.path
 import unittest
+import pytest
 
 from Bio.Phylo.PAML import baseml
 from Bio.Phylo.PAML._paml import PamlError
@@ -55,95 +56,101 @@ class ModTest(unittest.TestCase):
         self.bml = baseml.Baseml()
 
     def testAlignmentFileIsValid(self):
-        self.assertRaises(
-            (AttributeError, TypeError, OSError), baseml.Baseml, alignment=[]
-        )
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            baseml.Baseml(alignment=[])
         self.bml.alignment = []
         self.bml.tree = self.tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises((AttributeError, TypeError, OSError), self.bml.run)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.bml.run()
 
     def testAlignmentExists(self):
-        self.assertRaises(
-            (EnvironmentError, IOError), baseml.Baseml, alignment="nonexistent"
-        )
+        with pytest.raises((EnvironmentError, IOError)):
+            baseml.Baseml(alignment="nonexistent")
         self.bml.alignment = "nonexistent"
         self.bml.tree = self.tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises((EnvironmentError, IOError), self.bml.run)
+        with pytest.raises((EnvironmentError, IOError)):
+            self.bml.run()
 
     def testTreeFileValid(self):
-        self.assertRaises((AttributeError, TypeError, OSError), baseml.Baseml, tree=[])
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            baseml.Baseml(tree=[])
         self.bml.alignment = self.align_file
         self.bml.tree = []
         self.bml.out_file = self.out_file
-        self.assertRaises((AttributeError, TypeError, OSError), self.bml.run)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.bml.run()
 
     def testTreeExists(self):
-        self.assertRaises(
-            (EnvironmentError, IOError), baseml.Baseml, tree="nonexistent"
-        )
+        with pytest.raises((EnvironmentError, IOError)):
+            baseml.Baseml(tree="nonexistent")
         self.bml.alignment = self.align_file
         self.bml.tree = "nonexistent"
         self.bml.out_file = self.out_file
-        self.assertRaises((EnvironmentError, IOError), self.bml.run)
+        with pytest.raises((EnvironmentError, IOError)):
+            self.bml.run()
 
     def testWorkingDirValid(self):
         self.bml.tree = self.tree_file
         self.bml.alignment = self.align_file
         self.bml.out_file = self.out_file
         self.bml.working_dir = []
-        self.assertRaises((AttributeError, TypeError, OSError), self.bml.run)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.bml.run()
 
     def testOptionExists(self):
-        self.assertRaises((AttributeError, KeyError), self.bml.set_options, xxxx=1)
-        self.assertRaises((AttributeError, KeyError), self.bml.get_option, "xxxx")
+        with pytest.raises((AttributeError, KeyError)):
+            self.bml.set_options(xxxx=1)
+        with pytest.raises((AttributeError, KeyError)):
+            self.bml.get_option("xxxx")
 
     def testAlignmentSpecified(self):
         self.bml.tree = self.tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises((AttributeError, ValueError), self.bml.run)
+        with pytest.raises((AttributeError, ValueError)):
+            self.bml.run()
 
     def testTreeSpecified(self):
         self.bml.alignment = self.align_file
         self.bml.out_file = self.out_file
-        self.assertRaises((AttributeError, ValueError), self.bml.run)
+        with pytest.raises((AttributeError, ValueError)):
+            self.bml.run()
 
     def testOutputFileSpecified(self):
         self.bml.alignment = self.align_file
         self.bml.tree = self.tree_file
-        self.assertRaises((AttributeError, ValueError), self.bml.run)
+        with pytest.raises((AttributeError, ValueError)):
+            self.bml.run()
 
     def testPamlErrorsCaught(self):
         self.bml.alignment = self.align_file
         self.bml.tree = self.bad_tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises((EnvironmentError, PamlError), self.bml.run)
+        with pytest.raises((EnvironmentError, PamlError)):
+            self.bml.run()
 
     def testCtlFileValidOnRun(self):
         self.bml.alignment = self.align_file
         self.bml.tree = self.tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises(
-            (AttributeError, TypeError, OSError), self.bml.run, ctl_file=[]
-        )
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.bml.run(ctl_file=[])
 
     def testCtlFileExistsOnRun(self):
         self.bml.alignment = self.align_file
         self.bml.tree = self.tree_file
         self.bml.out_file = self.out_file
-        self.assertRaises(
-            (EnvironmentError, IOError), self.bml.run, ctl_file="nonexistent"
-        )
+        with pytest.raises((EnvironmentError, IOError)):
+            self.bml.run(ctl_file="nonexistent")
 
     def testCtlFileValidOnRead(self):
-        self.assertRaises(
-            (AttributeError, TypeError, OSError), self.bml.read_ctl_file, []
-        )
-        self.assertRaises(
-            (AttributeError, KeyError), self.bml.read_ctl_file, self.bad_ctl_file1
-        )
-        self.assertRaises(AttributeError, self.bml.read_ctl_file, self.bad_ctl_file2)
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            self.bml.read_ctl_file([])
+        with pytest.raises((AttributeError, KeyError)):
+            self.bml.read_ctl_file(self.bad_ctl_file1)
+        with pytest.raises(AttributeError):
+            self.bml.read_ctl_file(self.bad_ctl_file2)
         target_options = {
             "noisy": 0,
             "verbose": 0,
@@ -173,25 +180,25 @@ class ModTest(unittest.TestCase):
         }
         self.bml.read_ctl_file(self.ctl_file)
         # Compare the dictionary keys:
-        self.assertEqual(sorted(self.bml._options), sorted(target_options))
+        assert sorted(self.bml._options) == sorted(target_options)
         for key in target_options:
-            self.assertEqual(
-                self.bml._options[key],
-                target_options[key],
-                f"{key}: {self.bml._options[key]!r} vs {target_options[key]!r}",
-            )
+            assert self.bml._options[key] == target_options[key], f"{key}: {self.bml._options[key]!r} vs {target_options[key]!r}"
 
     def testCtlFileExistsOnRead(self):
-        self.assertRaises(IOError, self.bml.read_ctl_file, ctl_file="nonexistent")
+        with pytest.raises(IOError):
+            self.bml.read_ctl_file(ctl_file="nonexistent")
 
     def testResultsValid(self):
-        self.assertRaises((AttributeError, TypeError, OSError), baseml.read, [])
+        with pytest.raises((AttributeError, TypeError, OSError)):
+            baseml.read([])
 
     def testResultsExist(self):
-        self.assertRaises(IOError, baseml.read, "nonexistent")
+        with pytest.raises(IOError):
+            baseml.read("nonexistent")
 
     def testResultsParsable(self):
-        self.assertRaises(ValueError, baseml.read, self.results_file)
+        with pytest.raises(ValueError):
+            baseml.read(self.results_file)
 
     def testParseAllVersions(self):
         folder = os.path.join("PAML", "Results", "baseml", "versions")
@@ -199,8 +206,8 @@ class ModTest(unittest.TestCase):
             file_path = os.path.join(folder, results_file)
             if os.path.isfile(file_path) and results_file[:6] == "baseml":
                 results = baseml.read(file_path)
-                self.assertEqual(len(results), 6)
-                self.assertEqual(len(results["parameters"]), 7)
+                assert len(results) == 6
+                assert len(results["parameters"]) == 7
 
     def testParseModel(self):
         res_dir = os.path.join(self.results_dir, "baseml", "model")
@@ -215,25 +222,25 @@ class ModTest(unittest.TestCase):
             results = baseml.read(results_path)
             # There are 6 top-levels: parameters, tree, lnL, version,
             # tree length and lnL max
-            self.assertEqual(len(results), 6, version_msg)
-            self.assertIn("parameters", results, version_msg)
+            assert len(results) == 6, version_msg
+            assert "parameters" in results, version_msg
             params = results["parameters"]
-            self.assertIn("alpha", params, version_msg)
-            self.assertIn("rates", params, version_msg)
-            self.assertIn("parameter list", params, version_msg)
-            self.assertIn("rate frequencies", params, version_msg)
+            assert "alpha" in params, version_msg
+            assert "rates" in params, version_msg
+            assert "parameter list" in params, version_msg
+            assert "rate frequencies" in params, version_msg
             if model in ["1", "3", "4", "5", "6"]:
-                self.assertIn("kappa", params, version_msg)
+                assert "kappa" in params, version_msg
             if model in ["7", "8"]:
-                self.assertIn("base frequencies", params, version_msg)
-                self.assertIn("rate parameters", params, version_msg)
-                self.assertIn("Q matrix", params, version_msg)
+                assert "base frequencies" in params, version_msg
+                assert "rate parameters" in params, version_msg
+                assert "Q matrix" in params, version_msg
                 qmat = params["Q matrix"]
-                self.assertEqual(len(qmat), 2, version_msg)
-                self.assertIn("matrix", qmat)
+                assert len(qmat) == 2, version_msg
+                assert "matrix" in qmat
                 matrix = qmat["matrix"]
-                self.assertEqual(len(matrix), 4, version_msg)
-                self.assertEqual(len(matrix[0]), 4, version_msg)
+                assert len(matrix) == 4, version_msg
+                assert len(matrix[0]) == 4, version_msg
 
     def testParseAlpha1Rho1(self):
         # Test the auto-discrete gamma model
@@ -251,14 +258,14 @@ class ModTest(unittest.TestCase):
             results = baseml.read(results_path)
             # There are 6 top-levels: parameters, tree, lnL, version,
             # tree length and lnL max
-            self.assertEqual(len(results), 6, version_msg)
-            self.assertIn("parameters", results, version_msg)
+            assert len(results) == 6, version_msg
+            assert "parameters" in results, version_msg
             params = results["parameters"]
-            self.assertIn("rho", params, version_msg)
-            self.assertIn("transition probs.", params, version_msg)
+            assert "rho" in params, version_msg
+            assert "transition probs." in params, version_msg
             trans_p = params["transition probs."]
-            self.assertEqual(len(trans_p), 5, version_msg)
-            self.assertEqual(len(trans_p[0]), 5, version_msg)
+            assert len(trans_p) == 5, version_msg
+            assert len(trans_p[0]) == 5, version_msg
 
     def testParseNhomo(self):
         res_dir = os.path.join(self.results_dir, "baseml", "nhomo")
@@ -273,16 +280,16 @@ class ModTest(unittest.TestCase):
             results = baseml.read(results_path)
             # There are 6 top-levels: parameters, tree, lnL, version,
             # tree length and lnL max
-            self.assertEqual(len(results), 6, version_msg)
-            self.assertIn("parameters", results, version_msg)
+            assert len(results) == 6, version_msg
+            assert "parameters" in results, version_msg
             params = results["parameters"]
             if n == "1":
-                self.assertIn("base frequencies", params, version_msg)
+                assert "base frequencies" in params, version_msg
             else:
-                self.assertIn("nodes", params)
+                assert "nodes" in params
                 nodes = params["nodes"]
-                self.assertEqual(len(nodes), 8, version_msg)
-                self.assertEqual(len(nodes[1]), 2, version_msg)
+                assert len(nodes) == 8, version_msg
+                assert len(nodes[1]) == 2, version_msg
 
     def testParseSEs(self):
         res_dir = os.path.join(self.results_dir, "baseml", "SE")
@@ -293,12 +300,11 @@ class ModTest(unittest.TestCase):
             results = baseml.read(results_path)
             # There are 6 top-levels: parameters, tree, lnL, version,
             # tree length and lnL max
-            self.assertEqual(len(results), 6, version_msg)
-            self.assertIn("parameters", results, version_msg)
+            assert len(results) == 6, version_msg
+            assert "parameters" in results, version_msg
             params = results["parameters"]
-            self.assertIn("SEs", params, version_msg)
+            assert "SEs" in params, version_msg
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

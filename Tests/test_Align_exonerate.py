@@ -8,20 +8,12 @@
 import io
 import os
 import unittest
+import pytest
 from tempfile import NamedTemporaryFile
 
 from Bio import Align
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install numpy if you want to use Bio.Align.exonerate."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 class Exonerate_est2genome(unittest.TestCase):
     def test_exn_22_m_est2genome_cigar(self):
         """Test parsing exn_22_m_est2genome_cigar.exn."""
@@ -33,24 +25,24 @@ class Exonerate_est2genome(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         with Align.parse(exn_file, "exonerate") as alignments:
             self.check_cigar(alignments)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(exn_file, "exonerate") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
         with open(exn_file) as stream:
             data = stream.read()
@@ -61,38 +53,25 @@ class Exonerate_est2genome(unittest.TestCase):
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m est2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m est2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -119,29 +98,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 439)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 439
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -162,22 +139,13 @@ AlignmentCounts object with
                               320,    340,    340,    346]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 346 + gi|330443688|ref|NC_001145.3| 85010 473201 + 439 M 11 I 1 M 15 I 2 M 4 I 1 M 1 I 1 M 8 I 4 M 17 D 168908 M 4 D 1 M 8 I 1 M 3 I 2 M 33 D 1 M 7 D 2 M 102 D 96824 M 14 D 2 M 10 I 2 M 5 D 2 M 10 I 2 M 4 D 1 M 20 I 1 M 15 D 1 M 5 I 3 M 4 D 122118 M 20 D 5 M 6
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 326:
         identities = 0,
@@ -204,29 +172,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 20)
-        self.assertEqual(counts.internal_deletions, 387865)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 387885)
-        self.assertEqual(counts.insertions, 20)
-        self.assertEqual(counts.deletions, 387865)
-        self.assertEqual(counts.gaps, 387885)
-        self.assertEqual(counts.aligned, 326)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 20
+        assert counts.internal_deletions == 387865
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 387885
+        assert counts.insertions == 20
+        assert counts.deletions == 387865
+        assert counts.gaps == 387885
+        assert counts.aligned == 326
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 263)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 263
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[130198, 130184, 130183, 130179, 130179, 130154,
@@ -249,22 +215,13 @@ AlignmentCounts object with
                               362,    365,    365,    406]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 25 406 + gi|330443688|ref|NC_001145.3| 130198 11338 - 263 M 14 D 1 M 4 I 2 M 25 D 1 M 9 D 6 M 42 I 2 M 16 D 2 M 7 D 1 M 3 I 2 M 23 I 3 M 6 D 9357 M 1 I 1 M 11 D 1 M 12 I 1 M 9 D 1 M 10 I 1 M 18 D 1 M 5 D 109125 M 16 I 4 M 4 I 1 M 11 I 5 M 8 I 1 M 22 D 2 M 4 D 2 M 34 D 1 M 3 D 1 M 41
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 358:
         identities = 0,
@@ -291,22 +248,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 23)
-        self.assertEqual(counts.internal_deletions, 118502)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 118525)
-        self.assertEqual(counts.insertions, 23)
-        self.assertEqual(counts.deletions, 118502)
-        self.assertEqual(counts.gaps, 118525)
-        self.assertEqual(counts.aligned, 358)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 23
+        assert counts.internal_deletions == 118502
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 118525
+        assert counts.insertions == 23
+        assert counts.deletions == 118502
+        assert counts.gaps == 118525
+        assert counts.aligned == 358
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_est2genome_vulgar(self):
@@ -317,53 +273,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m est2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m est2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"M")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -390,29 +333,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 439)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 439
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -435,27 +376,15 @@ AlignmentCounts object with
                               320,    340,    340,    346]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"MIMIMIMIMIM5N3MDMIMIMDMDM5N3MDMIMDMIMDMIMDMIM5N3MDM"),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MIMIMIMIMIM5N3MDMIMIMDMDM5N3MDMIMDMIMDMIMDMIM5N3MDM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 346 + gi|330443688|ref|NC_001145.3| 85010 473201 + 439 M 11 11 G 1 0 M 15 15 G 2 0 M 4 4 G 1 0 M 1 1 G 1 0 M 8 8 G 4 0 M 17 17 5 0 2 I 0 168904 3 0 2 M 4 4 G 0 1 M 8 8 G 1 0 M 3 3 G 2 0 M 33 33 G 0 1 M 7 7 G 0 2 M 102 102 5 0 2 I 0 96820 3 0 2 M 14 14 G 0 2 M 10 10 G 2 0 M 5 5 G 0 2 M 10 10 G 2 0 M 4 4 G 0 1 M 20 20 G 1 0 M 15 15 G 0 1 M 5 5 G 3 0 M 4 4 5 0 2 I 0 122114 3 0 2 M 20 20 G 0 5 M 6 6
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 326:
         identities = 0,
@@ -482,29 +411,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 20)
-        self.assertEqual(counts.internal_deletions, 387865)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 387885)
-        self.assertEqual(counts.insertions, 20)
-        self.assertEqual(counts.deletions, 387865)
-        self.assertEqual(counts.gaps, 387885)
-        self.assertEqual(counts.aligned, 326)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 20
+        assert counts.internal_deletions == 387865
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 387885
+        assert counts.insertions == 20
+        assert counts.deletions == 387865
+        assert counts.gaps == 387885
+        assert counts.aligned == 326
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 263)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 263
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[130198, 130184, 130183, 130179, 130179, 130154,
@@ -529,27 +456,15 @@ AlignmentCounts object with
                               365,    406]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"MDMIMDMDMIMDMDMIMIM3N5MIMDMIMDMIMDM3N5MIMIMIMIMDMDMDMDM"),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MDMIMDMDMIMDMDMIMIM3N5MIMDMIMDMIMDM3N5MIMIMIMIMDMDMDMDM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 25 406 + gi|330443688|ref|NC_001145.3| 130198 11338 - 263 M 14 14 G 0 1 M 4 4 G 2 0 M 25 25 G 0 1 M 9 9 G 0 6 M 42 42 G 2 0 M 16 16 G 0 2 M 7 7 G 0 1 M 3 3 G 2 0 M 23 23 G 3 0 M 6 6 3 0 2 I 0 9353 5 0 2 M 1 1 G 1 0 M 11 11 G 0 1 M 12 12 G 1 0 M 9 9 G 0 1 M 10 10 G 1 0 M 18 18 G 0 1 M 5 5 3 0 2 I 0 109121 5 0 2 M 16 16 G 4 0 M 4 4 G 1 0 M 11 11 G 5 0 M 8 8 G 1 0 M 22 22 G 0 2 M 4 4 G 0 2 M 34 34 G 0 1 M 3 3 G 0 1 M 41 41
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 358:
         identities = 0,
@@ -576,22 +491,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 23)
-        self.assertEqual(counts.internal_deletions, 118502)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 118525)
-        self.assertEqual(counts.insertions, 23)
-        self.assertEqual(counts.deletions, 118502)
-        self.assertEqual(counts.gaps, 118525)
-        self.assertEqual(counts.aligned, 358)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 23
+        assert counts.internal_deletions == 118502
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 118525
+        assert counts.insertions == 23
+        assert counts.deletions == 118502
+        assert counts.gaps == 118525
+        assert counts.aligned == 358
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -604,49 +518,36 @@ class Exonerate_affine_local(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m affine:local ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "Michiels-MacBook-Pro.local")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m affine:local ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "Michiels-MacBook-Pro.local"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -673,27 +574,25 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 359)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 359
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[253990, 254024, 254025, 254031, 254033, 254134,
@@ -720,22 +619,13 @@ AlignmentCounts object with
                               520,    529,    529,    552]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 83 552 + gi|330443688|ref|NC_001145.3| 253990 254474 + 359 M 34 D 1 M 6 D 2 M 101 D 2 M 6 I 2 M 3 I 1 M 12 D 1 M 9 I 1 M 26 D 1 M 34 D 5 M 13 D 2 M 7 D 1 M 10 D 1 M 14 D 3 M 9 D 1 M 20 D 2 M 2 D 1 M 7 D 1 M 2 D 1 M 6 D 1 M 3 I 1 M 2 I 3 M 10 D 1 M 2 D 3 M 9 I 2 M 9 I 3 M 7 D 1 M 6 I 2 M 8 D 1 M 32 I 2 M 9 I 2 M 9 D 2 M 23
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (450 aligned letters; 0 identities; 0 mismatches; 53 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (450 aligned letters; 0 identities; 0 mismatches; 53 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 450:
         identities = 0,
@@ -762,27 +652,25 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 19)
-        self.assertEqual(counts.internal_deletions, 34)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 53)
-        self.assertEqual(counts.insertions, 19)
-        self.assertEqual(counts.deletions, 34)
-        self.assertEqual(counts.gaps, 53)
-        self.assertEqual(counts.aligned, 450)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 19
+        assert counts.internal_deletions == 34
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 53
+        assert counts.insertions == 19
+        assert counts.deletions == 34
+        assert counts.gaps == 53
+        assert counts.aligned == 450
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443715|ref|NC_001146.8|")
-        self.assertEqual(alignment.score, 219)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443715|ref|NC_001146.8|"
+        assert alignment.score == 219
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[454073, 454087, 454087, 454094, 454094, 454097,
@@ -807,22 +695,13 @@ AlignmentCounts object with
                               465,    479,    479,    509,    510,    517]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 60 517 + gi|330443715|ref|NC_001146.8| 454073 454531 + 219 M 14 I 1 M 7 I 1 M 3 I 1 M 12 D 1 M 23 D 1 M 16 I 2 M 17 D 2 M 6 D 1 M 7 D 1 M 8 I 1 M 12 D 1 M 3 D 1 M 14 D 1 M 10 D 1 M 20 D 1 M 19 D 2 M 9 I 5 M 8 I 1 M 41 I 3 M 42 D 1 M 8 D 3 M 1 D 1 M 26 I 2 M 11 I 3 M 12 D 1 M 18 D 1 M 18 D 1 M 14 D 1 M 30 I 1 M 7
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (436 aligned letters; 0 identities; 0 mismatches; 43 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (436 aligned letters; 0 identities; 0 mismatches; 43 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 436:
         identities = 0,
@@ -849,22 +728,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 21)
-        self.assertEqual(counts.internal_deletions, 22)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 43)
-        self.assertEqual(counts.insertions, 21)
-        self.assertEqual(counts.deletions, 22)
-        self.assertEqual(counts.gaps, 43)
-        self.assertEqual(counts.aligned, 436)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 21
+        assert counts.internal_deletions == 22
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 43
+        assert counts.insertions == 21
+        assert counts.deletions == 22
+        assert counts.gaps == 43
+        assert counts.aligned == 436
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_affine_local_vulgar(self):
@@ -875,51 +753,38 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m affine:local ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m affine:local ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -946,27 +811,25 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 359)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 359
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[253990, 254024, 254025, 254031, 254033, 254134,
@@ -993,29 +856,17 @@ AlignmentCounts object with
                               520,    529,    529,    552]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MDMDMDMIMIMDMIMDMDMDMDMDMDMDMDMDMDMDMDMIMIMDMDMIMIMDMIMDMIMIMDM"
-                ),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+                )
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 83 552 + gi|330443688|ref|NC_001145.3| 253990 254474 + 359 M 34 34 G 0 1 M 6 6 G 0 2 M 101 101 G 0 2 M 6 6 G 2 0 M 3 3 G 1 0 M 12 12 G 0 1 M 9 9 G 1 0 M 26 26 G 0 1 M 34 34 G 0 5 M 13 13 G 0 2 M 7 7 G 0 1 M 10 10 G 0 1 M 14 14 G 0 3 M 9 9 G 0 1 M 20 20 G 0 2 M 2 2 G 0 1 M 7 7 G 0 1 M 2 2 G 0 1 M 6 6 G 0 1 M 3 3 G 1 0 M 2 2 G 3 0 M 10 10 G 0 1 M 2 2 G 0 3 M 9 9 G 2 0 M 9 9 G 3 0 M 7 7 G 0 1 M 6 6 G 2 0 M 8 8 G 0 1 M 32 32 G 2 0 M 9 9 G 2 0 M 9 9 G 0 2 M 23 23
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (450 aligned letters; 0 identities; 0 mismatches; 53 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (450 aligned letters; 0 identities; 0 mismatches; 53 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 450:
         identities = 0,
@@ -1042,27 +893,25 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 19)
-        self.assertEqual(counts.internal_deletions, 34)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 53)
-        self.assertEqual(counts.insertions, 19)
-        self.assertEqual(counts.deletions, 34)
-        self.assertEqual(counts.gaps, 53)
-        self.assertEqual(counts.aligned, 450)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 19
+        assert counts.internal_deletions == 34
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 53
+        assert counts.insertions == 19
+        assert counts.deletions == 34
+        assert counts.gaps == 53
+        assert counts.aligned == 450
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443715|ref|NC_001146.8|")
-        self.assertEqual(alignment.score, 219)
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443715|ref|NC_001146.8|"
+        assert alignment.score == 219
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[454073, 454087, 454087, 454094, 454094, 454097,
@@ -1087,29 +936,17 @@ AlignmentCounts object with
                               465,    479,    479,    509,    510,    517]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMIMDMDMIMDMDMDMIMDMDMDMDMDMDMIMIMIMDMDMDMIMIMDMDMDMDMIM"
-                ),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+                )
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 60 517 + gi|330443715|ref|NC_001146.8| 454073 454531 + 219 M 14 14 G 1 0 M 7 7 G 1 0 M 3 3 G 1 0 M 12 12 G 0 1 M 23 23 G 0 1 M 16 16 G 2 0 M 17 17 G 0 2 M 6 6 G 0 1 M 7 7 G 0 1 M 8 8 G 1 0 M 12 12 G 0 1 M 3 3 G 0 1 M 14 14 G 0 1 M 10 10 G 0 1 M 20 20 G 0 1 M 19 19 G 0 2 M 9 9 G 5 0 M 8 8 G 1 0 M 41 41 G 3 0 M 42 42 G 0 1 M 8 8 G 0 3 M 1 1 G 0 1 M 26 26 G 2 0 M 11 11 G 3 0 M 12 12 G 0 1 M 18 18 G 0 1 M 18 18 G 0 1 M 14 14 G 0 1 M 30 30 G 1 0 M 7 7
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (436 aligned letters; 0 identities; 0 mismatches; 43 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (436 aligned letters; 0 identities; 0 mismatches; 43 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 436:
         identities = 0,
@@ -1136,22 +973,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 21)
-        self.assertEqual(counts.internal_deletions, 22)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 43)
-        self.assertEqual(counts.insertions, 21)
-        self.assertEqual(counts.deletions, 22)
-        self.assertEqual(counts.gaps, 43)
-        self.assertEqual(counts.aligned, 436)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 21
+        assert counts.internal_deletions == 22
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 43
+        assert counts.insertions == 21
+        assert counts.deletions == 22
+        assert counts.gaps == 43
+        assert counts.aligned == 436
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -1164,55 +1000,42 @@ class Exonerate_cdna2genome(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m cdna2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m cdna2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6146)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6146
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 # fmt: off
                 alignment.coordinates,
                 np.array([[1319275, 1319274, 1319271, 1318045],
                           [      0,       1,       4,    1230]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6146 M 1 M 3 M 1226
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -1239,51 +1062,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6146)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6146
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1318045, 1318174, 1318177, 1319275],
                           [   1230,    1101,    1098,       0]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1230 0 - gi|330443520|ref|NC_001136.10| 1318045 1319275 + 6146 M 129 M 3 M 1098
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -1310,29 +1122,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 518)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 518
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -1359,22 +1169,13 @@ AlignmentCounts object with
                               470,    472,    472,    475,    475,    516]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 516 + gi|330443688|ref|NC_001145.3| 85010 667216 + 518 M 11 I 1 M 15 I 2 M 4 I 1 M 1 I 1 M 8 I 4 M 17 D 168908 M 4 D 1 M 8 I 2 M 3 I 1 M 33 D 2 M 7 D 1 M 102 D 96824 M 14 D 2 M 10 I 2 M 5 D 2 M 10 I 2 M 4 D 1 M 20 I 1 M 15 D 1 M 5 I 3 M 4 D 122118 M 20 D 5 M 6 D 193839 M 12 D 2 M 5 I 1 M 7 D 2 M 1 D 1 M 12 M 75 M 6 I 1 M 4 D 1 M 2 D 1 M 3 D 1 M 41
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (494 aligned letters; 0 identities; 0 mismatches; 581734 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (494 aligned letters; 0 identities; 0 mismatches; 581734 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 494:
         identities = 0,
@@ -1401,22 +1202,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 22)
-        self.assertEqual(counts.internal_deletions, 581712)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 581734)
-        self.assertEqual(counts.insertions, 22)
-        self.assertEqual(counts.deletions, 581712)
-        self.assertEqual(counts.gaps, 581734)
-        self.assertEqual(counts.aligned, 494)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 22
+        assert counts.internal_deletions == 581712
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 581734
+        assert counts.insertions == 22
+        assert counts.deletions == 581712
+        assert counts.gaps == 581734
+        assert counts.aligned == 494
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_cdna2genome_vulgar(self):
@@ -1427,57 +1227,44 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m cdna2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m cdna2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6146)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6146
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319275, 1319274, 1319271, 1318045],
                           [      0,       1,       4,    1230]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MCM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6146 M 1 1 C 3 3 M 1226 1226
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -1504,53 +1291,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6146)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6146
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1318045, 1318174, 1318177, 1319275],
                           [   1230,    1101,    1098,       0]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MCM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1230 0 - gi|330443520|ref|NC_001136.10| 1318045 1319275 + 6146 M 129 129 C 3 3 M 1098 1098
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -1577,29 +1353,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 518)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 518
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -1630,29 +1404,17 @@ AlignmentCounts object with
                               475,    516]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMIMIMIM5N3MDMIMIMDMDM5N3MDMIMDMIMDMIMDMIM5N3MDM5N3MDMIMDMDMCMIMDMDMDM"
-                ),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+                )
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 516 + gi|330443688|ref|NC_001145.3| 85010 667216 + 518 M 11 11 G 1 0 M 15 15 G 2 0 M 4 4 G 1 0 M 1 1 G 1 0 M 8 8 G 4 0 M 17 17 5 0 2 I 0 168904 3 0 2 M 4 4 G 0 1 M 8 8 G 2 0 M 3 3 G 1 0 M 33 33 G 0 2 M 7 7 G 0 1 M 102 102 5 0 2 I 0 96820 3 0 2 M 14 14 G 0 2 M 10 10 G 2 0 M 5 5 G 0 2 M 10 10 G 2 0 M 4 4 G 0 1 M 20 20 G 1 0 M 15 15 G 0 1 M 5 5 G 3 0 M 4 4 5 0 2 I 0 122114 3 0 2 M 20 20 G 0 5 M 6 6 5 0 2 I 0 193835 3 0 2 M 12 12 G 0 2 M 5 5 G 1 0 M 7 7 G 0 2 M 1 1 G 0 1 M 12 12 C 75 75 M 6 6 G 1 0 M 4 4 G 0 1 M 2 2 G 0 1 M 3 3 G 0 1 M 41 41
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (494 aligned letters; 0 identities; 0 mismatches; 581734 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (494 aligned letters; 0 identities; 0 mismatches; 581734 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 494:
         identities = 0,
@@ -1679,22 +1441,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 22)
-        self.assertEqual(counts.internal_deletions, 581712)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 581734)
-        self.assertEqual(counts.insertions, 22)
-        self.assertEqual(counts.deletions, 581712)
-        self.assertEqual(counts.gaps, 581734)
-        self.assertEqual(counts.aligned, 494)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 22
+        assert counts.internal_deletions == 581712
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 581734
+        assert counts.insertions == 22
+        assert counts.deletions == 581712
+        assert counts.gaps == 581734
+        assert counts.aligned == 494
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -1707,51 +1468,38 @@ class Exonerate_coding2coding(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2coding ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2coding ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 M 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -1778,47 +1526,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -1845,51 +1582,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[255638, 255743, 255743, 255794],
                           [  1065,   1170,   1173,   1224]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1065 1224 + gi|330443688|ref|NC_001145.3| 255638 255794 + 116 M 105 I 3 M 51
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -1916,22 +1642,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 3)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 3)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 3
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 3
+        assert counts.deletions == 0
+        assert counts.gaps == 3
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_coding2coding_vulgar(self):
@@ -1942,53 +1667,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2coding ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2coding ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 C 1227 1227
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -2015,49 +1727,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 C 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -2084,53 +1785,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[255638, 255743, 255743, 255794],
                           [  1065,   1170,   1173,   1224]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"CIC"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"CIC")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1065 1224 + gi|330443688|ref|NC_001145.3| 255638 255794 + 116 C 105 105 G 3 0 C 51 51
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -2157,22 +1847,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 3)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 3)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 3
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 3
+        assert counts.deletions == 0
+        assert counts.gaps == 3
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -2185,53 +1874,40 @@ class Exonerate_coding2genome(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 # fmt: off
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 M 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -2258,47 +1934,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -2325,51 +1990,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[255638, 255743, 255743, 255794],
                           [  1065,   1170,   1173,   1224]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1065 1224 + gi|330443688|ref|NC_001145.3| 255638 255794 + 116 M 105 I 3 M 51
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -2396,22 +2050,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 3)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 3)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 3
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 3
+        assert counts.deletions == 0
+        assert counts.gaps == 3
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_coding2genome_vulgar(self):
@@ -2422,55 +2075,42 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2genome ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 # fmt: off
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 C 1227 1227
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -2497,49 +2137,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 C 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -2566,53 +2195,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[255638, 255743, 255743, 255794],
                           [  1065,   1170,   1173,   1224]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"CIC"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"CIC")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1065 1224 + gi|330443688|ref|NC_001145.3| 255638 255794 + 116 C 105 105 G 3 0 C 51 51
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -2639,22 +2257,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 3)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 3)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 3
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 3
+        assert counts.deletions == 0
+        assert counts.gaps == 3
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -2667,50 +2284,37 @@ class Exonerate_dna2protein(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate --showcigar yes --showvulgar no --showalignment no nuc2.fa pro.fa",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate --showcigar yes --showvulgar no --showalignment no nuc2.fa pro.fa"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "dna")
-        self.assertEqual(alignment.target.id, "protein")
-        self.assertEqual(alignment.score, 105)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[313, 344], [0, 93]]))
-        )
-        self.assertEqual(alignment.target.annotations["molecule_type"], "protein")
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.query.id == "dna"
+        assert alignment.target.id == "protein"
+        assert alignment.score == 105
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(alignment.coordinates, np.array([[313, 344], [0, 93]]))
+        assert alignment.target.annotations["molecule_type"] == "protein"
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: dna 0 93 + protein 313 344 . 105 M 93
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (31 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (31 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 31:
         identities = 0,
@@ -2737,22 +2341,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 31)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 31
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_dna2protein_vulgar(self):
@@ -2763,51 +2366,38 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate --showcigar no --showvulgar yes --showalignment no nuc2.fa pro.fa",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate --showcigar no --showvulgar yes --showalignment no nuc2.fa pro.fa"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "dna")
-        self.assertEqual(alignment.target.id, "protein")
-        self.assertEqual(alignment.score, 105)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[313, 344], [0, 93]]))
-        )
+        assert alignment.query.id == "dna"
+        assert alignment.target.id == "protein"
+        assert alignment.score == 105
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(alignment.coordinates, np.array([[313, 344], [0, 93]]))
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: dna 0 93 + protein 313 344 . 105 M 93 31
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (31 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (31 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 31:
         identities = 0,
@@ -2834,22 +2424,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 31)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 31
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -2862,55 +2451,42 @@ class Exonerate_genome2genome(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 8)
+        assert n == 8
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments, check_operations=False)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 8)
+        assert n == 8
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m genome2genome ../intron.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes --showcigar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m genome2genome ../intron.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes --showcigar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319997, 1319971, 1319968, 1319468],
                           [    529,     503,     500,       0]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 529 0 - gi|330443520|ref|NC_001136.10| 1319997 1319468 - 2641 M 26 M 3 M 500
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -2937,53 +2513,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319997, 1319971, 1319968, 1319468],
                           [    529,     503,     500,       0]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+            assert alignment.operations == bytearray(b"MCM")
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 529 0 - gi|330443520|ref|NC_001136.10| 1319997 1319468 - 2641 M 26 M 3 M 500
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -3010,51 +2575,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319468, 1319558, 1319561, 1319997],
                           [      0,      90,      93,     529]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 0 529 + gi|330443520|ref|NC_001136.10| 1319468 1319997 + 2641 M 90 M 3 M 436
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -3081,53 +2635,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319468, 1319558, 1319561, 1319997],
                           [      0,      90,      93,     529]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+            assert alignment.operations == bytearray(b"MCM")
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 0 529 + gi|330443520|ref|NC_001136.10| 1319468 1319997 + 2641 M 90 M 3 M 436
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -3154,29 +2697,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443489|ref|NC_001135.5|")
-        self.assertEqual(alignment.score, 267)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443489|ref|NC_001135.5|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 23668,  23697,  32680,  32712,  32714,  32716,
@@ -3197,22 +2738,13 @@ AlignmentCounts object with
                               168,    162]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 491 162 - gi|330443489|ref|NC_001135.5| 23668 115569 + 267 M 29 D 8983 M 32 D 2 M 2 D 1 M 15 D 9555 M 3 I 1 M 5 D 2 M 3 D 1 M 4 D 1 M 18 M 1 D 55423 M 5 M 22 I 3 M 46 D 17598 M 14 D 1 M 9 I 1 M 15 D 3 M 17 D 3 M 1 D 1 M 13 D 1 M 6 I 1 M 12 D 2 M 45 D 1 M 6
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 323:
         identities = 0,
@@ -3239,29 +2771,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 91578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 91584)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 91578)
-        self.assertEqual(counts.gaps, 91584)
-        self.assertEqual(counts.aligned, 323)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 91578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 91584
+        assert counts.insertions == 6
+        assert counts.deletions == 91578
+        assert counts.gaps == 91584
+        assert counts.aligned == 323
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443489|ref|NC_001135.5|")
-        self.assertEqual(alignment.score, 267)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443489|ref|NC_001135.5|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 23668,  23697,  23699,  32678,  32680,  32712,
@@ -3284,27 +2814,15 @@ AlignmentCounts object with
                               213,    213,    168,    168,    162]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"M5N3MDMDM5N3MIMDMDMDMS5N3SCMIM5N3MDMIMDMDMDMDMIMDMDM"),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+            assert alignment.operations == bytearray(b"M5N3MDMDM5N3MIMDMDMDMS5N3SCMIM5N3MDMIMDMDMDMDMIMDMDM")
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 491 162 - gi|330443489|ref|NC_001135.5| 23668 115569 + 267 M 29 D 2 D 8979 D 2 M 32 D 2 M 2 D 1 M 15 D 2 D 9551 D 2 M 3 I 1 M 5 D 2 M 3 D 1 M 4 D 1 M 18 D 1 I 1 D 2 D 55419 D 2 D 2 I 2 M 3 M 22 I 3 M 46 D 2 D 17594 D 2 M 14 D 1 M 9 I 1 M 15 D 3 M 17 D 3 M 1 D 1 M 13 D 1 M 6 I 1 M 12 D 2 M 45 D 1 M 6
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 323:
         identities = 0,
@@ -3331,29 +2849,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 91578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 91584)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 91578)
-        self.assertEqual(counts.gaps, 91584)
-        self.assertEqual(counts.aligned, 323)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 91578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 91584
+        assert counts.insertions == 6
+        assert counts.deletions == 91578
+        assert counts.gaps == 91584
+        assert counts.aligned == 323
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443667|ref|NC_001143.9|")
-        self.assertEqual(alignment.score, 267)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443667|ref|NC_001143.9|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[641760, 641729, 641729, 641725, 641725, 641706,
@@ -3384,22 +2900,13 @@ AlignmentCounts object with
                               116,    102,    100,     78]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 529 78 - gi|330443667|ref|NC_001143.9| 641760 71883 - 267 M 31 I 3 M 4 I 2 M 19 D 3 M 9 D 1 M 6 I 1 M 7 D 154244 I 57 D 47 M 27 I 5 M 4 I 1 M 3 I 3 M 4 I 1 M 9 D 1 M 16 D 101116 I 31 M 25 D 1 M 15 I 1 M 9 I 1 M 2 I 1 M 14 M 20 D 177446 M 13 M 2 D 1 M 24 D 136697 I 7 D 6 I 1 D 1 I 1 D 1 I 1 D 1 I 1 D 1 I 2 D 1 I 1 D 1 I 1 D 1 I 3 D 1 I 2 D 1 I 1 D 1 I 1 D 1 I 2 D 2 I 2 D 2 I 17 M 14 I 2 M 22
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 299:
         identities = 0,
@@ -3426,29 +2933,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 152)
-        self.assertEqual(counts.internal_deletions, 569578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 569730)
-        self.assertEqual(counts.insertions, 152)
-        self.assertEqual(counts.deletions, 569578)
-        self.assertEqual(counts.gaps, 569730)
-        self.assertEqual(counts.aligned, 299)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 152
+        assert counts.internal_deletions == 569578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 569730
+        assert counts.insertions == 152
+        assert counts.deletions == 569578
+        assert counts.gaps == 569730
+        assert counts.aligned == 299
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443667|ref|NC_001143.9|")
-        self.assertEqual(alignment.score, 267)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443667|ref|NC_001143.9|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[641760, 641729, 641729, 641725, 641725, 641706,
@@ -3483,29 +2988,17 @@ AlignmentCounts object with
                               100,     78]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMDMDMIM5NNN3MIMIMIMIMDM5NN3MDMIMIMIMCS5N3SCMDM5NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN3MIM"
-                ),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+                )
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sacCer3_dna 529 78 - gi|330443667|ref|NC_001143.9| 641760 71883 - 267 M 31 I 3 M 4 I 2 M 19 D 3 M 9 D 1 M 6 I 1 M 5 M 2 D 154244 I 57 D 47 M 2 M 25 I 5 M 4 I 1 M 3 I 3 M 4 I 1 M 9 D 1 M 14 M 2 D 101116 I 31 M 2 M 23 D 1 M 15 I 1 M 9 I 1 M 2 I 1 M 14 M 18 D 2 I 2 D 2 D 177442 D 2 D 1 I 1 M 12 M 2 D 1 M 22 M 2 D 136697 I 7 D 6 I 1 D 1 I 1 D 1 I 1 D 1 I 1 D 1 I 2 D 1 I 1 D 1 I 1 D 1 I 3 D 1 I 2 D 1 I 1 D 1 I 1 D 1 I 2 D 2 I 2 D 2 I 17 M 2 M 12 I 2 M 22
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 299:
         identities = 0,
@@ -3532,22 +3025,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 152)
-        self.assertEqual(counts.internal_deletions, 569578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 569730)
-        self.assertEqual(counts.insertions, 152)
-        self.assertEqual(counts.deletions, 569578)
-        self.assertEqual(counts.gaps, 569730)
-        self.assertEqual(counts.aligned, 299)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 152
+        assert counts.internal_deletions == 569578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 569730
+        assert counts.insertions == 152
+        assert counts.deletions == 569578
+        assert counts.gaps == 569730
+        assert counts.aligned == 299
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_genome2genome_vulgar(self):
@@ -3558,50 +3050,37 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 4)
+        assert n == 4
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m genome2genome ../intron.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes --showcigar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m genome2genome ../intron.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes --showcigar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1319997, 1319971, 1319968, 1319468],
                           [    529,     503,     500,       0]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MCM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sacCer3_dna 529 0 - gi|330443520|ref|NC_001136.10| 1319997 1319468 - 2641 M 26 26 C 3 3 M 500 500
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -3628,50 +3107,39 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2641)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2641
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[1319468, 1319558, 1319561, 1319997], [0, 90, 93, 529]]),
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MCM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MCM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sacCer3_dna 0 529 + gi|330443520|ref|NC_001136.10| 1319468 1319997 + 2641 M 90 90 C 3 3 M 436 436
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (529 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 529:
         identities = 0,
@@ -3698,29 +3166,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 529)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 529
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443489|ref|NC_001135.5|")
-        self.assertEqual(alignment.score, 267)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443489|ref|NC_001135.5|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 23668,  23697,  23699,  32678,  32680,  32712,
@@ -3743,27 +3209,15 @@ AlignmentCounts object with
                               213,    213,    168,    168,    162]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"M5N3MDMDM5N3MIMDMDMDMS5N3SCMIM5N3MDMIMDMDMDMDMIMDMDM"),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M5N3MDMDM5N3MIMDMDMDMS5N3SCMIM5N3MDMIMDMDMDMDMIMDMDM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sacCer3_dna 491 162 - gi|330443489|ref|NC_001135.5| 23668 115569 + 267 M 29 29 5 0 2 I 0 8979 3 0 2 M 32 32 G 0 2 M 2 2 G 0 1 M 15 15 5 0 2 I 0 9551 3 0 2 M 3 3 G 1 0 M 5 5 G 0 2 M 3 3 G 0 1 M 4 4 G 0 1 M 18 18 S 1 1 5 0 2 I 0 55419 3 0 2 S 2 2 C 3 3 M 22 22 G 3 0 M 46 46 5 0 2 I 0 17594 3 0 2 M 14 14 G 0 1 M 9 9 G 1 0 M 15 15 G 0 3 M 17 17 G 0 3 M 1 1 G 0 1 M 13 13 G 0 1 M 6 6 G 1 0 M 12 12 G 0 2 M 45 45 G 0 1 M 6 6
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (323 aligned letters; 0 identities; 0 mismatches; 91584 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 323:
         identities = 0,
@@ -3790,29 +3244,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 6)
-        self.assertEqual(counts.internal_deletions, 91578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 91584)
-        self.assertEqual(counts.insertions, 6)
-        self.assertEqual(counts.deletions, 91578)
-        self.assertEqual(counts.gaps, 91584)
-        self.assertEqual(counts.aligned, 323)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 6
+        assert counts.internal_deletions == 91578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 91584
+        assert counts.insertions == 6
+        assert counts.deletions == 91578
+        assert counts.gaps == 91584
+        assert counts.aligned == 323
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sacCer3_dna")
-        self.assertEqual(alignment.target.id, "gi|330443667|ref|NC_001143.9|")
-        self.assertEqual(alignment.score, 267)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sacCer3_dna"
+        assert alignment.target.id == "gi|330443667|ref|NC_001143.9|"
+        assert alignment.score == 267
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[641760, 641729, 641729, 641725, 641725, 641706,
@@ -3847,29 +3299,17 @@ AlignmentCounts object with
                               100,     78]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMDMDMIM5NNN3MIMIMIMIMDM5NN3MDMIMIMIMCS5N3SCMDM5NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN3MIM"
-                ),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+                )
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sacCer3_dna 529 78 - gi|330443667|ref|NC_001143.9| 641760 71883 - 267 M 31 31 G 3 0 M 4 4 G 2 0 M 19 19 G 0 3 M 9 9 G 0 1 M 6 6 G 1 0 M 5 5 5 2 2 I 0 154244 I 57 0 I 0 47 3 2 2 M 25 25 G 5 0 M 4 4 G 1 0 M 3 3 G 3 0 M 4 4 G 1 0 M 9 9 G 0 1 M 14 14 5 2 2 I 0 101116 I 31 0 3 2 2 M 23 23 G 0 1 M 15 15 G 1 0 M 9 9 G 1 0 M 2 2 G 1 0 M 14 14 C 18 18 S 2 2 5 0 2 I 0 177442 3 0 2 S 1 1 C 12 12 M 2 2 G 0 1 M 22 22 5 2 2 I 0 136697 I 7 0 I 0 6 I 1 0 I 0 1 I 1 0 I 0 1 I 1 0 I 0 1 I 1 0 I 0 1 I 2 0 I 0 1 I 1 0 I 0 1 I 1 0 I 0 1 I 3 0 I 0 1 I 2 0 I 0 1 I 1 0 I 0 1 I 1 0 I 0 1 I 2 0 I 0 2 I 2 0 I 0 2 I 17 0 3 2 2 M 12 12 G 2 0 M 22 22
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (299 aligned letters; 0 identities; 0 mismatches; 569730 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 299:
         identities = 0,
@@ -3896,22 +3336,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 152)
-        self.assertEqual(counts.internal_deletions, 569578)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 569730)
-        self.assertEqual(counts.insertions, 152)
-        self.assertEqual(counts.deletions, 569578)
-        self.assertEqual(counts.gaps, 569730)
-        self.assertEqual(counts.aligned, 299)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 152
+        assert counts.internal_deletions == 569578
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 569730
+        assert counts.insertions == 152
+        assert counts.deletions == 569578
+        assert counts.gaps == 569730
+        assert counts.aligned == 299
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -3924,51 +3363,38 @@ class Exonerate_ungapped(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ungapped ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ungapped ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -3995,47 +3421,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 233)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 233
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[254031, 254146], [121, 236]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 121 236 + gi|330443688|ref|NC_001145.3| 254031 254146 + 233 M 115
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (115 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (115 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 115:
         identities = 0,
@@ -4062,47 +3477,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 115)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 115
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[255671, 255739], [1098, 1166]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1098 1166 + gi|330443688|ref|NC_001145.3| 255671 255739 + 151 M 68
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (68 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (68 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 68:
         identities = 0,
@@ -4129,22 +3533,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 68)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 68
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_ungapped_vulgar(self):
@@ -4155,53 +3558,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ungapped ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ungapped ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4228,49 +3618,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 233)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 233
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[254031, 254146], [121, 236]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 121 236 + gi|330443688|ref|NC_001145.3| 254031 254146 + 233 M 115 115
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (115 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (115 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 115:
         identities = 0,
@@ -4297,49 +3676,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 115)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 115
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[255671, 255739], [1098, 1166]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1098 1166 + gi|330443688|ref|NC_001145.3| 255671 255739 + 151 M 68 68
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (68 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (68 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 68:
         identities = 0,
@@ -4366,22 +3734,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 68)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 68
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -4394,51 +3761,38 @@ class Exonerate_ungapped_trans(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ungapped:trans ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ungapped:trans ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 M 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -4465,47 +3819,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4532,47 +3875,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2072)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2072
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318045, 1319275], [1230, 0]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 1230 0 - gi|330443520|ref|NC_001136.10| 1318045 1319275 + 2072 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4599,22 +3931,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_ungapped_trans_vulgar(self):
@@ -4625,53 +3956,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ungapped:trans ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ungapped:trans ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2151)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2151
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318047, 1319274], [1228, 1]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1228 1 - gi|330443520|ref|NC_001136.10| 1318047 1319274 + 2151 C 1227 1227
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -4698,49 +4016,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2106)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2106
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 2106 C 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4767,49 +4074,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2072)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2072
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1318045, 1319275], [1230, 0]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"C"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"C")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 1230 0 - gi|330443520|ref|NC_001136.10| 1318045 1319275 + 2072 C 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4836,22 +4132,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -4864,51 +4159,38 @@ class Exonerate_ner(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ner ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ner ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -4935,29 +4217,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443681|ref|NC_001144.5|")
-        self.assertEqual(alignment.score, 502)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443681|ref|NC_001144.5|"
+        assert alignment.score == 502
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[297910, 297918, 297946, 297946, 297958, 297970,
@@ -5010,22 +4290,13 @@ AlignmentCounts object with
                              1201,   1201,   1210,   1230]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 110 1230 + gi|330443681|ref|NC_001144.5| 297910 318994 + 502 M 8 D 28 I 30 M 12 D 12 I 9 M 14 D 8 I 1 M 5 I 1 M 8 D 11 I 29 D 3 M 4 D 1 M 7 D 1 M 7 D 10 I 10 M 7 D 9 I 4 M 19 D 11 I 11 M 13 D 9 M 6 I 1 M 10 D 2 M 4 D 1 M 10 I 368 D 20287 M 9 D 6 I 11 D 2 M 7 D 15 I 9 M 12 I 2 M 10 D 5 I 10 M 20 I 1 M 6 D 3 I 1 D 19 I 1 D 7 I 1 D 1 I 1 D 1 I 3 D 2 I 1 D 1 I 1 D 1 I 1 D 1 I 1 M 6 D 40 I 10 M 14 D 5 I 43 M 8 D 1 I 18 M 7 I 1 M 9 D 4 I 8 M 7 D 15 I 6 M 7 D 3 M 9 D 8 I 10 M 5 I 1 M 9 D 3 I 12 M 10 D 7 M 7 D 6 I 1 M 11 D 1 M 6 D 14 I 6 M 6 I 1 M 15 I 1 M 14 D 12 I 8 M 6 D 11 I 1 M 20 D 18 I 2 M 4 I 1 M 5 D 15 I 2 M 7 D 2 I 16 D 2 M 10 D 10 I 1 M 11 D 4 I 9 M 14 D 1 I 9 M 20
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (445 aligned letters; 0 identities; 0 mismatches; 21314 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (445 aligned letters; 0 identities; 0 mismatches; 21314 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 445:
         identities = 0,
@@ -5052,29 +4323,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 675)
-        self.assertEqual(counts.internal_deletions, 20639)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 21314)
-        self.assertEqual(counts.insertions, 675)
-        self.assertEqual(counts.deletions, 20639)
-        self.assertEqual(counts.gaps, 21314)
-        self.assertEqual(counts.aligned, 445)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 675
+        assert counts.internal_deletions == 20639
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 21314
+        assert counts.insertions == 675
+        assert counts.deletions == 20639
+        assert counts.gaps == 21314
+        assert counts.aligned == 445
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 440)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 440
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[183946, 183952, 183960, 183960, 183977, 183988,
@@ -5123,22 +4392,13 @@ AlignmentCounts object with
                              1192]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 509 1192 + gi|330443520|ref|NC_001136.10| 183946 184603 + 440 M 6 D 8 I 22 D 17 M 11 D 7 I 19 D 7 M 29 D 8 I 11 D 5 M 11 D 4 I 1 D 1 I 2 D 3 I 2 D 1 I 3 D 2 I 10 M 15 D 2 I 16 D 9 M 16 D 3 M 7 D 1 M 6 D 1 M 6 I 1 M 16 D 21 I 18 M 10 D 11 I 1 M 4 D 2 M 4 I 1 M 10 D 1 I 10 M 3 I 1 M 11 D 14 I 5 M 13 D 19 I 5 M 9 I 1 M 9 D 10 I 9 M 6 D 6 I 3 D 3 I 1 D 1 I 8 M 22 D 2 I 19 D 7 M 19 D 1 I 6 M 12 D 12 I 18 D 3 M 6 I 1 M 11 D 1 M 4 D 2 M 11 I 1 M 5 D 6 I 14 M 11 D 13 I 1 M 10 D 7 I 2 D 1 I 1 D 2 I 2 D 1 I 2 D 1 I 11 M 10 I 1 M 19 D 1 I 19 M 10 D 14 I 1 D 2 I 2 D 1 I 10 M 10 D 2 M 9 D 2 I 6 M 8 D 3 I 12 D 2 M 25
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (404 aligned letters; 0 identities; 0 mismatches; 532 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (404 aligned letters; 0 identities; 0 mismatches; 532 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 404:
         identities = 0,
@@ -5165,22 +4425,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 279)
-        self.assertEqual(counts.internal_deletions, 253)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 532)
-        self.assertEqual(counts.insertions, 279)
-        self.assertEqual(counts.deletions, 253)
-        self.assertEqual(counts.gaps, 532)
-        self.assertEqual(counts.aligned, 404)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 279
+        assert counts.internal_deletions == 253
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 532
+        assert counts.insertions == 279
+        assert counts.deletions == 253
+        assert counts.gaps == 532
+        assert counts.aligned == 404
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_ner_vulgar(self):
@@ -5191,53 +4450,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m ner ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m ner ../scer_cad1.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -5264,29 +4510,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443681|ref|NC_001144.5|")
-        self.assertEqual(alignment.score, 502)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443681|ref|NC_001144.5|"
+        assert alignment.score == 502
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[297910, 297917, 297946, 297946, 297957, 297970,
@@ -5333,29 +4577,17 @@ AlignmentCounts object with
                              1177,   1187,   1200,   1200,   1210,   1230]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MUUMUUMUUMIMUUMDMDMUUMUUMUUMUUMIMDMDMUUMUUMUUMIMUUMIMUUMUUMUUMUUMIMUUMUUMUUMUUMIMUUMUUMUUMDMUUMIMIMUUMUUMUUMIMUUMUUMUUMUUMUUM",
-                ),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+                )
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 110 1230 + gi|330443681|ref|NC_001144.5| 297910 318994 + 502 M 7 7 N 31 29 M 11 11 N 10 13 M 13 13 N 2 9 M 5 5 G 1 0 M 7 7 N 30 15 M 4 4 G 0 1 M 7 7 G 0 1 M 6 6 N 11 11 M 6 6 N 5 10 M 18 18 N 12 12 M 12 12 N 1 10 M 6 6 G 1 0 M 10 10 G 0 2 M 4 4 G 0 1 M 9 9 N 369 20288 M 8 8 N 12 9 M 6 6 N 10 16 M 12 12 G 2 0 M 9 9 N 11 6 M 20 20 G 1 0 M 5 5 N 12 37 M 5 5 N 11 41 M 13 13 N 44 6 M 7 7 N 19 2 M 7 7 G 1 0 M 8 8 N 9 5 M 6 6 N 7 16 M 6 6 N 1 4 M 8 8 N 11 9 M 5 5 G 1 0 M 8 8 N 13 4 M 9 9 N 1 8 M 6 6 N 2 7 M 11 11 G 0 1 M 5 5 N 7 15 M 6 6 G 1 0 M 15 15 G 1 0 M 13 13 N 9 13 M 5 5 N 2 12 M 19 19 N 3 19 M 4 4 G 1 0 M 4 4 N 3 16 M 6 6 N 17 5 M 9 9 N 2 11 M 10 10 N 10 5 M 13 13 N 10 2 M 20 20
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (413 aligned letters; 0 identities; 0 mismatches; 21378 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (413 aligned letters; 0 identities; 0 mismatches; 21378 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 413:
         identities = 0,
@@ -5382,29 +4614,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 707)
-        self.assertEqual(counts.internal_deletions, 20671)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 21378)
-        self.assertEqual(counts.insertions, 707)
-        self.assertEqual(counts.deletions, 20671)
-        self.assertEqual(counts.gaps, 21378)
-        self.assertEqual(counts.aligned, 413)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 707
+        assert counts.internal_deletions == 20671
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 21378
+        assert counts.insertions == 707
+        assert counts.deletions == 20671
+        assert counts.gaps == 21378
+        assert counts.aligned == 413
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 440)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 440
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[183946, 183951, 183977, 183977, 183987, 184002,
@@ -5443,29 +4673,17 @@ AlignmentCounts object with
                              1192]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MUUMUUMUUMUUMUUMUUMDMDMIMUUMUUMDMIMUUMIMUUMUUMIMUUMUUMUUMUUMUUMIMDMDMIMUUMUUMUUMIMUUMUUMDMUUMUUM"
-                ),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+                )
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 509 1192 + gi|330443520|ref|NC_001136.10| 183946 184603 + 440 M 5 5 N 23 26 M 10 10 N 20 15 M 28 28 N 12 14 M 10 10 N 19 12 M 14 14 N 17 12 M 15 15 N 1 4 M 7 7 G 0 1 M 6 6 G 0 1 M 6 6 G 1 0 M 15 15 N 19 22 M 9 9 N 2 12 M 4 4 G 0 2 M 4 4 G 1 0 M 9 9 N 11 2 M 3 3 G 1 0 M 10 10 N 6 15 M 12 12 N 6 20 M 9 9 G 1 0 M 8 8 N 10 11 M 5 5 N 13 11 M 21 21 N 20 10 M 18 18 N 7 2 M 11 11 N 19 16 M 6 6 G 1 0 M 11 11 G 0 1 M 4 4 G 0 2 M 11 11 G 1 0 M 4 4 N 15 7 M 10 10 N 2 14 M 9 9 N 19 13 M 10 10 G 1 0 M 18 18 N 20 2 M 9 9 N 14 18 M 10 10 G 0 2 M 8 8 N 7 3 M 7 7 N 13 6 M 25 25
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (381 aligned letters; 0 identities; 0 mismatches; 578 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (381 aligned letters; 0 identities; 0 mismatches; 578 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 381:
         identities = 0,
@@ -5492,22 +4710,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 302)
-        self.assertEqual(counts.internal_deletions, 276)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 578)
-        self.assertEqual(counts.insertions, 302)
-        self.assertEqual(counts.deletions, 276)
-        self.assertEqual(counts.gaps, 578)
-        self.assertEqual(counts.aligned, 381)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 302
+        assert counts.internal_deletions == 276
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 578
+        assert counts.insertions == 302
+        assert counts.deletions == 276
+        assert counts.gaps == 578
+        assert counts.aligned == 381
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -5520,51 +4737,38 @@ class Exonerate_multiple(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 6)
+        assert n == 6
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 6)
+        assert n == 6
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m est2genome comb.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m est2genome comb.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443482|ref|NC_001134.8|")
-        self.assertEqual(alignment.score, 4485)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443482|ref|NC_001134.8|"
+        assert alignment.score == 4485
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[560077, 560974], [0, 897]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296142823|ref|NM_001178508.1| 0 897 + gi|330443482|ref|NC_001134.8| 560077 560974 + 4485 M 897
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (897 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (897 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 897:
         identities = 0,
@@ -5591,29 +4795,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 897)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 897
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443753|ref|NC_001148.4|")
-        self.assertEqual(alignment.score, 941)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443753|ref|NC_001148.4|"
+        assert alignment.score == 941
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[492933, 492929, 492929, 492908, 492908, 492857,
@@ -5642,22 +4844,13 @@ AlignmentCounts object with
                               873,    896]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296142823|ref|NM_001178508.1| 2 896 + gi|330443753|ref|NC_001148.4| 492933 492033 - 941 M 4 I 2 M 21 I 1 M 51 I 2 M 6 I 3 M 11 I 3 M 1 I 1 M 26 I 3 M 102 I 1 M 1 I 1 M 1 I 1 M 55 D 3 M 5 I 2 M 7 D 1 M 4 D 1 M 9 I 1 M 3 D 1 M 2 D 2 M 2 D 3 M 3 D 1 M 22 D 1 M 9 I 1 M 68 D 1 M 3 I 1 M 174 I 1 M 8 D 1 M 154 D 3 M 8 D 1 M 4 D 2 M 9 D 2 M 1 D 1 M 5 D 6 M 53 D 1 M 14 I 1 M 23
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (869 aligned letters; 0 identities; 0 mismatches; 56 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (869 aligned letters; 0 identities; 0 mismatches; 56 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 869:
         identities = 0,
@@ -5684,29 +4877,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 25)
-        self.assertEqual(counts.internal_deletions, 31)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 56)
-        self.assertEqual(counts.insertions, 25)
-        self.assertEqual(counts.deletions, 31)
-        self.assertEqual(counts.gaps, 56)
-        self.assertEqual(counts.aligned, 869)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 25
+        assert counts.internal_deletions == 31
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 56
+        assert counts.insertions == 25
+        assert counts.deletions == 31
+        assert counts.gaps == 56
+        assert counts.aligned == 869
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 651)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 651
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[267809, 267843, 267843, 267851, 267851, 267852,
@@ -5737,22 +4928,13 @@ AlignmentCounts object with
                               669,    691,    691,    703,    703,    721]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296142823|ref|NM_001178508.1| 34 721 + gi|330443520|ref|NC_001136.10| 267809 300717 + 651 M 34 I 1 M 8 I 1 M 1 I 2 M 7 D 4 M 4 I 2 M 3 I 3 M 10 I 3 M 28 I 1 M 34 I 1 M 6 D 2 M 10 D 1 M 14 D 1 M 15 I 1 M 12 I 1 M 1 I 1 M 3 I 3 M 28 I 8 M 3 I 2 M 21 I 2 M 7 D 4 M 2 D 2 M 6 D 3 M 13 D 2 M 4 D 1 M 11 I 5 M 6 I 2 M 12 D 1 M 52 I 1 M 7 D 1 M 55 D 1 M 7 I 3 M 13 D 2 M 100 D 1 M 6 I 1 M 40 I 2 M 6 D 2 M 22 D 32238 M 12 D 1 M 18
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (641 aligned letters; 0 identities; 0 mismatches; 32313 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (641 aligned letters; 0 identities; 0 mismatches; 32313 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 641:
         identities = 0,
@@ -5779,47 +4961,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 46)
-        self.assertEqual(counts.internal_deletions, 32267)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 32313)
-        self.assertEqual(counts.insertions, 46)
-        self.assertEqual(counts.deletions, 32267)
-        self.assertEqual(counts.gaps, 32313)
-        self.assertEqual(counts.aligned, 641)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 46
+        assert counts.internal_deletions == 32267
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 32313
+        assert counts.insertions == 46
+        assert counts.deletions == 32267
+        assert counts.gaps == 32313
+        assert counts.aligned == 641
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -5846,29 +5017,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 439)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 439
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -5889,22 +5058,13 @@ AlignmentCounts object with
                               320,    340,    340,    346]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 346 + gi|330443688|ref|NC_001145.3| 85010 473201 + 439 M 11 I 1 M 15 I 2 M 4 I 1 M 1 I 1 M 8 I 4 M 17 D 168908 M 4 D 1 M 8 I 1 M 3 I 2 M 33 D 1 M 7 D 2 M 102 D 96824 M 14 D 2 M 10 I 2 M 5 D 2 M 10 I 2 M 4 D 1 M 20 I 1 M 15 D 1 M 5 I 3 M 4 D 122118 M 20 D 5 M 6
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 326:
         identities = 0,
@@ -5931,29 +5091,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 20)
-        self.assertEqual(counts.internal_deletions, 387865)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 387885)
-        self.assertEqual(counts.insertions, 20)
-        self.assertEqual(counts.deletions, 387865)
-        self.assertEqual(counts.gaps, 387885)
-        self.assertEqual(counts.aligned, 326)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 20
+        assert counts.internal_deletions == 387865
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 387885
+        assert counts.insertions == 20
+        assert counts.deletions == 387865
+        assert counts.gaps == 387885
+        assert counts.aligned == 326
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 263)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 263
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[130198, 130184, 130183, 130179, 130179, 130154,
@@ -5976,22 +5134,13 @@ AlignmentCounts object with
                               362,    365,    365,    406]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 25 406 + gi|330443688|ref|NC_001145.3| 130198 11338 - 263 M 14 D 1 M 4 I 2 M 25 D 1 M 9 D 6 M 42 I 2 M 16 D 2 M 7 D 1 M 3 I 2 M 23 I 3 M 6 D 9357 M 1 I 1 M 11 D 1 M 12 I 1 M 9 D 1 M 10 I 1 M 18 D 1 M 5 D 109125 M 16 I 4 M 4 I 1 M 11 I 5 M 8 I 1 M 22 D 2 M 4 D 2 M 34 D 1 M 3 D 1 M 41
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 358:
         identities = 0,
@@ -6018,22 +5167,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 23)
-        self.assertEqual(counts.internal_deletions, 118502)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 118525)
-        self.assertEqual(counts.insertions, 23)
-        self.assertEqual(counts.deletions, 118502)
-        self.assertEqual(counts.gaps, 118525)
-        self.assertEqual(counts.aligned, 358)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 23
+        assert counts.internal_deletions == 118502
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 118525
+        assert counts.insertions == 23
+        assert counts.deletions == 118502
+        assert counts.gaps == 118525
+        assert counts.aligned == 358
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_q_multiple_vulgar(self):
@@ -6044,53 +5192,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 6)
+        assert n == 6
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 6)
+        assert n == 6
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m est2genome comb.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m est2genome comb.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443482|ref|NC_001134.8|")
-        self.assertEqual(alignment.score, 4485)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443482|ref|NC_001134.8|"
+        assert alignment.score == 4485
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[560077, 560974], [0, 897]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296142823|ref|NM_001178508.1| 0 897 + gi|330443482|ref|NC_001134.8| 560077 560974 + 4485 M 897 897
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (897 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (897 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 897:
         identities = 0,
@@ -6117,29 +5252,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 897)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 897
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443753|ref|NC_001148.4|")
-        self.assertEqual(alignment.score, 941)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443753|ref|NC_001148.4|"
+        assert alignment.score == 941
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[492933, 492929, 492929, 492908, 492908, 492857,
@@ -6168,29 +5301,17 @@ AlignmentCounts object with
                               873,    896]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMIMIMIMIMIMIMIMIMDMIMDMDMIMDMDMDMDMDMIMDMIMIMDMDMDMDMDMDMDMDMIM"
-                ),
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+                )
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296142823|ref|NM_001178508.1| 2 896 + gi|330443753|ref|NC_001148.4| 492933 492033 - 941 M 4 4 G 2 0 M 21 21 G 1 0 M 51 51 G 2 0 M 6 6 G 3 0 M 11 11 G 3 0 M 1 1 G 1 0 M 26 26 G 3 0 M 102 102 G 1 0 M 1 1 G 1 0 M 1 1 G 1 0 M 55 55 G 0 3 M 5 5 G 2 0 M 7 7 G 0 1 M 4 4 G 0 1 M 9 9 G 1 0 M 3 3 G 0 1 M 2 2 G 0 2 M 2 2 G 0 3 M 3 3 G 0 1 M 22 22 G 0 1 M 9 9 G 1 0 M 68 68 G 0 1 M 3 3 G 1 0 M 174 174 G 1 0 M 8 8 G 0 1 M 154 154 G 0 3 M 8 8 G 0 1 M 4 4 G 0 2 M 9 9 G 0 2 M 1 1 G 0 1 M 5 5 G 0 6 M 53 53 G 0 1 M 14 14 G 1 0 M 23 23
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (869 aligned letters; 0 identities; 0 mismatches; 56 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (869 aligned letters; 0 identities; 0 mismatches; 56 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 869:
         identities = 0,
@@ -6217,29 +5338,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 25)
-        self.assertEqual(counts.internal_deletions, 31)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 56)
-        self.assertEqual(counts.insertions, 25)
-        self.assertEqual(counts.deletions, 31)
-        self.assertEqual(counts.gaps, 56)
-        self.assertEqual(counts.aligned, 869)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 25
+        assert counts.internal_deletions == 31
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 56
+        assert counts.insertions == 25
+        assert counts.deletions == 31
+        assert counts.gaps == 56
+        assert counts.aligned == 869
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296142823|ref|NM_001178508.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 651)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296142823|ref|NM_001178508.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 651
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[267809, 267843, 267843, 267851, 267851, 267852,
@@ -6272,29 +5391,17 @@ AlignmentCounts object with
                               703,    721]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(
+            assert alignment.operations == bytearray(
                     b"MIMIMIMDMIMIMIMIMIMDMDMDMIMIMIMIMIMIMIMDMDMDMDMDMIMIMDMIMDMDMIMDMDMIMIMDM3N5MDM"
-                ),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+                )
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296142823|ref|NM_001178508.1| 34 721 + gi|330443520|ref|NC_001136.10| 267809 300717 + 651 M 34 34 G 1 0 M 8 8 G 1 0 M 1 1 G 2 0 M 7 7 G 0 4 M 4 4 G 2 0 M 3 3 G 3 0 M 10 10 G 3 0 M 28 28 G 1 0 M 34 34 G 1 0 M 6 6 G 0 2 M 10 10 G 0 1 M 14 14 G 0 1 M 15 15 G 1 0 M 12 12 G 1 0 M 1 1 G 1 0 M 3 3 G 3 0 M 28 28 G 8 0 M 3 3 G 2 0 M 21 21 G 2 0 M 7 7 G 0 4 M 2 2 G 0 2 M 6 6 G 0 3 M 13 13 G 0 2 M 4 4 G 0 1 M 11 11 G 5 0 M 6 6 G 2 0 M 12 12 G 0 1 M 52 52 G 1 0 M 7 7 G 0 1 M 55 55 G 0 1 M 7 7 G 3 0 M 13 13 G 0 2 M 100 100 G 0 1 M 6 6 G 1 0 M 40 40 G 2 0 M 6 6 G 0 2 M 22 22 3 0 2 I 0 32234 5 0 2 M 12 12 G 0 1 M 18 18
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (641 aligned letters; 0 identities; 0 mismatches; 32313 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (641 aligned letters; 0 identities; 0 mismatches; 32313 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 641:
         identities = 0,
@@ -6321,49 +5428,38 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 46)
-        self.assertEqual(counts.internal_deletions, 32267)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 32313)
-        self.assertEqual(counts.insertions, 46)
-        self.assertEqual(counts.deletions, 32267)
-        self.assertEqual(counts.gaps, 32313)
-        self.assertEqual(counts.aligned, 641)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 46
+        assert counts.internal_deletions == 32267
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 32313
+        assert counts.insertions == 46
+        assert counts.deletions == 32267
+        assert counts.gaps == 32313
+        assert counts.aligned == 641
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 6150)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 6150
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318045], [0, 1230]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"M")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 1230 + gi|330443520|ref|NC_001136.10| 1319275 1318045 - 6150 M 1230 1230
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1230 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1230:
         identities = 0,
@@ -6390,29 +5486,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1230)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1230
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 439)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 439
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[ 85010,  85021,  85021,  85036,  85036,  85040,
@@ -6435,27 +5529,15 @@ AlignmentCounts object with
                               320,    340,    340,    346]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"MIMIMIMIMIM5N3MDMIMIMDMDM5N3MDMIMDMIMDMIMDMIM5N3MDM"),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MIMIMIMIMIM5N3MDMIMIMDMDM5N3MDMIMDMIMDMIMDMIM5N3MDM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 346 + gi|330443688|ref|NC_001145.3| 85010 473201 + 439 M 11 11 G 1 0 M 15 15 G 2 0 M 4 4 G 1 0 M 1 1 G 1 0 M 8 8 G 4 0 M 17 17 5 0 2 I 0 168904 3 0 2 M 4 4 G 0 1 M 8 8 G 1 0 M 3 3 G 2 0 M 33 33 G 0 1 M 7 7 G 0 2 M 102 102 5 0 2 I 0 96820 3 0 2 M 14 14 G 0 2 M 10 10 G 2 0 M 5 5 G 0 2 M 10 10 G 2 0 M 4 4 G 0 1 M 20 20 G 1 0 M 15 15 G 0 1 M 5 5 G 3 0 M 4 4 5 0 2 I 0 122114 3 0 2 M 20 20 G 0 5 M 6 6
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (326 aligned letters; 0 identities; 0 mismatches; 387885 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 326:
         identities = 0,
@@ -6482,29 +5564,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 20)
-        self.assertEqual(counts.internal_deletions, 387865)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 387885)
-        self.assertEqual(counts.insertions, 20)
-        self.assertEqual(counts.deletions, 387865)
-        self.assertEqual(counts.gaps, 387885)
-        self.assertEqual(counts.aligned, 326)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 20
+        assert counts.internal_deletions == 387865
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 387885
+        assert counts.insertions == 20
+        assert counts.deletions == 387865
+        assert counts.gaps == 387885
+        assert counts.aligned == 326
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 263)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 263
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[130198, 130184, 130183, 130179, 130179, 130154,
@@ -6529,27 +5609,15 @@ AlignmentCounts object with
                               365,    406]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations,
-                bytearray(b"MDMIMDMDMIMDMDMIMIM3N5MIMDMIMDMIMDM3N5MIMIMIMIMDMDMDMDM"),
-            )
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MDMIMDMDMIMDMDMIMIM3N5MIMDMIMDMIMDM3N5MIMIMIMIMDMDMDMDM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 25 406 + gi|330443688|ref|NC_001145.3| 130198 11338 - 263 M 14 14 G 0 1 M 4 4 G 2 0 M 25 25 G 0 1 M 9 9 G 0 6 M 42 42 G 2 0 M 16 16 G 0 2 M 7 7 G 0 1 M 3 3 G 2 0 M 23 23 G 3 0 M 6 6 3 0 2 I 0 9353 5 0 2 M 1 1 G 1 0 M 11 11 G 0 1 M 12 12 G 1 0 M 9 9 G 0 1 M 10 10 G 1 0 M 18 18 G 0 1 M 5 5 3 0 2 I 0 109121 5 0 2 M 16 16 G 4 0 M 4 4 G 1 0 M 11 11 G 5 0 M 8 8 G 1 0 M 22 22 G 0 2 M 4 4 G 0 2 M 34 34 G 0 1 M 3 3 G 0 1 M 41 41
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (358 aligned letters; 0 identities; 0 mismatches; 118525 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 358:
         identities = 0,
@@ -6576,22 +5644,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 23)
-        self.assertEqual(counts.internal_deletions, 118502)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 118525)
-        self.assertEqual(counts.insertions, 23)
-        self.assertEqual(counts.deletions, 118502)
-        self.assertEqual(counts.gaps, 118525)
-        self.assertEqual(counts.aligned, 358)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 23
+        assert counts.internal_deletions == 118502
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 118525
+        assert counts.insertions == 23
+        assert counts.deletions == 118502
+        assert counts.gaps == 118525
+        assert counts.aligned == 358
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -6604,55 +5671,42 @@ class Exonerate_coding2coding_fshifts(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2coding c2c_frameshift2.fa scer_cad1.fa --showcigar yes --showvulgar no --showalignment no --bestn 3",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2coding c2c_frameshift2.fa scer_cad1.fa --showcigar yes --showvulgar no --showalignment no --bestn 3"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 213)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 213
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[465, 558, 558, 591, 593, 605, 609, 630],
                           [  0,  93,  94, 127, 127, 139, 139, 160]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 0 160 + gi|296143771|ref|NM_001180731.1| 465 630 + 213 M 93 I 1 M 33 D 2 M 12 D 4 M 21
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (159 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (159 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 159:
         identities = 0,
@@ -6679,51 +5733,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 7)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 7)
-        self.assertEqual(counts.aligned, 159)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 7
+        assert counts.insertions == 1
+        assert counts.deletions == 6
+        assert counts.gaps == 7
+        assert counts.aligned == 159
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 201)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 201
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[628, 604, 598, 559, 559, 466],
                           [158, 134, 134,  95,  94,   1]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: gi|296143771|ref|NM_001180731.1| 158 1 - gi|296143771|ref|NM_001180731.1| 628 466 - 201 M 24 D 6 M 39 I 1 M 93
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -6750,22 +5793,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 7)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 7)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 7
+        assert counts.insertions == 1
+        assert counts.deletions == 6
+        assert counts.gaps == 7
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_coding2coding_fshifts_vulgar(self):
@@ -6776,57 +5818,44 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m coding2coding c2c_frameshift2.fa scer_cad1.fa --showvulgar yes --showalignment no --bestn 3",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m coding2coding c2c_frameshift2.fa scer_cad1.fa --showvulgar yes --showalignment no --bestn 3"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 213)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 213
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[465, 558, 558, 591, 593, 605, 609, 630],
                           [  0,  93,  94, 127, 127, 139, 139, 160]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"CFCFCFC"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"CFCFCFC")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 0 160 + gi|296143771|ref|NM_001180731.1| 465 630 + 213 C 93 93 F 1 0 C 33 33 F 0 2 C 12 12 F 0 4 C 21 21
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (159 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (159 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 159:
         identities = 0,
@@ -6853,53 +5882,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 7)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 7)
-        self.assertEqual(counts.aligned, 159)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 7
+        assert counts.insertions == 1
+        assert counts.deletions == 6
+        assert counts.gaps == 7
+        assert counts.aligned == 159
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 201)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertGreater(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 201
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] > alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[628, 604, 598, 559, 559, 466],
                           [158, 134, 134,  95,  94,   1]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"CDCFC"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"CDCFC")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: gi|296143771|ref|NM_001180731.1| 158 1 - gi|296143771|ref|NM_001180731.1| 628 466 - 201 C 24 24 G 0 6 C 39 39 F 1 0 C 93 93
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 7 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -6926,22 +5944,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 6)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 7)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 6)
-        self.assertEqual(counts.gaps, 7)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 6
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 7
+        assert counts.insertions == 1
+        assert counts.deletions == 6
+        assert counts.gaps == 7
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -6954,51 +5971,38 @@ class Exonerate_protein2dna(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2dna ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2dna ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2105)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2105
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318048], [0, 409]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 0 409 . gi|330443520|ref|NC_001136.10| 1319275 1318048 - 2105 M 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -7025,48 +6029,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 205)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 205
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[253991, 254027, 254030, 254270], [28, 40, 40, 120]]),
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 28 120 . gi|330443688|ref|NC_001145.3| 253991 254270 + 205 M 36 D 3 M 240
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 276:
         identities = 0,
@@ -7093,48 +6086,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 3)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 3)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 276)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 3
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 0
+        assert counts.deletions == 3
+        assert counts.gaps == 3
+        assert counts.aligned == 276
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[255638, 255743, 255743, 255794], [355, 390, 391, 408]]),
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 355 408 . gi|330443688|ref|NC_001145.3| 255638 255794 + 116 M 105 I 1 M 51
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -7161,22 +6143,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 1)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1
+        assert counts.insertions == 1
+        assert counts.deletions == 0
+        assert counts.gaps == 1
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_protein2dna_vulgar(self):
@@ -7187,53 +6168,40 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2dna ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2dna ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2105)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2105
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318048], [0, 409]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 0 409 . gi|330443520|ref|NC_001136.10| 1319275 1318048 - 2105 M 409 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -7260,53 +6228,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 205)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 205
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[253991, 254027, 254030, 254270],
                           [    28,     40,     40,    120]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MDM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MDM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 28 120 . gi|330443688|ref|NC_001145.3| 253991 254270 + 205 M 12 36 G 0 3 M 80 240
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 276:
         identities = 0,
@@ -7333,53 +6290,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 3)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 3)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 276)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 3
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 0
+        assert counts.deletions == 3
+        assert counts.gaps == 3
+        assert counts.aligned == 276
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 116)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 116
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[255638, 255743, 255743, 255794],
                           [   355,    390,    391,    408]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MIM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MIM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 355 408 . gi|330443688|ref|NC_001145.3| 255638 255794 + 116 M 35 105 G 1 0 M 17 51
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (156 aligned letters; 0 identities; 0 mismatches; 1 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 156:
         identities = 0,
@@ -7406,22 +6352,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 1)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 1)
-        self.assertEqual(counts.insertions, 1)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 1)
-        self.assertEqual(counts.aligned, 156)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 1
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 1
+        assert counts.insertions == 1
+        assert counts.deletions == 0
+        assert counts.gaps == 1
+        assert counts.aligned == 156
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -7434,52 +6379,39 @@ class Exonerate_protein2dna_fshifts(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2dna scer_cad1_prot.fa scer_cad1frameshift.fa --showcigar yes --showvulgar no --showalignment no --bestn 3",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2dna scer_cad1_prot.fa scer_cad1frameshift.fa --showcigar yes --showvulgar no --showalignment no --bestn 3"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 367)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 367
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[216, 345, 347, 455], [330, 373, 373, 409]]),
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 330 409 . gi|296143771|ref|NM_001180731.1| 216 455 + 367 M 129 D 2 M 108
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (237 aligned letters; 0 identities; 0 mismatches; 2 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (237 aligned letters; 0 identities; 0 mismatches; 2 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 237:
         identities = 0,
@@ -7506,45 +6438,34 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 2)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 2)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 2)
-        self.assertEqual(counts.aligned, 237)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 2
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 2
+        assert counts.insertions == 0
+        assert counts.deletions == 2
+        assert counts.gaps == 2
+        assert counts.aligned == 237
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 322)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[16, 208], [6, 70]]))
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 322
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(alignment.coordinates, np.array([[16, 208], [6, 70]]))
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 6 70 . gi|296143771|ref|NM_001180731.1| 16 208 + 322 M 192
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (192 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (192 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 192:
         identities = 0,
@@ -7571,22 +6492,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 192)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 192
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_protein2dna_fshifts_vulgar(self):
@@ -7597,54 +6517,41 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 2)
+        assert n == 2
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2dna scer_cad1_prot.fa scer_cad1frameshift.fa --showvulgar yes --showalignment no --bestn 3",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2dna scer_cad1_prot.fa scer_cad1frameshift.fa --showvulgar yes --showalignment no --bestn 3"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 367)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 367
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 np.array([[216, 345, 347, 455], [330, 373, 373, 409]]),
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MFM"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MFM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 330 409 . gi|296143771|ref|NM_001180731.1| 216 455 + 367 M 43 129 F 0 2 M 36 108
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (237 aligned letters; 0 identities; 0 mismatches; 2 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (237 aligned letters; 0 identities; 0 mismatches; 2 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 237:
         identities = 0,
@@ -7671,47 +6578,36 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 2)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 2)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 2)
-        self.assertEqual(counts.gaps, 2)
-        self.assertEqual(counts.aligned, 237)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 2
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 2
+        assert counts.insertions == 0
+        assert counts.deletions == 2
+        assert counts.gaps == 2
+        assert counts.aligned == 237
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|296143771|ref|NM_001180731.1|")
-        self.assertEqual(alignment.score, 322)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[16, 208], [6, 70]]))
-        )
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|296143771|ref|NM_001180731.1|"
+        assert alignment.score == 322
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(alignment.coordinates, np.array([[16, 208], [6, 70]]))
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"M")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 6 70 . gi|296143771|ref|NM_001180731.1| 16 208 + 322 M 64 192
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (192 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (192 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 192:
         identities = 0,
@@ -7738,22 +6634,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 192)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 192
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -7766,51 +6661,38 @@ class Exonerate_protein2genome(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar yes --showvulgar no"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2105)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2105
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318048], [0, 409]])
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 0 409 . gi|330443520|ref|NC_001136.10| 1319275 1318048 - 2105 M 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -7837,51 +6719,40 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 205)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 205
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[253991, 254027, 254030, 254270],
                           [    28,     40,     40,    120]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: sp|P24813|YAP2_YEAST 28 120 . gi|330443688|ref|NC_001145.3| 253991 254270 + 205 M 36 D 3 M 240
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 276:
         identities = 0,
@@ -7908,45 +6779,37 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 3)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 3)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 276)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 3
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 0
+        assert counts.deletions == 3
+        assert counts.gaps == 3
+        assert counts.aligned == 276
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443590|ref|NC_001140.6|")
-        self.assertEqual(alignment.score, 122)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443590|ref|NC_001140.6|"
+        assert alignment.score == 122
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[84646, 84535, 68601, 68450],
                           [   37,    74,    74,   125]])
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (262 aligned letters; 0 identities; 0 mismatches; 15934 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (262 aligned letters; 0 identities; 0 mismatches; 15934 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 262:
         identities = 0,
@@ -7973,22 +6836,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 15934)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 15934)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 15934)
-        self.assertEqual(counts.gaps, 15934)
-        self.assertEqual(counts.aligned, 262)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 15934
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 15934
+        assert counts.insertions == 0
+        assert counts.deletions == 15934
+        assert counts.gaps == 15934
+        assert counts.aligned == 262
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_22_m_protein2genome_vulgar(self):
@@ -7999,7 +6861,7 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 3)
+        assert n == 3
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
@@ -8009,40 +6871,27 @@ AlignmentCounts object with
         # does not regenerate all information provided in the vulgar file.
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome ../scer_cad1_prot.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showalignment no --showcigar no --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443520|ref|NC_001136.10|")
-        self.assertEqual(alignment.score, 2105)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443520|ref|NC_001136.10|"
+        assert alignment.score == 2105
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates, np.array([[1319275, 1318048], [0, 409]])
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"M"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 0 409 . gi|330443520|ref|NC_001136.10| 1319275 1318048 - 2105 M 409 1227
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1227 aligned letters; 0 identities; 0 mismatches; 0 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1227:
         identities = 0,
@@ -8069,53 +6918,42 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 0)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 0)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 0)
-        self.assertEqual(counts.gaps, 0)
-        self.assertEqual(counts.aligned, 1227)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 0
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 0
+        assert counts.insertions == 0
+        assert counts.deletions == 0
+        assert counts.gaps == 0
+        assert counts.aligned == 1227
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443688|ref|NC_001145.3|")
-        self.assertEqual(alignment.score, 205)
-        self.assertLess(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443688|ref|NC_001145.3|"
+        assert alignment.score == 205
+        assert alignment.coordinates[0, 0] < alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[253991, 254027, 254030, 254270],
                           [    28,     40,     40,    120]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MDM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MDM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 28 120 . gi|330443688|ref|NC_001145.3| 253991 254270 + 205 M 12 36 G 0 3 M 80 240
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (276 aligned letters; 0 identities; 0 mismatches; 3 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 276:
         identities = 0,
@@ -8142,29 +6980,27 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 3)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 3)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 3)
-        self.assertEqual(counts.gaps, 3)
-        self.assertEqual(counts.aligned, 276)
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 3
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 3
+        assert counts.insertions == 0
+        assert counts.deletions == 3
+        assert counts.gaps == 3
+        assert counts.aligned == 276
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "sp|P24813|YAP2_YEAST")
-        self.assertEqual(alignment.target.id, "gi|330443590|ref|NC_001140.6|")
-        self.assertEqual(alignment.score, 122)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "sp|P24813|YAP2_YEAST"
+        assert alignment.target.id == "gi|330443590|ref|NC_001140.6|"
+        assert alignment.score == 122
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[84646, 84535, 84533, 84531, 68603, 68601,
@@ -8173,24 +7009,15 @@ AlignmentCounts object with
                               75,   125]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MS5N3SM"))
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"MS5N3SM")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: sp|P24813|YAP2_YEAST 37 125 . gi|330443590|ref|NC_001140.6| 84646 68450 - 122 M 37 111 S 0 2 5 0 2 I 0 15928 3 0 2 S 1 1 M 50 150
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (262 aligned letters; 0 identities; 0 mismatches; 15934 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (262 aligned letters; 0 identities; 0 mismatches; 15934 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 262:
         identities = 0,
@@ -8217,22 +7044,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 15934)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 15934)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 15934)
-        self.assertEqual(counts.gaps, 15934)
-        self.assertEqual(counts.aligned, 262)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 15934
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 15934
+        assert counts.insertions == 0
+        assert counts.deletions == 15934
+        assert counts.gaps == 15934
+        assert counts.aligned == 262
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -8247,33 +7073,29 @@ class Exonerate_protein2genome_revcomp_fshifts(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome gene026_baits.fasta gene026_contigs.fasta --showalignment no --showcigar yes --showvulgar no --bestn 2 --refine full",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "Michiels-MacBook-Pro.local")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome gene026_baits.fasta gene026_contigs.fasta --showalignment no --showcigar yes --showvulgar no --bestn 2 --refine full"
+        assert alignments.metadata["Hostname"] == "Michiels-MacBook-Pro.local"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "Morus-gene026")
-        self.assertEqual(alignment.target.id, "NODE_2_length_1708_cov_48.590765")
-        self.assertEqual(alignment.score, 1308)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "Morus-gene026"
+        assert alignment.target.id == "NODE_2_length_1708_cov_48.590765"
+        assert alignment.score == 1308
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1416, 1380, 1374, 1125, 1125, 1047, 1047,  744,
@@ -8282,22 +7104,13 @@ class Exonerate_protein2genome_revcomp_fshifts(unittest.TestCase):
                             300,  398,  402,  402,  441]])
                 # fmt: on
             )
-        )
-        self.assertEqual(
-            alignment.format("exonerate", "cigar"),
-            """\
+        assert alignment.format("exonerate", "cigar") == """\
 cigar: Morus-gene026 69 441 . NODE_2_length_1708_cov_48.590765 1416 331 - 1308 M 36 D 6 M 249 I 5 M 78 I 1 M 303 I 3 M 294 I 4 D 2 M 117
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1077 aligned letters; 0 identities; 0 mismatches; 21 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1077 aligned letters; 0 identities; 0 mismatches; 21 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1077:
         identities = 0,
@@ -8324,22 +7137,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 13)
-        self.assertEqual(counts.internal_deletions, 8)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 21)
-        self.assertEqual(counts.insertions, 13)
-        self.assertEqual(counts.deletions, 8)
-        self.assertEqual(counts.gaps, 21)
-        self.assertEqual(counts.aligned, 1077)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 13
+        assert counts.internal_deletions == 8
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 21
+        assert counts.insertions == 13
+        assert counts.deletions == 8
+        assert counts.gaps == 21
+        assert counts.aligned == 1077
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_24_m_protein2genome_revcomp_fshifts_vulgar(self):
@@ -8352,33 +7164,29 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments, check_operations=False)
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome gene026_baits.fasta gene026_contigs.fasta --showalignment no --showcigar no --showvulgar yes --bestn 2 --refine full",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "Michiels-MacBook-Pro.local")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome gene026_baits.fasta gene026_contigs.fasta --showalignment no --showcigar no --showvulgar yes --bestn 2 --refine full"
+        assert alignments.metadata["Hostname"] == "Michiels-MacBook-Pro.local"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "Morus-gene026")
-        self.assertEqual(alignment.target.id, "NODE_2_length_1708_cov_48.590765")
-        self.assertEqual(alignment.score, 1308)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "Morus-gene026"
+        assert alignment.target.id == "NODE_2_length_1708_cov_48.590765"
+        assert alignment.score == 1308
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[1416, 1380, 1374, 1125, 1125, 1047, 1047,  744,
@@ -8387,24 +7195,15 @@ AlignmentCounts object with
                             300,  398,  402, 402,  441]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(alignment.operations, bytearray(b"MDMIMIMIMIFM"))
-            self.assertEqual(
-                alignment.format("exonerate", "vulgar"),
-                """\
+            assert alignment.operations == bytearray(b"MDMIMIMIMIFM")
+            assert alignment.format("exonerate", "vulgar") == """\
 vulgar: Morus-gene026 69 441 . NODE_2_length_1708_cov_48.590765 1416 331 - 1308 M 12 36 G 0 6 M 83 249 G 5 0 M 26 78 G 1 0 M 101 303 G 3 0 M 98 294 G 4 0 F 0 2 M 39 117
-""",
-            )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1077 aligned letters; 0 identities; 0 mismatches; 21 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1077 aligned letters; 0 identities; 0 mismatches; 21 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1077:
         identities = 0,
@@ -8431,22 +7230,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 13)
-        self.assertEqual(counts.internal_deletions, 8)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 21)
-        self.assertEqual(counts.insertions, 13)
-        self.assertEqual(counts.deletions, 8)
-        self.assertEqual(counts.gaps, 21)
-        self.assertEqual(counts.aligned, 1077)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 13
+        assert counts.internal_deletions == 8
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 21
+        assert counts.insertions == 13
+        assert counts.deletions == 8
+        assert counts.gaps == 21
+        assert counts.aligned == 1077
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -8461,33 +7259,29 @@ class Exonerate_protein2genome_met_intron(unittest.TestCase):
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "cigar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_cigar(alignments)
 
     def check_cigar(self, alignments):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome gene001_baits.fasta gene001_contigs.fasta --showalignment no --showcigar yes --showvulgar no --bestn 1 --refine full",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "Michiels-MacBook-Pro.local")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome gene001_baits.fasta gene001_contigs.fasta --showalignment no --showcigar yes --showvulgar no --bestn 1 --refine full"
+        assert alignments.metadata["Hostname"] == "Michiels-MacBook-Pro.local"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "Morus-gene001")
-        self.assertEqual(alignment.target.id, "NODE_1_length_2817_cov_100.387732")
-        self.assertEqual(alignment.score, 1978)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "Morus-gene001"
+        assert alignment.target.id == "NODE_1_length_2817_cov_100.387732"
+        assert alignment.score == 1978
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[2392, 2281, 2129, 2030, 1921, 1810, 1724, 1421,
@@ -8496,16 +7290,10 @@ class Exonerate_protein2genome_met_intron(unittest.TestCase):
                             256,  303,  303,  482]])
                 # fmt: on
             )
-        )
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1301 aligned letters; 0 identities; 0 mismatches; 703 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1301 aligned letters; 0 identities; 0 mismatches; 703 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1301:
         identities = 0,
@@ -8532,22 +7320,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 703)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 703)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 703)
-        self.assertEqual(counts.gaps, 703)
-        self.assertEqual(counts.aligned, 1301)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 703
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 703
+        assert counts.insertions == 0
+        assert counts.deletions == 703
+        assert counts.gaps == 703
+        assert counts.aligned == 1301
+        with pytest.raises(StopIteration):
             next(alignments)
 
     def test_exn_24_protein2genome_met_intron_vulgar(self):
@@ -8560,7 +7347,7 @@ AlignmentCounts object with
         alignments = Align.parse(exn_file, "exonerate")
         stream = io.StringIO()
         n = Align.write(alignments, stream, "exonerate", "vulgar")
-        self.assertEqual(n, 1)
+        assert n == 1
         stream.seek(0)
         alignments = Align.parse(stream, "exonerate")
         self.check_vulgar(alignments)
@@ -8570,20 +7357,16 @@ AlignmentCounts object with
         # information provided in the vulgar file.
 
     def check_vulgar(self, alignments, check_operations=True):
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m protein2genome gene001_baits.fasta gene001_contigs.fasta --showalignment no --showcigar no --showvulgar yes --bestn 1 --refine full",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "Michiels-MacBook-Pro.local")
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m protein2genome gene001_baits.fasta gene001_contigs.fasta --showalignment no --showcigar no --showvulgar yes --bestn 1 --refine full"
+        assert alignments.metadata["Hostname"] == "Michiels-MacBook-Pro.local"
         alignment = next(alignments)
-        self.assertEqual(alignment.query.id, "Morus-gene001")
-        self.assertEqual(alignment.target.id, "NODE_1_length_2817_cov_100.387732")
-        self.assertEqual(alignment.score, 1978)
-        self.assertGreater(alignment.coordinates[0, 0], alignment.coordinates[0, -1])
-        self.assertLess(alignment.coordinates[1, 0], alignment.coordinates[1, -1])
-        self.assertTrue(
-            np.array_equal(
+        assert alignment.query.id == "Morus-gene001"
+        assert alignment.target.id == "NODE_1_length_2817_cov_100.387732"
+        assert alignment.score == 1978
+        assert alignment.coordinates[0, 0] > alignment.coordinates[0, -1]
+        assert alignment.coordinates[1, 0] < alignment.coordinates[1, -1]
+        assert np.array_equal(
                 alignment.coordinates,
                 # fmt: off
                 np.array([[2392, 2281, 2279, 2131, 2129, 2030, 2028, 1923,
@@ -8594,26 +7377,15 @@ AlignmentCounts object with
                             256,  256,  257,  303,  303,  303,  303,  482]])
                 # fmt: on
             )
-        )
         if check_operations:
-            self.assertEqual(
-                alignment.operations, bytearray(b"M5N3M5N3M5N3MS5N3SM5N3M")
-            )
-        self.assertEqual(
-            alignment.format("exonerate", "vulgar"),
-            """\
+            assert alignment.operations == bytearray(b"M5N3M5N3M5N3MS5N3SM5N3M")
+        assert alignment.format("exonerate", "vulgar") == """\
 vulgar: Morus-gene001 48 482 . NODE_1_length_2817_cov_100.387732 2392 388 - 1978 M 37 111 5 0 2 I 0 148 3 0 2 M 33 99 5 0 2 I 0 105 3 0 2 M 37 111 5 0 2 I 0 82 3 0 2 M 101 303 S 0 1 5 0 2 I 0 218 3 0 2 S 1 2 M 46 138 5 0 2 I 0 129 3 0 2 M 179 537
-""",
-        )
+"""
         counts = alignment.counts()
-        self.assertEqual(
-            repr(counts),
-            "<AlignmentCounts object (1301 aligned letters; 0 identities; 0 mismatches; 703 gaps) at 0x%x>"
-            % id(counts),
-        )
-        self.assertEqual(
-            str(counts),
-            """\
+        assert (repr(counts) == "<AlignmentCounts object (1301 aligned letters; 0 identities; 0 mismatches; 703 gaps) at 0x%x>"
+            % id(counts))
+        assert str(counts) == """\
 AlignmentCounts object with
     aligned = 1301:
         identities = 0,
@@ -8640,22 +7412,21 @@ AlignmentCounts object with
             right_deletions = 0:
                 open_right_deletions = 0,
                 extend_right_deletions = 0.
-""",
-        )
-        self.assertEqual(counts.left_insertions, 0)
-        self.assertEqual(counts.left_deletions, 0)
-        self.assertEqual(counts.right_insertions, 0)
-        self.assertEqual(counts.right_deletions, 0)
-        self.assertEqual(counts.internal_insertions, 0)
-        self.assertEqual(counts.internal_deletions, 703)
-        self.assertEqual(counts.left_gaps, 0)
-        self.assertEqual(counts.right_gaps, 0)
-        self.assertEqual(counts.internal_gaps, 703)
-        self.assertEqual(counts.insertions, 0)
-        self.assertEqual(counts.deletions, 703)
-        self.assertEqual(counts.gaps, 703)
-        self.assertEqual(counts.aligned, 1301)
-        with self.assertRaises(StopIteration):
+"""
+        assert counts.left_insertions == 0
+        assert counts.left_deletions == 0
+        assert counts.right_insertions == 0
+        assert counts.right_deletions == 0
+        assert counts.internal_insertions == 0
+        assert counts.internal_deletions == 703
+        assert counts.left_gaps == 0
+        assert counts.right_gaps == 0
+        assert counts.internal_gaps == 703
+        assert counts.insertions == 0
+        assert counts.deletions == 703
+        assert counts.gaps == 703
+        assert counts.aligned == 1301
+        with pytest.raises(StopIteration):
             next(alignments)
 
 
@@ -8664,25 +7435,24 @@ class Exonerate_none(unittest.TestCase):
         """Test parsing exonerate output (exn_22_q_none.exn)."""
         exn_file = os.path.join("Exonerate", "exn_22_q_none.exn")
         alignments = Align.parse(exn_file, "exonerate")
-        self.assertEqual(alignments.metadata["Program"], "exonerate")
-        self.assertEqual(
-            alignments.metadata["Command line"],
-            "exonerate -m est2genome none.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showcigar yes --showvulgar yes",
-        )
-        self.assertEqual(alignments.metadata["Hostname"], "blackbriar")
-        self.assertRaises(StopIteration, next, alignments)
+        assert alignments.metadata["Program"] == "exonerate"
+        assert alignments.metadata["Command line"] == "exonerate -m est2genome none.fa /media/Waterloo/Downloads/genomes/scer_s288c/scer_s288c.fa --bestn 3 --showcigar yes --showvulgar yes"
+        assert alignments.metadata["Hostname"] == "blackbriar"
+        with pytest.raises(StopIteration):
+            next(alignments)
         alignments = iter(alignments)
-        self.assertRaises(StopIteration, next, alignments)
+        with pytest.raises(StopIteration):
+            next(alignments)
         with Align.parse(exn_file, "exonerate") as alignments:
-            self.assertRaises(StopIteration, next, alignments)
-        with self.assertRaises(AttributeError):
+            with pytest.raises(StopIteration):
+                next(alignments)
+        with pytest.raises(AttributeError):
             alignments._stream
         with Align.parse(exn_file, "exonerate") as alignments:
             pass
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             alignments._stream
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

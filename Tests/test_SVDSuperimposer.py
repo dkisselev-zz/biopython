@@ -6,21 +6,15 @@
 """Tests for SVDSuperimposer module."""
 
 import unittest
+import pytest
 
-try:
-    from numpy import around
-    from numpy import array
-    from numpy import array_equal
-    from numpy import dot  # missing in old PyPy's micronumpy
-    from numpy.linalg import det  # Missing in PyPy 2.0 numpypy
-    from numpy.linalg import svd  # Missing in PyPy 2.0 numpypy
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.SVDSuperimposer."
-    ) from None
-
+pytest.importorskip("numpy")
+from numpy import around
+from numpy import array
+from numpy import array_equal
+from numpy import dot  # missing in old PyPy's micronumpy
+from numpy.linalg import det  # Missing in PyPy 2.0 numpypy
+from numpy.linalg import svd  # Missing in PyPy 2.0 numpypy
 from Bio.SVDSuperimposer import SVDSuperimposer
 
 
@@ -51,34 +45,26 @@ class SVDSuperimposerTest(unittest.TestCase):
         x = array([[1.19, 1.28, 1.37], [1.46, 1.55, 1.64], [1.73, 1.82, 1.91]])
         y = array([[1.91, 1.82, 1.73], [1.64, 1.55, 1.46], [1.37, 1.28, 1.19]])
         self.sup.set(x, y)
-        self.assertIsNone(self.sup.init_rms)
-        self.assertAlmostEqual(self.sup.get_init_rms(), 0.8049844719)
+        assert self.sup.init_rms is None
+        assert self.sup.get_init_rms() == pytest.approx(0.8049844719, abs=5e-8)
 
     def test_oldTest(self):
-        self.assertTrue(
-            array_equal(
+        assert array_equal(
                 around(self.sup.reference_coords, decimals=3),
                 around(self.x, decimals=3),
             )
-        )
-        self.assertTrue(
-            array_equal(around(self.sup.coords, decimals=3), around(self.y, decimals=3))
-        )
-        self.assertIsNone(self.sup.rot)
-        self.assertIsNone(self.sup.tran)
-        self.assertIsNone(self.sup.rms)
-        self.assertIsNone(self.sup.init_rms)
+        assert array_equal(around(self.sup.coords, decimals=3), around(self.y, decimals=3))
+        assert self.sup.rot is None
+        assert self.sup.tran is None
+        assert self.sup.rms is None
+        assert self.sup.init_rms is None
 
         self.sup.run()
-        self.assertTrue(
-            array_equal(
+        assert array_equal(
                 around(self.sup.reference_coords, decimals=3),
                 around(self.x, decimals=3),
             )
-        )
-        self.assertTrue(
-            array_equal(around(self.sup.coords, decimals=3), around(self.y, decimals=3))
-        )
+        assert array_equal(around(self.sup.coords, decimals=3), around(self.y, decimals=3))
         rot = array(
             [
                 [0.68304983, 0.53664371, 0.49543563],
@@ -87,24 +73,16 @@ class SVDSuperimposerTest(unittest.TestCase):
             ]
         )
         tran = array([38.78608157, -20.65451334, -15.42227366])
-        self.assertTrue(
-            array_equal(around(self.sup.rot, decimals=3), around(rot, decimals=3))
-        )
-        self.assertTrue(
-            array_equal(around(self.sup.tran, decimals=3), around(tran, decimals=3))
-        )
-        self.assertIsNone(self.sup.rms)
-        self.assertIsNone(self.sup.init_rms)
+        assert array_equal(around(self.sup.rot, decimals=3), around(rot, decimals=3))
+        assert array_equal(around(self.sup.tran, decimals=3), around(tran, decimals=3))
+        assert self.sup.rms is None
+        assert self.sup.init_rms is None
 
-        self.assertAlmostEqual(self.sup.get_rms(), 0.00304266526014)
+        assert self.sup.get_rms() == pytest.approx(0.00304266526014, abs=5e-8)
 
         rot_get, tran_get = self.sup.get_rotran()
-        self.assertTrue(
-            array_equal(around(rot_get, decimals=3), around(rot, decimals=3))
-        )
-        self.assertTrue(
-            array_equal(around(tran_get, decimals=3), around(tran, decimals=3))
-        )
+        assert array_equal(around(rot_get, decimals=3), around(rot, decimals=3))
+        assert array_equal(around(tran_get, decimals=3), around(tran, decimals=3))
 
         y_on_x1 = dot(self.y, rot) + tran
         y_x_solution = array(
@@ -115,16 +93,11 @@ class SVDSuperimposerTest(unittest.TestCase):
                 [5.02202228e01, -1.94372374e-02, 5.28534537e01],
             ]
         )
-        self.assertTrue(
-            array_equal(around(y_on_x1, decimals=3), around(y_x_solution, decimals=3))
-        )
+        assert array_equal(around(y_on_x1, decimals=3), around(y_x_solution, decimals=3))
 
         y_on_x2 = self.sup.get_transformed()
-        self.assertTrue(
-            array_equal(around(y_on_x2, decimals=3), around(y_x_solution, decimals=3))
-        )
+        assert array_equal(around(y_on_x2, decimals=3), around(y_x_solution, decimals=3))
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

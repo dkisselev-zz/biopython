@@ -6,6 +6,7 @@
 """Unit test for Raf."""
 
 import unittest
+import pytest
 from io import StringIO
 
 from Bio.SCOP import Raf
@@ -22,21 +23,21 @@ class RafTests(unittest.TestCase):
         """Parse a RAF record."""
         r = Raf.SeqMap(self.rafLine)
 
-        self.assertEqual(r.pdbid, "101m")
-        self.assertEqual(r.pdb_datestamp, "010301")
-        self.assertEqual(r.flags, "111011")
+        assert r.pdbid == "101m"
+        assert r.pdb_datestamp == "010301"
+        assert r.flags == "111011"
 
         i = r.index("143")
         res = r.res[i]
-        self.assertEqual(res.chainid, "_")
-        self.assertEqual(res.resid, "143")
-        self.assertEqual(res.seqres, "A")
-        self.assertEqual(res.atom, "A")
+        assert res.chainid == "_"
+        assert res.resid == "143"
+        assert res.seqres == "A"
+        assert res.atom == "A"
 
         r = Raf.SeqMap(self.rafLine2)
         res = r.res[r.index("6A", chainid="A")]
-        self.assertEqual(res.resid, "6A")
-        self.assertEqual(res.atom, "E")
+        assert res.resid == "6A"
+        assert res.atom == "E"
 
     def testSeqMapAdd(self):
         r2 = Raf.SeqMap(self.rafLine2)
@@ -44,57 +45,57 @@ class RafTests(unittest.TestCase):
 
         length = len(r2.res) + len(r3.res)
         r2 += r3
-        self.assertEqual(len(r2.res), length)
+        assert len(r2.res) == length
 
         r2.extend(r2)
-        self.assertEqual(len(r2.res), length * 2)
+        assert len(r2.res) == length * 2
 
         r4 = r2 + r2
-        self.assertEqual(len(r4.res), length * 4)
+        assert len(r4.res) == length * 4
 
         r4.append(Raf.Res())
-        self.assertEqual(len(r4.res), (length * 4) + 1)
+        assert len(r4.res) == (length * 4) + 1
 
     def testSeqMapSlice(self):
         r = Raf.SeqMap(self.rafLine)
         r = r[r.index("124") : r.index("135") + 1]
-        self.assertEqual(len(r.res), 12)
+        assert len(r.res) == 12
 
     def test_SeqMap_getAtoms_err(self):
         r = Raf.SeqMap(self.rafLine)
         # There is no overlap with this PDB file...
         with open("PDB/1A8O.pdb") as pdb_handle:
             out_handle = StringIO()
-            self.assertRaises(RuntimeError, r.getAtoms, *(pdb_handle, out_handle))
+            with pytest.raises(RuntimeError):
+                r.getAtoms(*(pdb_handle, out_handle))
 
     def testSeqMapIndex(self):
         filename = "./SCOP/raftest.txt"
 
         index = Raf.SeqMapIndex(filename)
         r = index.getSeqMap("103m")
-        self.assertEqual(r.pdbid, "103m")
-        self.assertEqual(len(r.res), 154)
-        self.assertEqual(r.pdb_datestamp, "010301")
-        self.assertEqual(r.flags, "111011")
+        assert r.pdbid == "103m"
+        assert len(r.res) == 154
+        assert r.pdb_datestamp == "010301"
+        assert r.flags == "111011"
 
         r = index.getSeqMap("103m 1-10")
-        self.assertEqual(r.pdbid, "103m")
-        self.assertEqual(len(r.res), 10)
-        self.assertEqual(r.pdb_datestamp, "010301")
-        self.assertEqual(r.flags, "111011")
+        assert r.pdbid == "103m"
+        assert len(r.res) == 10
+        assert r.pdb_datestamp == "010301"
+        assert r.flags == "111011"
 
         r = index.getSeqMap("104l A:")
-        self.assertEqual(r.pdbid, "104l")
+        assert r.pdbid == "104l"
 
         r = index.getSeqMap("104l A:112-113")
-        self.assertEqual(r.pdbid, "104l")
-        self.assertEqual(len(r.res), 2)
+        assert r.pdbid == "104l"
+        assert len(r.res) == 2
 
         r = index.getSeqMap("104l A:112-113,B:146-148")
-        self.assertEqual(r.pdbid, "104l")
-        self.assertEqual(len(r.res), 5)
+        assert r.pdbid == "104l"
+        assert len(r.res) == 5
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

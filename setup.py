@@ -89,21 +89,14 @@ class test_biopython(Command):
         pass
 
     def run(self):
-        """Run the tests."""
-        this_dir = os.getcwd()
+        """Run the tests via pytest."""
+        import pytest as _pytest
 
-        # change to the test dir and run the tests
-        os.chdir("Tests")
-        sys.path.insert(0, "")
-        import run_tests
-
+        args = []
         if self.offline:
-            run_tests.main(["--offline"])
-        else:
-            run_tests.main([])
-
-        # change back to the current directory
-        os.chdir(this_dir)
+            args.append("--offline")
+        os.chdir("Tests")
+        raise SystemExit(_pytest.main(args))
 
 
 def can_import(module_name):

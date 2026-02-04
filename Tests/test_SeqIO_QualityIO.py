@@ -6,6 +6,7 @@
 
 import os
 import unittest
+import pytest
 import warnings
 from io import BytesIO
 from io import StringIO
@@ -52,7 +53,7 @@ class QualityIOTestBaseClass(SeqIOTestBaseClass):
             err_msg = f"mismatch in {keyword}"
             if msg is not None:
                 err_msg = f"{msg}: {err_msg}"
-            self.assertEqual(q_old, q_new, msg=err_msg)
+            assert q_old == q_new, err_msg
 
         q_old = old.letter_annotations.get("phred_quality")
         q_new = new.letter_annotations.get("solexa_quality")
@@ -65,7 +66,7 @@ class QualityIOTestBaseClass(SeqIOTestBaseClass):
             err_msg = f"mismatch converting phred_quality {q_old} to solexa_quality"
             if msg is not None:
                 err_msg = f"{msg}: {err_msg}"
-            self.assertEqual(converted, q_new, msg=err_msg)
+            assert converted == q_new, err_msg
 
         q_old = old.letter_annotations.get("solexa_quality")
         q_new = new.letter_annotations.get("phred_quality")
@@ -78,7 +79,7 @@ class QualityIOTestBaseClass(SeqIOTestBaseClass):
             err_msg = f"mismatch converting solexa_quality {q_old} to phred_quality"
             if msg is not None:
                 err_msg = f"{msg}: {err_msg}"
-            self.assertEqual(converted, q_new, msg=err_msg)
+            assert converted == q_new, err_msg
 
 
 class TestFastqErrors(unittest.TestCase):
@@ -92,9 +93,9 @@ class TestFastqErrors(unittest.TestCase):
             records = SeqIO.parse(filename, fmt)
             for i in range(good_count):
                 record = next(records)  # Make sure no errors!
-                self.assertIsInstance(record, SeqRecord)
+                assert isinstance(record, SeqRecord)
             # Detect error in the next record:
-            with self.assertRaises(ValueError, msg=msg) as cm:
+            with pytest.raises(ValueError) as cm:
                 record = next(records)
 
     def check_general_fails(self, filename, good_count):
@@ -103,7 +104,7 @@ class TestFastqErrors(unittest.TestCase):
         for i in range(good_count):
             title, seq, qual = next(tuples)  # Make sure no errors!
         # Detect error in the next record:
-        with self.assertRaises(ValueError, msg=msg) as cm:
+        with pytest.raises(ValueError) as cm:
             title, seq, qual = next(tuples)
 
     def check_general_passes(self, filename, record_count):
@@ -113,9 +114,9 @@ class TestFastqErrors(unittest.TestCase):
         msg = f"FastqGeneralIterator failed to parse {filename}"
         count = 0
         for title, seq, qual in tuples:
-            self.assertEqual(len(seq), len(qual), msg=msg)
+            assert len(seq) == len(qual), msg
             count += 1
-        self.assertEqual(count, record_count, msg=msg)
+        assert count == record_count, msg
 
     def test_reject_high_and_low(self):
         # These FASTQ files will be rejected by both the low level parser AND
@@ -163,20 +164,17 @@ class TestReferenceSffConversions(unittest.TestCase):
         wanted = list(SeqIO.parse(out_name, fmt))
         data = StringIO()
         count = SeqIO.convert(sff_name, sff_format, data, fmt)
-        self.assertEqual(count, len(wanted))
+        assert count == len(wanted)
         data.seek(0)
         converted = list(SeqIO.parse(data, fmt))
-        self.assertEqual(len(wanted), len(converted))
+        assert len(wanted) == len(converted)
         for old, new in zip(wanted, converted):
-            self.assertEqual(old.id, new.id)
-            self.assertEqual(old.name, new.name)
+            assert old.id == new.id
+            assert old.name == new.name
             if fmt != "qual":
-                self.assertEqual(old.seq, new.seq)
+                assert old.seq == new.seq
             elif fmt != "fasta":
-                self.assertEqual(
-                    old.letter_annotations["phred_quality"],
-                    new.letter_annotations["phred_quality"],
-                )
+                assert old.letter_annotations["phred_quality"] == new.letter_annotations["phred_quality"]
 
     def check_sff(self, sff_name):
         self.check(
@@ -225,7 +223,7 @@ class TestReferenceFastqConversions(unittest.TestCase):
     def simple_check(self, base_name, in_variant):
         for out_variant in ["sanger", "solexa", "illumina"]:
             in_filename = f"Quality/{base_name}_original_{in_variant}.fastq"
-            self.assertTrue(os.path.isfile(in_filename))
+            assert os.path.isfile(in_filename)
             # Load the reference output...
             with open(f"Quality/{base_name}_as_{out_variant}.fastq") as handle:
                 expected = handle.read()
@@ -239,7 +237,7 @@ class TestReferenceFastqConversions(unittest.TestCase):
                 SeqIO.convert(
                     in_filename, "fastq-" + in_variant, handle, "fastq-" + out_variant
                 )
-                self.assertEqual(expected, handle.getvalue())
+                assert expected == handle.getvalue()
                 # Check matches using parse/write
                 handle = StringIO()
                 SeqIO.write(
@@ -247,7 +245,7 @@ class TestReferenceFastqConversions(unittest.TestCase):
                     handle,
                     "fastq-" + out_variant,
                 )
-                self.assertEqual(expected, handle.getvalue())
+                assert expected == handle.getvalue()
 
     def test_reference_conversion(self):
         tests = [
@@ -287,7 +285,7 @@ class TestQual(QualityIOTestBaseClass):
         h = StringIO()
         SeqIO.write(records, h, "qual")
         with open("Quality/example.qual") as expected:
-            self.assertEqual(h.getvalue(), expected.read())
+            assert h.getvalue() == expected.read()
 
     def test_fasta(self):
         """Check FASTQ parsing matches FASTA parsing."""
@@ -301,7 +299,7 @@ class TestQual(QualityIOTestBaseClass):
         h = StringIO()
         SeqIO.write(records, h, "fasta")
         with open("Quality/example.fasta") as expected:
-            self.assertEqual(h.getvalue(), expected.read())
+            assert h.getvalue() == expected.read()
 
     def test_qual_negative(self):
         """Check QUAL negative scores mapped to PHRED zero."""
@@ -325,10 +323,8 @@ class TestQual(QualityIOTestBaseClass):
                     yield record
 
             records = add_sequence(records)
-            self.assertEqual(4, SeqIO.write(records, h2, "fastq"))
-        self.assertEqual(
-            h2.getvalue(),
-            """\
+            assert 4 == SeqIO.write(records, h2, "fastq")
+        assert h2.getvalue() == """\
 @1117_10_107_F3
 ??????????????????????????????????????????????????
 +
@@ -345,8 +341,7 @@ BB!!!<!!21!=9,!'!!!>!)>9!!))!5!.!!).!=+9!+!!!%!!('
 ??????????????????????????????????????????????????
 +
 17!!!B!!?<!<=A!>!!!<!3*'!!81!;!&(!7(!3/)!)!!!,!!%9
-""",
-        )
+"""
 
 
 class TestReadWrite(unittest.TestCase):
@@ -356,10 +351,8 @@ class TestReadWrite(unittest.TestCase):
         """Read and write back simple example with upper case 2000bp read."""
         data = f"@{'id descr goes here'}\n{'ACGT' * 500}\n+\n{'!@a~' * 500}\n"
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
 
     def test_fastq_1000(self):
         """Read and write back simple example with mixed case 1000bp read."""
@@ -369,10 +362,8 @@ class TestReadWrite(unittest.TestCase):
             "abcd!!efgh" * 100,
         )
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
 
     def test_fastq_dna(self):
         """Read and write back simple example with ambiguous DNA."""
@@ -383,10 +374,8 @@ class TestReadWrite(unittest.TestCase):
             "".join(chr(33 + q) for q in range(len(ambiguous_dna_letters))),
         )
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
         # Now in lower case...
         data = "@%s\n%s\n+\n%s\n" % (
             "id descr goes here",
@@ -394,10 +383,8 @@ class TestReadWrite(unittest.TestCase):
             "".join(chr(33 + q) for q in range(len(ambiguous_dna_letters))),
         )
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
 
     def test_fastq_rna(self):
         """Read and write back simple example with ambiguous RNA."""
@@ -408,10 +395,8 @@ class TestReadWrite(unittest.TestCase):
             "".join(chr(33 + q) for q in range(len(ambiguous_rna_letters))),
         )
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
         # Now in lower case...
         data = "@%s\n%s\n+\n%s\n" % (
             "id descr goes here",
@@ -419,10 +404,8 @@ class TestReadWrite(unittest.TestCase):
             "".join(chr(33 + q) for q in range(len(ambiguous_rna_letters))),
         )
         handle = StringIO()
-        self.assertEqual(
-            1, SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
-        )
-        self.assertEqual(data, handle.getvalue())
+        assert 1 == SeqIO.write(SeqIO.parse(StringIO(data), "fastq"), handle, "fastq")
+        assert data == handle.getvalue()
 
 
 class TestWriteRead(QualityIOTestBaseClass):
@@ -829,38 +812,38 @@ class MappingTests(unittest.TestCase):
 
     def test_solexa_quality_from_phred(self):
         """Mapping check for function solexa_quality_from_phred."""
-        self.assertEqual(-5, round(QualityIO.solexa_quality_from_phred(0)))
-        self.assertEqual(-5, round(QualityIO.solexa_quality_from_phred(1)))
-        self.assertEqual(-2, round(QualityIO.solexa_quality_from_phred(2)))
-        self.assertEqual(0, round(QualityIO.solexa_quality_from_phred(3)))
-        self.assertEqual(2, round(QualityIO.solexa_quality_from_phred(4)))
-        self.assertEqual(3, round(QualityIO.solexa_quality_from_phred(5)))
-        self.assertEqual(5, round(QualityIO.solexa_quality_from_phred(6)))
-        self.assertEqual(6, round(QualityIO.solexa_quality_from_phred(7)))
-        self.assertEqual(7, round(QualityIO.solexa_quality_from_phred(8)))
-        self.assertEqual(8, round(QualityIO.solexa_quality_from_phred(9)))
+        assert -5 == round(QualityIO.solexa_quality_from_phred(0))
+        assert -5 == round(QualityIO.solexa_quality_from_phred(1))
+        assert -2 == round(QualityIO.solexa_quality_from_phred(2))
+        assert 0 == round(QualityIO.solexa_quality_from_phred(3))
+        assert 2 == round(QualityIO.solexa_quality_from_phred(4))
+        assert 3 == round(QualityIO.solexa_quality_from_phred(5))
+        assert 5 == round(QualityIO.solexa_quality_from_phred(6))
+        assert 6 == round(QualityIO.solexa_quality_from_phred(7))
+        assert 7 == round(QualityIO.solexa_quality_from_phred(8))
+        assert 8 == round(QualityIO.solexa_quality_from_phred(9))
         for i in range(10, 100):
-            self.assertEqual(i, round(QualityIO.solexa_quality_from_phred(i)))
+            assert i == round(QualityIO.solexa_quality_from_phred(i))
 
     def test_phred_quality_from_solexa(self):
         """Mapping check for function phred_quality_from_solexa."""
-        self.assertEqual(1, round(QualityIO.phred_quality_from_solexa(-5)))
-        self.assertEqual(1, round(QualityIO.phred_quality_from_solexa(-4)))
-        self.assertEqual(2, round(QualityIO.phred_quality_from_solexa(-3)))
-        self.assertEqual(2, round(QualityIO.phred_quality_from_solexa(-2)))
-        self.assertEqual(3, round(QualityIO.phred_quality_from_solexa(-1)))
-        self.assertEqual(3, round(QualityIO.phred_quality_from_solexa(0)))
-        self.assertEqual(4, round(QualityIO.phred_quality_from_solexa(1)))
-        self.assertEqual(4, round(QualityIO.phred_quality_from_solexa(2)))
-        self.assertEqual(5, round(QualityIO.phred_quality_from_solexa(3)))
-        self.assertEqual(5, round(QualityIO.phred_quality_from_solexa(4)))
-        self.assertEqual(6, round(QualityIO.phred_quality_from_solexa(5)))
-        self.assertEqual(7, round(QualityIO.phred_quality_from_solexa(6)))
-        self.assertEqual(8, round(QualityIO.phred_quality_from_solexa(7)))
-        self.assertEqual(9, round(QualityIO.phred_quality_from_solexa(8)))
-        self.assertEqual(10, round(QualityIO.phred_quality_from_solexa(9)))
+        assert 1 == round(QualityIO.phred_quality_from_solexa(-5))
+        assert 1 == round(QualityIO.phred_quality_from_solexa(-4))
+        assert 2 == round(QualityIO.phred_quality_from_solexa(-3))
+        assert 2 == round(QualityIO.phred_quality_from_solexa(-2))
+        assert 3 == round(QualityIO.phred_quality_from_solexa(-1))
+        assert 3 == round(QualityIO.phred_quality_from_solexa(0))
+        assert 4 == round(QualityIO.phred_quality_from_solexa(1))
+        assert 4 == round(QualityIO.phred_quality_from_solexa(2))
+        assert 5 == round(QualityIO.phred_quality_from_solexa(3))
+        assert 5 == round(QualityIO.phred_quality_from_solexa(4))
+        assert 6 == round(QualityIO.phred_quality_from_solexa(5))
+        assert 7 == round(QualityIO.phred_quality_from_solexa(6))
+        assert 8 == round(QualityIO.phred_quality_from_solexa(7))
+        assert 9 == round(QualityIO.phred_quality_from_solexa(8))
+        assert 10 == round(QualityIO.phred_quality_from_solexa(9))
         for i in range(10, 100):
-            self.assertEqual(i, round(QualityIO.phred_quality_from_solexa(i)))
+            assert i == round(QualityIO.phred_quality_from_solexa(i))
 
     def test_sanger_to_solexa(self):
         """Mapping check for FASTQ Sanger (0 to 93) to Solexa (-5 to 62)."""
@@ -880,11 +863,11 @@ class MappingTests(unittest.TestCase):
             SeqIO.write(
                 SeqIO.parse(in_handle, "fastq-sanger"), out_handle, "fastq-solexa"
             )
-            self.assertLessEqual(len(w), 1, w)
+            assert len(w) <= 1, w
         out_handle.seek(0)
         record = SeqIO.read(out_handle, "fastq-solexa")
-        self.assertEqual(record.seq, seq)
-        self.assertEqual(record.letter_annotations["solexa_quality"], expected_sol)
+        assert record.seq == seq
+        assert record.letter_annotations["solexa_quality"] == expected_sol
 
     def test_solexa_to_sanger(self):
         """Mapping check for FASTQ Solexa (-5 to 62) to Sanger (0 to 62)."""
@@ -901,8 +884,8 @@ class MappingTests(unittest.TestCase):
         SeqIO.write(SeqIO.parse(in_handle, "fastq-solexa"), out_handle, "fastq-sanger")
         out_handle.seek(0)
         record = SeqIO.read(out_handle, "fastq-sanger")
-        self.assertEqual(record.seq, seq)
-        self.assertEqual(record.letter_annotations["phred_quality"], expected_phred)
+        assert record.seq == seq
+        assert record.letter_annotations["phred_quality"] == expected_phred
 
     def test_sanger_to_illumina(self):
         """Mapping check for FASTQ Sanger (0 to 93) to Illumina (0 to 62)."""
@@ -916,11 +899,11 @@ class MappingTests(unittest.TestCase):
             SeqIO.write(
                 SeqIO.parse(in_handle, "fastq-sanger"), out_handle, "fastq-illumina"
             )
-            self.assertLessEqual(len(w), 1, w)
+            assert len(w) <= 1, w
         out_handle.seek(0)
         record = SeqIO.read(out_handle, "fastq-illumina")
-        self.assertEqual(record.seq, seq)
-        self.assertEqual(record.letter_annotations["phred_quality"], expected_phred)
+        assert record.seq == seq
+        assert record.letter_annotations["phred_quality"] == expected_phred
 
     def test_illumina_to_sanger(self):
         """Mapping check for FASTQ Illumina (0 to 62) to Sanger (0 to 62)."""
@@ -934,8 +917,8 @@ class MappingTests(unittest.TestCase):
         )
         out_handle.seek(0)
         record = SeqIO.read(out_handle, "fastq-sanger")
-        self.assertEqual(record.seq, seq)
-        self.assertEqual(record.letter_annotations["phred_quality"], expected_phred)
+        assert record.seq == seq
+        assert record.letter_annotations["phred_quality"] == expected_phred
 
 
 class TestSFF(unittest.TestCase):
@@ -943,38 +926,38 @@ class TestSFF(unittest.TestCase):
 
     def test_overlapping_clip(self):
         record = next(SeqIO.parse("Roche/greek.sff", "sff"))
-        self.assertEqual(len(record), 395)
+        assert len(record) == 395
         s = record.seq.lower()
         # Apply overlapping clipping
         record.annotations["clip_qual_left"] = 51
         record.annotations["clip_qual_right"] = 44
         record.annotations["clip_adapter_left"] = 50
         record.annotations["clip_adapter_right"] = 75
-        self.assertEqual(len(record), 395)
-        self.assertEqual(len(record.seq), 395)
+        assert len(record) == 395
+        assert len(record.seq) == 395
         # Save the clipped record...
         h = BytesIO()
         count = SeqIO.write(record, h, "sff")
-        self.assertEqual(count, 1)
+        assert count == 1
         # Now reload it...
         h.seek(0)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", BiopythonParserWarning)
             record = SeqIO.read(h, "sff")
-            self.assertEqual(len(w), 1, w)
-        self.assertEqual(record.annotations["clip_qual_left"], 51)
-        self.assertEqual(record.annotations["clip_qual_right"], 44)
-        self.assertEqual(record.annotations["clip_adapter_left"], 50)
-        self.assertEqual(record.annotations["clip_adapter_right"], 75)
-        self.assertEqual(len(record), 395)
-        self.assertEqual(s, record.seq.lower())
+            assert len(w) == 1, w
+        assert record.annotations["clip_qual_left"] == 51
+        assert record.annotations["clip_qual_right"] == 44
+        assert record.annotations["clip_adapter_left"] == 50
+        assert record.annotations["clip_adapter_right"] == 75
+        assert len(record) == 395
+        assert s == record.seq.lower()
         # And check with trimming applied...
         h.seek(0)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", BiopythonParserWarning)
             record = SeqIO.read(h, "sff-trim")
-            self.assertEqual(len(w), 1, w)
-        self.assertEqual(len(record), 0)
+            assert len(w) == 1, w
+        assert len(record) == 0
 
     def test_negative_clip(self):
         for clip in [
@@ -984,23 +967,26 @@ class TestSFF(unittest.TestCase):
             "clip_adapter_right",
         ]:
             record = next(SeqIO.parse("Roche/greek.sff", "sff"))
-            self.assertEqual(len(record), 395)
-            self.assertLessEqual(0, record.annotations[clip])
+            assert len(record) == 395
+            assert 0 <= record.annotations[clip]
             record.annotations[clip] = -1
             with BytesIO() as h:
-                self.assertRaises(ValueError, SeqIO.write, record, h, "sff")
+                with pytest.raises(ValueError):
+                    SeqIO.write(record, h, "sff")
 
 
 class NonFastqTests(unittest.TestCase):
     def test_fasta_as_fastq(self):
         for f in ("fastq", "fastq-sanger", "fastq-solexa", "fastq-illumina"):
             generator = SeqIO.parse("Fasta/elderberry.nu", f)
-            self.assertRaises(ValueError, next, generator)
+            with pytest.raises(ValueError):
+                next(generator)
 
     def test_sff_as_fastq(self):
         for f in ("fastq", "fastq-sanger", "fastq-solexa", "fastq-illumina"):
             generator = SeqIO.parse("Roche/greek.sff", f)
-            self.assertRaises(ValueError, next, generator)
+            with pytest.raises(ValueError):
+                next(generator)
 
 
 class TestsConverter(SeqIOConverterTestBaseClass, QualityIOTestBaseClass):
@@ -1021,7 +1007,7 @@ class TestsConverter(SeqIOConverterTestBaseClass, QualityIOTestBaseClass):
         handle.seek(0)
         # Now load it back and check it agrees,
         records2 = list(SeqIO.parse(handle, out_format))
-        self.assertEqual(len(records), len(records2), msg=msg)
+        assert len(records) == len(records2), msg
         for record1, record2 in zip(records, records2):
             self.compare_record(record1, record2, out_format, msg=msg)
         # Finally, use the convert function, and check that agrees:
@@ -1036,7 +1022,7 @@ class TestsConverter(SeqIOConverterTestBaseClass, QualityIOTestBaseClass):
                 warnings.simplefilter("ignore", BiopythonWarning)
             SeqIO.convert(filename, in_format, handle2, out_format)
         # We could re-parse this, but it is simpler and stricter:
-        self.assertEqual(handle.getvalue(), handle2.getvalue(), msg=msg)
+        assert handle.getvalue() == handle2.getvalue(), msg
 
     def failure_check(self, filename, in_format, out_format):
         msg = "Confirm failure detection converting %s from %s to %s" % (
@@ -1045,18 +1031,18 @@ class TestsConverter(SeqIOConverterTestBaseClass, QualityIOTestBaseClass):
             out_format,
         )
         # We want the SAME error message from parse/write as convert!
-        with self.assertRaises(ValueError, msg=msg) as cm:
+        with pytest.raises(ValueError) as cm:
             records = list(SeqIO.parse(filename, in_format))
             self.write_records(records, out_format)
-        err1 = str(cm.exception)
+        err1 = str(cm.value)
         # Now do the conversion...
-        with self.assertRaises(ValueError, msg=msg) as cm:
+        with pytest.raises(ValueError) as cm:
             handle = StringIO()
             SeqIO.convert(filename, in_format, handle, out_format)
-        err2 = str(cm.exception)
+        err2 = str(cm.value)
         # Verify that parse/write and convert give the same failure
         err_msg = f"{msg}: parse/write and convert gave different failures"
-        self.assertEqual(err1, err2, msg=err_msg)
+        assert err1 == err2, err_msg
 
     def test_conversion(self):
         tests = [
@@ -1116,5 +1102,4 @@ class TestsConverter(SeqIOConverterTestBaseClass, QualityIOTestBaseClass):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

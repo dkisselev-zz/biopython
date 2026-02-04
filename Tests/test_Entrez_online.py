@@ -15,15 +15,15 @@ scope of this file as they are already covered in test_Entrez.py.
 import doctest
 import sys
 import unittest
-
-import requires_internet
+import pytest
 
 from Bio import Entrez
 from Bio import Medline
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 # This lets us set the email address to be sent to NCBI Entrez:
@@ -43,23 +43,23 @@ class EntrezOnlineCase(unittest.TestCase):
         finally:
             # Do not want any failure here to break other tests
             Entrez.api_key = cached
-        self.assertNotIn("api_key=", stream.url)
+        assert "api_key=" not in stream.url
         rec = Entrez.read(stream)
         stream.close()
-        self.assertIsInstance(rec, dict)
-        self.assertIn("DbList", rec)
+        assert isinstance(rec, dict)
+        assert "DbList" in rec
         # arbitrary number, just to make sure that DbList has contents
-        self.assertGreater(len(rec["DbList"]), 5)
+        assert len(rec["DbList"]) > 5
 
     def test_read_from_url(self):
         """Test Entrez.read from URL."""
         stream = Entrez.einfo()
         rec = Entrez.read(stream)
         stream.close()
-        self.assertIsInstance(rec, dict)
-        self.assertIn("DbList", rec)
+        assert isinstance(rec, dict)
+        assert "DbList" in rec
         # arbitrary number, just to make sure that DbList has contents
-        self.assertGreater(len(rec["DbList"]), 5)
+        assert len(rec["DbList"]) > 5
 
     def test_parse_from_url(self):
         """Test Entrez.parse from URL."""
@@ -68,9 +68,9 @@ class EntrezOnlineCase(unittest.TestCase):
         )
         recs = list(Entrez.parse(stream))
         stream.close()
-        self.assertEqual(3, len(recs))
+        assert 3 == len(recs)
         # arbitrary number, just to make sure the parser works
-        self.assertTrue(all(len(rec).keys > 5) for rec in recs)
+        assert (all(len(rec).keys > 5) for rec in recs)
 
     def test_webenv_search(self):
         """Test Entrez.search from link webenv history."""
@@ -99,7 +99,7 @@ class EntrezOnlineCase(unittest.TestCase):
         )
         search_record = Entrez.read(stream)
         stream.close()
-        self.assertEqual(2, len(search_record["IdList"]))
+        assert 2 == len(search_record["IdList"])
 
     def test_seqio_from_url(self):
         """Test Entrez into SeqIO.read from URL."""
@@ -108,9 +108,9 @@ class EntrezOnlineCase(unittest.TestCase):
         )
         record = SeqIO.read(stream, "genbank")
         stream.close()
-        self.assertIsInstance(record, SeqRecord)
-        self.assertEqual("EU490707.1", record.id)
-        self.assertEqual(1302, len(record))
+        assert isinstance(record, SeqRecord)
+        assert "EU490707.1" == record.id
+        assert 1302 == len(record)
 
     def test_medline_from_url(self):
         """Test Entrez into Medline.read from URL."""
@@ -119,17 +119,17 @@ class EntrezOnlineCase(unittest.TestCase):
         )
         record = Medline.read(stream)
         stream.close()
-        self.assertIsInstance(record, dict)
-        self.assertEqual("19304878", record["PMID"])
-        self.assertEqual("10.1093/bioinformatics/btp163 [doi]", record["LID"])
+        assert isinstance(record, dict)
+        assert "19304878" == record["PMID"]
+        assert "10.1093/bioinformatics/btp163 [doi]" == record["LID"]
 
     def test_efetch_taxonomy_xml(self):
         """Test Entrez using a integer id - like a taxon id."""
         stream = Entrez.efetch(db="taxonomy", id=3702, retmode="XML")
         taxon_record = Entrez.read(stream)
-        self.assertTrue(1, len(taxon_record))
-        self.assertIn("TaxId", taxon_record[0])
-        self.assertTrue("3702", taxon_record[0]["TaxId"])
+        assert 1, len(taxon_record)
+        assert "TaxId" in taxon_record[0]
+        assert "3702", taxon_record[0]["TaxId"]
         stream.close()
 
     def test_elink(self):
@@ -145,7 +145,7 @@ class EntrezOnlineCase(unittest.TestCase):
         with Entrez.elink(id=ids, **params) as stream:
             result1 = Entrez.read(stream)
 
-        self.assertEqual(len(result1), len(ids))
+        assert len(result1) == len(ids)
 
         id_map = {}  # Dictionary mapping each gene ID to some number of protein IDs
 
@@ -154,23 +154,23 @@ class EntrezOnlineCase(unittest.TestCase):
             (linksetdb,) = linkset["LinkSetDb"]
             to_ids = [link["Id"] for link in linksetdb["Link"]]
             # Failure here could indicate we used an invalid ID
-            self.assertGreater(len(to_ids), 0)
+            assert len(to_ids) > 0
             id_map[from_id] = to_ids
 
-        self.assertCountEqual(id_map.keys(), ids)
+        assert sorted(id_map.keys()) == sorted(ids)
 
         # Pass string argument - single LinkSet
         with Entrez.elink(id=",".join(ids), **params) as stream:
             result2 = Entrez.read(stream)
 
         (linkset,) = result2
-        self.assertCountEqual(linkset["IdList"], ids)
+        assert sorted(linkset["IdList"]) == sorted(ids)
 
         # Check we got the same set of IDs as in the last request
         (linksetdb,) = linkset["LinkSetDb"]
         to_ids = [link["Id"] for link in linksetdb["Link"]]
         prev_to_ids = set().union(*id_map.values())
-        self.assertCountEqual(to_ids, prev_to_ids)
+        assert sorted(to_ids) == sorted(prev_to_ids)
 
     def test_epost(self):
         """Test Entrez.epost with multiple ids, both comma separated and as list."""
@@ -186,8 +186,8 @@ class EntrezOnlineCase(unittest.TestCase):
         record = Entrez.read(stream)
         stream.close()
 
-        self.assertEqual(record["Query"], "biopythooon")
-        self.assertEqual(record["CorrectedQuery"], "biopython")
+        assert record["Query"] == "biopythooon"
+        assert record["CorrectedQuery"] == "biopython"
 
     def test_ecitmatch(self):
         """Test Entrez.ecitmatch to search for a citation."""
@@ -204,7 +204,7 @@ class EntrezOnlineCase(unittest.TestCase):
         expected_result = (
             "proc natl acad sci u s a|1991|88|3248|mann bj|citation_1|2014248\n"
         )
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         stream.close()
 
     def test_efetch_ids(self):
@@ -235,7 +235,7 @@ class EntrezOnlineCase(unittest.TestCase):
                     for seqid in rec["GBSeq_other-seqids"]
                     if seqid.startswith("gi|")
                 ]
-                self.assertCountEqual(rec_ids, ids)
+                assert sorted(rec_ids) == sorted(ids)
 
     def test_efetch_gds_utf8(self):
         """Test correct handling of encodings in Entrez.efetch."""
@@ -244,18 +244,18 @@ class EntrezOnlineCase(unittest.TestCase):
         text = stream.read()
         # Use of Unicode double quotation marks U+201C and U+201D
         expected_phrase = "“field of injury”"
-        self.assertEqual(text[342:359], expected_phrase)
+        assert text[342:359] == expected_phrase
         stream.close()
 
     def test_fetch_xml_schemas(self):
         stream = Entrez.efetch("protein", id="783730874", rettype="ipg", retmode="xml")
         record = Entrez.read(stream, validate=False)
         stream.close()
-        self.assertEqual(len(record), 1)
-        self.assertIn("IPGReport", record)
-        self.assertIn("Product", record["IPGReport"])
-        self.assertIn("Statistics", record["IPGReport"])
-        self.assertIn("ProteinList", record["IPGReport"])
+        assert len(record) == 1
+        assert "IPGReport" in record
+        assert "Product" in record["IPGReport"]
+        assert "Statistics" in record["IPGReport"]
+        assert "ProteinList" in record["IPGReport"]
 
 
 if __name__ == "__main__":

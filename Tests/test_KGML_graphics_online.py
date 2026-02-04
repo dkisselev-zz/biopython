@@ -9,31 +9,26 @@
 # Builtins
 import os
 import unittest
+import pytest
 
 # Biopython
 # Do we have ReportLab?  Raise error if not present.
-from Bio import MissingExternalDependencyError
 
 try:
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen.canvas import Canvas
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
+    pytest.skip("Install reportlab if you want to use Bio.Graphics.", allow_module_level=True)
 
 # Do we have PIL?
 try:
     from PIL import Image
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install Pillow or its predecessor PIL (Python Imaging Library) "
-        "if you want to use bitmaps from KGML."
-    ) from None
+    pytest.skip("Install Pillow or its predecessor PIL (Python Imaging Library) "
+        "if you want to use bitmaps from KGML.", allow_module_level=True)
 
 
 # Biopython Bio.KEGG.KGML
-import requires_internet
 
 # test_KGML_graphics module
 from test_KGML_graphics import PathwayData
@@ -41,7 +36,8 @@ from test_KGML_graphics import PathwayData
 from Bio.Graphics.KGML_vis import KGMLCanvas
 from Bio.KEGG.KGML.KGML_parser import read
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 class KGMLPathwayOnlineTest(unittest.TestCase):
@@ -82,5 +78,4 @@ class KGMLPathwayOnlineTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

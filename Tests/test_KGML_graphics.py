@@ -8,9 +8,9 @@
 # Builtins
 import os
 import unittest
+import pytest
 
 # Do we have ReportLab?  Raise error if not present.
-from Bio import MissingExternalDependencyError
 
 # Biopython
 from Bio.Graphics.ColorSpiral import ColorSpiral
@@ -21,9 +21,7 @@ try:
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen.canvas import Canvas
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
+    pytest.skip("Install reportlab if you want to use Bio.Graphics.", allow_module_level=True)
 
 try:
     c = HexColor("#8080F780")
@@ -31,18 +29,14 @@ except TypeError:
     # Known to fail under ReportLab 2.6 with:
     # unsupported operand type(s) for &: 'int' and 'float'
     # ReportLab 2.7+ also offers hasAlpha=True rather than alpha=True
-    raise MissingExternalDependencyError(
-        "Install at least reportlab 2.7 for transparency support."
-    ) from None
+    pytest.skip("Install at least reportlab 2.7 for transparency support.", allow_module_level=True)
 
 # Do we have PIL?
 try:
     from PIL import Image
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install Pillow or its predecessor PIL (Python Imaging Library) "
-        "if you want to use bitmaps from KGML."
-    ) from None
+    pytest.skip("Install Pillow or its predecessor PIL (Python Imaging Library) "
+        "if you want to use bitmaps from KGML.", allow_module_level=True)
 
 
 # Biopython Bio.KEGG.KGML
@@ -189,5 +183,4 @@ class KGMLPathwayTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

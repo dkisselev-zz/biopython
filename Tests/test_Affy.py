@@ -7,17 +7,11 @@
 import os
 import struct
 import unittest
+import pytest
 
-try:
-    import numpy.testing
-    from numpy import array
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.Affy.CelFile"
-    ) from None
-
+pytest.importorskip("numpy")
+import numpy.testing
+from numpy import array
 from Bio.Affy import CelFile
 
 
@@ -36,63 +30,53 @@ class AffyTest(unittest.TestCase):
     def testAffy3(self):
         with open(self.affy3) as f:
             record = CelFile.read(f)
-            self.assertGreater(len(record.DatHeader), 0)
-            self.assertEqual(record.intensities.shape, (5, 5))
-            self.assertEqual(record.intensities.shape, record.stdevs.shape)
-            self.assertEqual(record.intensities.shape, record.npix.shape)
-            self.assertEqual(record.ncols, 5)
-            self.assertEqual(record.nrows, 5)
-            self.assertEqual(record.version, 3)
-            self.assertEqual(record.GridCornerUL, (206, 129))
-            self.assertEqual(record.GridCornerUR, (3570, 107))
-            self.assertEqual(record.GridCornerLR, (3597, 3470))
-            self.assertEqual(record.GridCornerLL, (234, 3492))
-            self.assertEqual(record.DatHeader["filename"], "1g_A9AF")
-            self.assertEqual(record.DatHeader["CLS"], 3684)
-            self.assertEqual(record.DatHeader["RWS"], 3684)
-            self.assertEqual(record.DatHeader["XIN"], 1)
-            self.assertEqual(record.DatHeader["YIN"], 1)
-            self.assertEqual(record.DatHeader["VE"], 30)
-            self.assertAlmostEqual(record.DatHeader["laser-power"], 2.0)
-            self.assertEqual(record.DatHeader["scan-date"], "08/23/07")
-            self.assertEqual(record.DatHeader["scan-time"], "11:23:24")
-            self.assertEqual(record.DatHeader["scanner-id"], "50205880")
-            self.assertEqual(record.DatHeader["scanner-type"], "M10")
-            self.assertEqual(record.DatHeader["array-type"], "Tgondii_SNP1.1sq")
-            self.assertEqual(record.DatHeader["filter-wavelength"], 570)
-            self.assertAlmostEqual(record.DatHeader["arc-radius"], 25356.509766)
-            self.assertAlmostEqual(record.DatHeader["laser-spotsize"], 3.5)
-            self.assertAlmostEqual(record.DatHeader["pixel-size"], 1.56)
-            self.assertEqual(record.DatHeader["image-orientation"], 6)
-            self.assertEqual(record.Algorithm, "Percentile")
-            self.assertEqual(len(record.AlgorithmParameters), 16)
-            self.assertEqual(record.AlgorithmParameters["Percentile"], 75)
-            self.assertEqual(record.AlgorithmParameters["CellMargin"], 2)
-            self.assertAlmostEqual(record.AlgorithmParameters["OutlierHigh"], 1.500)
-            self.assertAlmostEqual(record.AlgorithmParameters["OutlierLow"], 1.004)
-            self.assertEqual(record.AlgorithmParameters["AlgVersion"], "6.0")
-            self.assertEqual(
-                record.AlgorithmParameters["FixedCellSize"], True
-            )  # noqa: A502
-            self.assertEqual(record.AlgorithmParameters["FullFeatureWidth"], 7)
-            self.assertEqual(record.AlgorithmParameters["FullFeatureHeight"], 7)
-            self.assertEqual(
-                record.AlgorithmParameters["IgnoreOutliersInShiftRows"], False
-            )  # noqa: A502
-            self.assertEqual(
-                record.AlgorithmParameters["FeatureExtraction"], True
-            )  # noqa: A502
-            self.assertEqual(record.AlgorithmParameters["PoolWidthExtenstion"], 2)
-            self.assertEqual(record.AlgorithmParameters["PoolHeightExtension"], 2)
-            self.assertEqual(
-                record.AlgorithmParameters["UseSubgrids"], False
-            )  # noqa: A502
-            self.assertEqual(
-                record.AlgorithmParameters["RandomizePixels"], False
-            )  # noqa: A502
-            self.assertEqual(record.AlgorithmParameters["ErrorBasis"], "StdvMean")
-            self.assertAlmostEqual(record.AlgorithmParameters["StdMult"], 1.0)
-            self.assertEqual(record.NumberCells, 25)
+            assert len(record.DatHeader) > 0
+            assert record.intensities.shape == (5, 5)
+            assert record.intensities.shape == record.stdevs.shape
+            assert record.intensities.shape == record.npix.shape
+            assert record.ncols == 5
+            assert record.nrows == 5
+            assert record.version == 3
+            assert record.GridCornerUL == (206, 129)
+            assert record.GridCornerUR == (3570, 107)
+            assert record.GridCornerLR == (3597, 3470)
+            assert record.GridCornerLL == (234, 3492)
+            assert record.DatHeader["filename"] == "1g_A9AF"
+            assert record.DatHeader["CLS"] == 3684
+            assert record.DatHeader["RWS"] == 3684
+            assert record.DatHeader["XIN"] == 1
+            assert record.DatHeader["YIN"] == 1
+            assert record.DatHeader["VE"] == 30
+            assert record.DatHeader["laser-power"] == pytest.approx(2.0, abs=5e-8)
+            assert record.DatHeader["scan-date"] == "08/23/07"
+            assert record.DatHeader["scan-time"] == "11:23:24"
+            assert record.DatHeader["scanner-id"] == "50205880"
+            assert record.DatHeader["scanner-type"] == "M10"
+            assert record.DatHeader["array-type"] == "Tgondii_SNP1.1sq"
+            assert record.DatHeader["filter-wavelength"] == 570
+            assert record.DatHeader["arc-radius"] == pytest.approx(25356.509766, abs=5e-8)
+            assert record.DatHeader["laser-spotsize"] == pytest.approx(3.5, abs=5e-8)
+            assert record.DatHeader["pixel-size"] == pytest.approx(1.56, abs=5e-8)
+            assert record.DatHeader["image-orientation"] == 6
+            assert record.Algorithm == "Percentile"
+            assert len(record.AlgorithmParameters) == 16
+            assert record.AlgorithmParameters["Percentile"] == 75
+            assert record.AlgorithmParameters["CellMargin"] == 2
+            assert record.AlgorithmParameters["OutlierHigh"] == pytest.approx(1.500, abs=5e-8)
+            assert record.AlgorithmParameters["OutlierLow"] == pytest.approx(1.004, abs=5e-8)
+            assert record.AlgorithmParameters["AlgVersion"] == "6.0"
+            assert record.AlgorithmParameters["FixedCellSize"] == True  # noqa: A502
+            assert record.AlgorithmParameters["FullFeatureWidth"] == 7
+            assert record.AlgorithmParameters["FullFeatureHeight"] == 7
+            assert record.AlgorithmParameters["IgnoreOutliersInShiftRows"] == False  # noqa: A502
+            assert record.AlgorithmParameters["FeatureExtraction"] == True  # noqa: A502
+            assert record.AlgorithmParameters["PoolWidthExtenstion"] == 2
+            assert record.AlgorithmParameters["PoolHeightExtension"] == 2
+            assert record.AlgorithmParameters["UseSubgrids"] == False  # noqa: A502
+            assert record.AlgorithmParameters["RandomizePixels"] == False  # noqa: A502
+            assert record.AlgorithmParameters["ErrorBasis"] == "StdvMean"
+            assert record.AlgorithmParameters["StdMult"] == pytest.approx(1.0, abs=5e-8)
+            assert record.NumberCells == 25
 
             global message
             try:
@@ -110,7 +94,7 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
+                raise AssertionError(message)
             try:
                 numpy.testing.assert_allclose(
                     record.stdevs,
@@ -126,7 +110,7 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
+                raise AssertionError(message)
             try:
                 numpy.testing.assert_array_equal(
                     record.npix,
@@ -142,8 +126,8 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
-            self.assertEqual(record.nmask, 3)
+                raise AssertionError(message)
+            assert record.nmask == 3
             try:
                 numpy.testing.assert_array_equal(
                     record.mask,
@@ -159,8 +143,8 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
-            self.assertEqual(record.noutliers, 3)
+                raise AssertionError(message)
+            assert record.noutliers == 3
             try:
                 numpy.testing.assert_array_equal(
                     record.outliers,
@@ -176,8 +160,8 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
-            self.assertEqual(record.nmodified, 3)
+                raise AssertionError(message)
+            assert record.nmodified == 3
             try:
                 numpy.testing.assert_allclose(
                     record.modified,
@@ -193,16 +177,16 @@ class AffyTest(unittest.TestCase):
             except AssertionError as err:
                 message = str(err)
             if message is not None:
-                self.fail(message)
+                raise AssertionError(message)
 
     def testAffy4(self):
         with open(self.affy4, "rb") as f:
             record = CelFile.read(f)
-        self.assertEqual(record.intensities.shape, (5, 5))
-        self.assertEqual(record.intensities.shape, record.stdevs.shape)
-        self.assertEqual(record.intensities.shape, record.npix.shape)
-        self.assertEqual(record.ncols, 5)
-        self.assertEqual(record.nrows, 5)
+        assert record.intensities.shape == (5, 5)
+        assert record.intensities.shape == record.stdevs.shape
+        assert record.intensities.shape == record.npix.shape
+        assert record.ncols == 5
+        assert record.nrows == 5
         global message
         try:
             numpy.testing.assert_allclose(
@@ -219,7 +203,7 @@ class AffyTest(unittest.TestCase):
         except AssertionError as err:
             message = str(err)
         if message is not None:
-            self.fail(message)
+            raise AssertionError(message)
         try:
             numpy.testing.assert_allclose(
                 record.stdevs,
@@ -235,7 +219,7 @@ class AffyTest(unittest.TestCase):
         except AssertionError as err:
             message = str(err)
         if message is not None:
-            self.fail(message)
+            raise AssertionError(message)
         try:
             numpy.testing.assert_allclose(
                 record.npix,
@@ -251,23 +235,23 @@ class AffyTest(unittest.TestCase):
         except AssertionError as err:
             message = str(err)
         if message is not None:
-            self.fail(message)
-        self.assertEqual(len(record.AlgorithmParameters), 329)
-        self.assertEqual(len(record.GridCornerUL), 7)
-        self.assertEqual(record.AlgorithmParameters[-3:], "169")
+            raise AssertionError(message)
+        assert len(record.AlgorithmParameters) == 329
+        assert len(record.GridCornerUL) == 7
+        assert record.AlgorithmParameters[-3:] == "169"
 
     def testAffyBadHeader(self):
-        with self.assertRaises(CelFile.ParserError):
+        with pytest.raises(CelFile.ParserError):
             with open(self.affy4Bad, "rb") as f:
                 record = CelFile.read(f)
 
     def testAffyWrongModeReadV3(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             with open(self.affy3, "rb") as f:
                 record = CelFile.read(f, version=3)
 
     def testAffyWrongModeReadV4(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             with open(self.affy4) as f:
                 record = CelFile.read(f, version=4)
 
@@ -337,5 +321,4 @@ class AffyTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

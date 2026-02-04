@@ -13,17 +13,15 @@ BACs/chromosomes/etc.
 import os
 import random
 import unittest
+import pytest
 
-from Bio import MissingExternalDependencyError
 
 try:
     import reportlab as r
 
     del r
 except ImportError:
-    raise MissingExternalDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
+    pytest.skip("Install reportlab if you want to use Bio.Graphics.", allow_module_level=True)
 
 # local stuff
 from Bio.Graphics.Distribution import BarChartDistribution
@@ -83,5 +81,4 @@ class BarChartTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

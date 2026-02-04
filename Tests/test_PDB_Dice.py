@@ -8,6 +8,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 
 from Bio.PDB import Dice
 from Bio.PDB import PDBParser
@@ -34,27 +35,26 @@ class DiceTests(unittest.TestCase):
             l_diced_ato = list(diced_str.get_atoms())
 
             # Chain checks
-            self.assertEqual(len(l_diced_cha), 1)
-            self.assertEqual(l_diced_cha[0].id, "B")
+            assert len(l_diced_cha) == 1
+            assert l_diced_cha[0].id == "B"
 
             # Residue Checks
-            self.assertEqual(len(l_diced_res), 3)
-            self.assertEqual(l_diced_res[0].id[1], 18)
-            self.assertEqual(l_diced_res[2].id[1], 20)
+            assert len(l_diced_res) == 3
+            assert l_diced_res[0].id[1] == 18
+            assert l_diced_res[2].id[1] == 20
 
             # Atom checks
-            self.assertEqual(len(l_diced_ato), 29)
-            self.assertEqual(l_diced_ato[0].name, "N")
-            self.assertEqual(l_diced_ato[0].parent.resname, "VAL")
-            self.assertEqual(l_diced_ato[0].parent.parent.id, "B")
-            self.assertEqual(l_diced_ato[28].name, "CZ")
-            self.assertEqual(l_diced_ato[28].parent.resname, "PHE")
-            self.assertEqual(l_diced_ato[28].parent.parent.id, "B")
+            assert len(l_diced_ato) == 29
+            assert l_diced_ato[0].name == "N"
+            assert l_diced_ato[0].parent.resname == "VAL"
+            assert l_diced_ato[0].parent.parent.id == "B"
+            assert l_diced_ato[28].name == "CZ"
+            assert l_diced_ato[28].parent.resname == "PHE"
+            assert l_diced_ato[28].parent.parent.id == "B"
 
         finally:
             os.remove(file_pdb_diced)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

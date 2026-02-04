@@ -14,18 +14,11 @@
 """Unit tests for the Bio.PDB PDBParser module."""
 
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionException
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
@@ -50,7 +43,7 @@ class FlawedPDB_tests(unittest.TestCase):
             # Trigger warnings
             self.permissive.get_structure("example", "PDB/a_structure.pdb")
 
-            self.assertEqual(len(w), 15)
+            assert len(w) == 15
             for wrn, msg in zip(
                 w,
                 [
@@ -72,20 +65,16 @@ class FlawedPDB_tests(unittest.TestCase):
                     "Atom O defined twice in residue <Residue HOH het=W resseq=67 icode= > at line 904.",
                 ],
             ):
-                self.assertIn(msg, str(wrn))
+                assert msg in str(wrn)
 
     def test_2_flawedpdb_strict(self):
         """Parse a flawed PDB file in permissive mode: check errors."""
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", PDBConstructionWarning)
-            self.assertRaises(
-                PDBConstructionException,
-                self.strict.get_structure,
-                "example",
-                "PDB/a_structure.pdb",
-            )
+            with pytest.raises(PDBConstructionException):
+                self.strict.get_structure("example", "PDB/a_structure.pdb")
 
-            self.assertEqual(len(w), 4, w)
+            assert len(w) == 4, w
 
     def test_3_bad_xyz_permissive(self):
         """Parse an entry with bad x,y,z value with PERMISSIVE=True."""
@@ -95,7 +84,7 @@ class FlawedPDB_tests(unittest.TestCase):
     def test_4_bad_xyz_strict(self):
         """Parse an entry with bad x,y,z value with PERMISSIVE=False."""
         data = "ATOM      9  N   ASP A 152      21.ish  34.953  27.691  1.00 19.26           N\n"
-        with self.assertRaises(PDBConstructionException):
+        with pytest.raises(PDBConstructionException):
             self.strict.get_structure("example", StringIO(data))
 
     def test_5_missing_occupancy_permissive(self):
@@ -103,18 +92,18 @@ class FlawedPDB_tests(unittest.TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", PDBConstructionWarning)
             structure = self.permissive.get_structure("test", "PDB/occupancy.pdb")
-            self.assertEqual(len(w), 3, w)
+            assert len(w) == 3, w
 
         atoms = structure[0]["A"][(" ", 152, " ")]
 
         # Blank occupancy behavior set in Bio/PDB/PDBParser
-        self.assertIsNone(atoms["N"].get_occupancy())
-        self.assertEqual(atoms["CA"].get_occupancy(), 1.0)
-        self.assertEqual(atoms["C"].get_occupancy(), 0.0)
+        assert atoms["N"].get_occupancy() is None
+        assert atoms["CA"].get_occupancy() == 1.0
+        assert atoms["C"].get_occupancy() == 0.0
 
     def test_6_missing_occupancy_strict(self):
         """Parse file with missing occupancy with PERMISSIVE=False."""
-        with self.assertRaises(PDBConstructionException):
+        with pytest.raises(PDBConstructionException):
             _ = self.strict.get_structure("test", "PDB/occupancy.pdb")
 
 
@@ -131,21 +120,21 @@ class ParseDummyPDB_test(unittest.TestCase):
     def test_structure_integrity(self):
         """Verify the structure of the parsed example PDB file."""
         # Structure contains 2 models
-        self.assertEqual(len(self.structure), 2)
+        assert len(self.structure) == 2
         # --- Checking model 0 ---
         m0 = self.structure[0]
         # Model 0 contains 1 chain
-        self.assertEqual(len(m0), 1)
+        assert len(m0) == 1
         # Chain 'A' contains 1 residue
-        self.assertEqual(len(m0["A"]), 1)
+        assert len(m0["A"]) == 1
         # Residue ('H_PCA', 1, ' ') contains 9 atoms.
         residue = m0["A"].get_list()[0]
-        self.assertEqual(residue.get_id(), ("H_PCA", 1, " "))
-        self.assertEqual(len(residue), 9)
+        assert residue.get_id() == ("H_PCA", 1, " ")
+        assert len(residue) == 9
         # --- Checking model 1 ---
         m1 = self.structure[1]
         # Model 1 contains 3 chains
-        self.assertEqual(len(m1), 4)
+        assert len(m1) == 4
         # Deconstruct this data structure to check each chain
         chain_data = [  # chain_id, chain_len, [(residue_id, residue_len), ...]
             (
@@ -355,13 +344,13 @@ class ParseDummyPDB_test(unittest.TestCase):
         for c_idx, chn in enumerate(chain_data):
             # Check chain ID and length
             chain = m1.get_list()[c_idx]
-            self.assertEqual(chain.get_id(), chn[0])
-            self.assertEqual(len(chain), chn[1])
+            assert chain.get_id() == chn[0]
+            assert len(chain) == chn[1]
             for r_idx, res in enumerate(chn[2]):
                 residue = chain.get_list()[r_idx]
                 # Check residue ID and atom count
-                self.assertEqual(residue.get_id(), res[0])
-                self.assertEqual(len(residue), res[1])
+                assert residue.get_id() == res[0]
+                assert len(residue) == res[1]
                 disorder_lvl = residue.is_disordered()
                 if disorder_lvl == 1:
                     # Check the number of disordered atoms
@@ -369,57 +358,47 @@ class ParseDummyPDB_test(unittest.TestCase):
                         1 for atom in residue if atom.is_disordered()
                     )
                     if disordered_count:
-                        self.assertEqual(disordered_count, res[2])
+                        assert disordered_count == res[2]
                 elif disorder_lvl == 2:
                     # Point mutation -- check residue names
-                    self.assertEqual(residue.disordered_get_id_list(), res[2])
+                    assert residue.disordered_get_id_list() == res[2]
 
     def test_structure_details(self):
         """Verify details of the parsed example PDB file."""
         structure = self.structure
-        self.assertEqual(len(structure), 2)
+        assert len(structure) == 2
 
         # First model
         model = structure[0]
-        self.assertEqual(model.id, 0)
-        self.assertEqual(model.level, "M")
-        self.assertEqual(len(model), 1)
+        assert model.id == 0
+        assert model.level == "M"
+        assert len(model) == 1
         chain = model["A"]
-        self.assertEqual(chain.id, "A")
-        self.assertEqual(chain.level, "C")
-        self.assertEqual(len(chain), 1)
-        self.assertEqual(" ".join(residue.resname for residue in chain), "PCA")
-        self.assertEqual(
-            " ".join(atom.name for atom in chain.get_atoms()),
-            "N CA CB CG DA OE C O CA  ",
-        )
-        self.assertEqual(
-            " ".join(atom.element for atom in chain.get_atoms()), "N C C C D O C O CA"
-        )
+        assert chain.id == "A"
+        assert chain.level == "C"
+        assert len(chain) == 1
+        assert " ".join(residue.resname for residue in chain) == "PCA"
+        assert " ".join(atom.name for atom in chain.get_atoms()) == "N CA CB CG DA OE C O CA  "
+        assert " ".join(atom.element for atom in chain.get_atoms()) == "N C C C D O C O CA"
         # Second model
         model = structure[1]
-        self.assertEqual(model.id, 1)
-        self.assertEqual(model.level, "M")
-        self.assertEqual(len(model), 4)
+        assert model.id == 1
+        assert model.level == "M"
+        assert len(model) == 4
         chain = model["A"]
-        self.assertEqual(chain.id, "A")
-        self.assertEqual(chain.level, "C")
-        self.assertEqual(len(chain), 86)
-        self.assertEqual(
-            " ".join(residue.resname for residue in chain),
-            "CYS ARG CYS GLY SER GLN GLY GLY GLY SER THR CYS "
+        assert chain.id == "A"
+        assert chain.level == "C"
+        assert len(chain) == 86
+        assert (" ".join(residue.resname for residue in chain) == "CYS ARG CYS GLY SER GLN GLY GLY GLY SER THR CYS "
             "PRO GLY LEU ARG CYS CYS SER ILE TRP GLY TRP CYS "
             "GLY ASP SER GLU PRO TYR CYS GLY ARG THR CYS GLU "
             "ASN LYS CYS TRP SER GLY GLU ARG SER ASP HIS ARG "
             "CYS GLY ALA ALA VAL GLY ASN PRO PRO CYS GLY GLN "
             "ASP ARG CYS CYS SER VAL HIS GLY TRP CYS GLY GLY "
             "GLY ASN ASP TYR CYS SER GLY GLY ASN CYS GLN TYR "
-            "ARG CYS",
-        )
+            "ARG CYS")
 
-        self.assertEqual(
-            " ".join(atom.name for atom in chain.get_atoms()),
-            "C N CA C O CB CG CD NE CZ NH1 NH2 N CA C O CB SG N "
+        assert (" ".join(atom.name for atom in chain.get_atoms()) == "C N CA C O CB CG CD NE CZ NH1 NH2 N CA C O CB SG N "
             "CA C O N CA C O CB OG N CA C O CB CG CD OE1 NE2 N CA "
             "C O N CA C O N CA C O N CA C O CB OG N CA C O CB OG1 "
             "CG2 N CA C O CB SG N CA C O CB CG CD N CA C O N CA C "
@@ -451,12 +430,9 @@ class ParseDummyPDB_test(unittest.TestCase):
             "OH N CA C O CB SG N CA C O CB OG N CA C O N CA C O N "
             "CA C O CB CG OD1 ND2 N CA C O CB SG N CA C O CB CG "
             "CD OE1 NE2 N CA C O CB CG CD1 CD2 CE1 CE2 CZ OH N CA "
-            "C O CB CG CD NE CZ NH1 NH2 N CA C O CB SG",
-        )
+            "C O CB CG CD NE CZ NH1 NH2 N CA C O CB SG")
 
-        self.assertEqual(
-            " ".join(atom.element for atom in chain.get_atoms()),
-            "C N C C O C C C N C N N N C C O C S N C C O N C C O "
+        assert (" ".join(atom.element for atom in chain.get_atoms()) == "C N C C O C C C N C N N N C C O C S N C C O N C C O "
             "C O N C C O C C C O N N C C O N C C O N C C O N C C "
             "O C O N C C O C O C N C C O C S N C C O C C C N C C "
             "O N C C O C C C C N C C O C C C N C N N N C C O C S "
@@ -479,8 +455,7 @@ class ParseDummyPDB_test(unittest.TestCase):
             "C O N N C C O C C O O N C C O C C C C C C C O N C C "
             "O C S N C C O C O N C C O N C C O N C C O C C O N N "
             "C C O C S N C C O C C C O N N C C O C C C C C C C O "
-            "N C C O C C C N C N N N C C O C S",
-        )
+            "N C C O C C C N C N N N C C O C S")
 
 
 class ParseRealPDB_tests(unittest.TestCase):
@@ -494,41 +469,39 @@ class ParseRealPDB_tests(unittest.TestCase):
     def test_empty(self):
         """Parse an empty file."""
         handle = StringIO()
-        with self.assertRaises(ValueError) as context_manager:
+        with pytest.raises(ValueError) as context_manager:
             _ = self.permissive.get_structure("MT", handle)
-        self.assertEqual(str(context_manager.exception), "Empty file.")
+        assert str(context_manager.value) == "Empty file."
 
     def test_SMCRA(self):
         """Walk down the structure hierarchy and test parser reliability."""
         s = self.permissive.get_structure("scr", "PDB/1A8O.pdb")
         for m in s:
             p = m.get_parent()
-            self.assertEqual(s, p)
+            assert s == p
             for c in m:
                 p = c.get_parent()
-                self.assertEqual(m, p)
+                assert m == p
                 for r in c:
                     p = r.get_parent()
-                    self.assertEqual(c, p)
+                    assert c == p
                     for a in r:
                         p = a.get_parent()
-                        self.assertEqual(r.get_resname(), p.get_resname())
+                        assert r.get_resname() == p.get_resname()
 
     def test_1A8O_strict(self):
         """Parse 1A8O.pdb file in strict mode."""
         structure = self.strict.get_structure("example", "PDB/1A8O.pdb")
-        self.assertEqual(len(structure), 1)
+        assert len(structure) == 1
         model = structure[0]
-        self.assertEqual(model.id, 0)
-        self.assertEqual(model.level, "M")
-        self.assertEqual(len(model), 1)
+        assert model.id == 0
+        assert model.level == "M"
+        assert len(model) == 1
         chain = model["A"]
-        self.assertEqual(chain.id, "A")
-        self.assertEqual(chain.level, "C")
-        self.assertEqual(len(chain), 158)
-        self.assertEqual(
-            " ".join(residue.resname for residue in chain),
-            "MSE ASP ILE ARG GLN GLY PRO LYS GLU PRO PHE ARG "
+        assert chain.id == "A"
+        assert chain.level == "C"
+        assert len(chain) == 158
+        assert (" ".join(residue.resname for residue in chain) == "MSE ASP ILE ARG GLN GLY PRO LYS GLU PRO PHE ARG "
             "ASP TYR VAL ASP ARG PHE TYR LYS THR LEU ARG ALA "
             "GLU GLN ALA SER GLN GLU VAL LYS ASN TRP MSE THR "
             "GLU THR LEU LEU VAL GLN ASN ALA ASN PRO ASP CYS "
@@ -541,11 +514,8 @@ class ParseRealPDB_tests(unittest.TestCase):
             "HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH "
             "HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH "
             "HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH HOH "
-            "HOH HOH",
-        )
-        self.assertEqual(
-            " ".join(atom.name for atom in chain.get_atoms()),
-            "N CA C O CB CG SE CE N CA C O CB CG OD1 OD2 N CA "
+            "HOH HOH")
+        assert (" ".join(atom.name for atom in chain.get_atoms()) == "N CA C O CB CG SE CE N CA C O CB CG OD1 OD2 N CA "
             "C O CB CG1 CG2 CD1 N CA C O CB CG CD NE CZ NH1 "
             "NH2 N CA C O CB CG CD OE1 NE2 N CA C O N CA C O "
             "CB CG CD N CA C O CB CG CD CE NZ N CA C O CB CG "
@@ -580,11 +550,8 @@ class ParseRealPDB_tests(unittest.TestCase):
             "NE2 N CA C O OXT O O O O O O O O O O O O O O O O "
             "O O O O O O O O O O O O O O O O O O O O O O O O "
             "O O O O O O O O O O O O O O O O O O O O O O O O "
-            "O O O O O O O O O O O O O O O O O O O O O O O O",
-        )
-        self.assertEqual(
-            " ".join(atom.element for atom in chain.get_atoms()),
-            "N C C O C C SE C N C C O C C O O N C C O C C C C "
+            "O O O O O O O O O O O O O O O O O O O O O O O O")
+        assert (" ".join(atom.element for atom in chain.get_atoms()) == "N C C O C C SE C N C C O C C O O N C C O C C C C "
             "N C C O C C C N C N N N C C O C C C O N N C C O "
             "N C C O C C C N C C O C C C C N N C C O C C C O "
             "O N C C O C C C N C C O C C C C C C C N C C O C "
@@ -610,8 +577,7 @@ class ParseRealPDB_tests(unittest.TestCase):
             "N C C O O O O O O O O O O O O O O O O O O O O O "
             "O O O O O O O O O O O O O O O O O O O O O O O O "
             "O O O O O O O O O O O O O O O O O O O O O O O O "
-            "O O O O O O O O O O O O O O O O O O O O O",
-        )
+            "O O O O O O O O O O O O O O O O O O O O O")
 
     def test_duplicated_residue_permissive(self):
         """Catch exception on duplicated residue."""
@@ -624,13 +590,13 @@ class ParseRealPDB_tests(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             s = self.permissive.get_structure("example", StringIO(data))
-            self.assertEqual(len(w), 1)
+            assert len(w) == 1
 
         reslist = list(s.get_residues())
         n_res = len(reslist)
         resids = [r.id[1] for r in reslist]
-        self.assertEqual(n_res, 2)
-        self.assertEqual(resids, [5, 6])
+        assert n_res == 2
+        assert resids == [5, 6]
 
     def test_duplicated_residue_strict(self):
         """Throw exception on duplicated residue."""
@@ -641,10 +607,9 @@ class ParseRealPDB_tests(unittest.TestCase):
             "END   \n"
         )
 
-        with self.assertRaises(PDBConstructionException):
+        with pytest.raises(PDBConstructionException):
             _ = self.strict.get_structure("example", StringIO(data))
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

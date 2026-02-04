@@ -6,20 +6,15 @@
 import math
 import os
 import unittest
+import pytest
 
 # Do we have ReportLab?  Raise error if not present.
-from Bio import MissingPythonDependencyError
 
-try:
-    from reportlab.lib import colors
-    from reportlab.lib.units import cm
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-except ImportError:
-    raise MissingPythonDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
-
+pytest.importorskip("reportlab")
+from reportlab.lib import colors
+from reportlab.lib.units import cm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 try:
     # The preferred PIL import has changed over time...
     try:
@@ -221,26 +216,10 @@ class ColorsTest(unittest.TestCase):
         translator = ColorTranslator()
 
         # Does the translate method correctly convert the passed argument?
-        self.assertEqual(
-            translator.float1_color((0.5, 0.5, 0.5)),
-            translator.translate((0.5, 0.5, 0.5)),
-            "Did not correctly translate colour from floating point RGB tuple",
-        )
-        self.assertEqual(
-            translator.int255_color((1, 75, 240)),
-            translator.translate((1, 75, 240)),
-            "Did not correctly translate colour from integer RGB tuple",
-        )
-        self.assertEqual(
-            translator.artemis_color(7),
-            translator.translate(7),
-            "Did not correctly translate colour from Artemis colour scheme",
-        )
-        self.assertEqual(
-            translator.scheme_color(2),
-            translator.translate(2),
-            "Did not correctly translate colour from user-defined colour scheme",
-        )
+        assert translator.float1_color((0.5, 0.5, 0.5)) == translator.translate((0.5, 0.5, 0.5)), "Did not correctly translate colour from floating point RGB tuple"
+        assert translator.int255_color((1, 75, 240)) == translator.translate((1, 75, 240)), "Did not correctly translate colour from integer RGB tuple"
+        assert translator.artemis_color(7) == translator.translate(7), "Did not correctly translate colour from Artemis colour scheme"
+        assert translator.scheme_color(2) == translator.translate(2), "Did not correctly translate colour from user-defined colour scheme"
 
 
 class GraphTest(unittest.TestCase):
@@ -301,11 +280,8 @@ class GraphTest(unittest.TestCase):
         gd.set_data([(1, 10), (5, 15), (20, 40)])
         gd.add_point((10, 20))
 
-        self.assertEqual(
-            gd[4:16],
-            [(5, 15), (10, 20)],  # noqa 231
-            "Unable to insert and retrieve points correctly",
-        )
+        assert gd[4:16] == [(5, 15), (10, 20)], (  # noqa 231
+            "Unable to insert and retrieve points correctly")
 
 
 class LabelTest(unittest.TestCase):
@@ -510,7 +486,7 @@ class SigilsTest(unittest.TestCase):
             label_size=6,
             label_angle=-90,
         )
-        self.assertEqual(len(self.gdd.tracks), 5)
+        assert len(self.gdd.tracks) == 5
         self.finish("GD_sigil_labels", circular=True)
 
     def test_arrow_shafts(self):
@@ -521,7 +497,7 @@ class SigilsTest(unittest.TestCase):
         self.add_track_with_sigils(
             sigil="ARROW", color="darkgreen", arrowshaft_height=0.1
         )
-        self.assertEqual(len(self.gdd.tracks), 4)
+        assert len(self.gdd.tracks) == 4
         self.finish("GD_sigil_arrow_shafts")
 
     def test_big_arrow_shafts(self):
@@ -536,7 +512,7 @@ class SigilsTest(unittest.TestCase):
         self.add_track_with_sigils(
             sigil="BIGARROW", color="green", arrowshaft_height=0.1
         )
-        self.assertEqual(len(self.gdd.tracks), 4)
+        assert len(self.gdd.tracks) == 4
         self.finish("GD_sigil_bigarrow_shafts")
 
     def test_arrow_heads(self):
@@ -547,7 +523,7 @@ class SigilsTest(unittest.TestCase):
         self.add_track_with_sigils(
             sigil="ARROW", color="red", arrowhead_length=10000
         )  # Triangles
-        self.assertEqual(len(self.gdd.tracks), 4)
+        assert len(self.gdd.tracks) == 4
         self.finish("GD_sigil_arrows")
 
     def short_sigils(self, glyph):
@@ -736,32 +712,33 @@ class DiagramTest(unittest.TestCase):
             "\n0 sets"
             "\n"
         )
-        self.assertEqual(expected, str(self.gdd))
+        assert expected == str(self.gdd)
 
     def test_add_track(self):
         """Add track."""
         track = Track(name="Annotated Features")
         self.gdd.add_track(track, 2)
-        self.assertEqual(2, len(self.gdd.get_tracks()))
+        assert 2 == len(self.gdd.get_tracks())
 
     def test_add_track_to_occupied_level(self):
         """Add track to occupied level."""
         new_track = self.gdd.get_tracks()[0]
         self.gdd.add_track(new_track, 1)
-        self.assertEqual(2, len(self.gdd.get_tracks()))
+        assert 2 == len(self.gdd.get_tracks())
 
     def test_add_track_error(self):
         """Test adding unspecified track."""
-        self.assertRaises(ValueError, self.gdd.add_track, None, 1)
+        with pytest.raises(ValueError):
+            self.gdd.add_track(None, 1)
 
     def test_del_tracks(self):
         """Delete track."""
         self.gdd.del_track(1)
-        self.assertEqual(0, len(self.gdd.get_tracks()))
+        assert 0 == len(self.gdd.get_tracks())
 
     def test_get_tracks(self):
         """Get track."""
-        self.assertEqual(1, len(self.gdd.get_tracks()))
+        assert 1 == len(self.gdd.get_tracks())
 
     def test_move_track(self):
         """Move a track."""
@@ -774,7 +751,7 @@ class DiagramTest(unittest.TestCase):
             "\n0 sets"
             "\n"
         )
-        self.assertEqual(expected, str(self.gdd))
+        assert expected == str(self.gdd)
 
     def test_renumber(self):
         """Test renumbering tracks."""
@@ -787,7 +764,7 @@ class DiagramTest(unittest.TestCase):
             "\n0 sets"
             "\n"
         )
-        self.assertEqual(expected, str(self.gdd))
+        assert expected == str(self.gdd)
 
     def test_write_arguments(self):
         """Check how the write methods respond to output format arguments."""
@@ -796,9 +773,9 @@ class DiagramTest(unittest.TestCase):
         filename = os.path.join("Graphics", "error.txt")
         # We (now) allow valid formats in any case.
         for output in ["XXX", "xxx", None, 123, 5.9]:
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 gdd.write(filename, output)
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 gdd.write_to_string(output)
 
     def test_partial_diagram(self):
@@ -881,7 +858,7 @@ class DiagramTest(unittest.TestCase):
 
         # Also check the write_to_string (bytes string) method matches,
         with open(output_filename, "rb") as handle:
-            self.assertEqual(handle.read(), gdd.write_to_string("PDF"))
+            assert handle.read() == gdd.write_to_string("PDF")
 
         output_filename = os.path.join("Graphics", "GD_region_linear.svg")
         gdd.write(output_filename, "SVG")
@@ -1273,5 +1250,4 @@ class DiagramTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -13,6 +13,7 @@
 
 import subprocess
 import unittest
+import pytest
 import warnings
 
 from Bio.PDB import MMCIFParser
@@ -51,7 +52,7 @@ class MSMS_tests(unittest.TestCase):
         residues = []
         for item in rd.property_list[:100]:
             residues.append(item[0].get_resname())
-        self.assertEqual("".join(residues), first_100_residues)
+        assert "".join(residues) == first_100_residues
 
     # def test_ResidueDepth_2XHE(self):
     #     self.check_msms(
@@ -112,9 +113,8 @@ class ResidueDepth_tests(unittest.TestCase):
         biopy_radii = []
         for atom in model.get_atoms():
             biopy_radii.append(_get_atom_radius(atom, rtype="united"))
-        self.assertEqual(msms_radii, biopy_radii)
+        assert msms_radii == biopy_radii
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

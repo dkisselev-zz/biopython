@@ -8,6 +8,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 from io import StringIO
 from itertools import combinations
 
@@ -37,105 +38,97 @@ class DistanceMatrixTest(unittest.TestCase):
 
     def test_good_construction(self):
         dm = DistanceMatrix(self.names, self.matrix)
-        self.assertIsInstance(dm, TreeConstruction.DistanceMatrix)
-        self.assertEqual(dm.names[0], "Alpha")
-        self.assertEqual(dm.matrix[2][1], 3)
-        self.assertEqual(len(dm), 4)
-        self.assertEqual(
-            repr(dm),
-            "DistanceMatrix(names=['Alpha', 'Beta', 'Gamma', 'Delta'], "
-            "matrix=[[0], [1, 0], [2, 3, 0], [4, 5, 6, 0]])",
-        )
+        assert isinstance(dm, TreeConstruction.DistanceMatrix)
+        assert dm.names[0] == "Alpha"
+        assert dm.matrix[2][1] == 3
+        assert len(dm) == 4
+        assert (repr(dm) == "DistanceMatrix(names=['Alpha', 'Beta', 'Gamma', 'Delta'], "
+            "matrix=[[0], [1, 0], [2, 3, 0], [4, 5, 6, 0]])")
 
     def test_bad_construction(self):
-        self.assertRaises(
-            TypeError,
-            DistanceMatrix,
-            ["Alpha", 100, "Gamma", "Delta"],
-            [[0], [0.1, 0], [0.2, 0.3, 0], [0.4, 0.5, 0.6, 0]],
-        )
-        self.assertRaises(
-            TypeError,
-            DistanceMatrix,
-            ["Alpha", "Beta", "Gamma", "Delta"],
-            [[0], ["a"], [0.2, 0.3], [0.4, 0.5, 0.6]],
-        )
-        self.assertRaises(
-            ValueError,
-            DistanceMatrix,
-            ["Alpha", "Alpha", "Gamma", "Delta"],
-            [[0], [0.1], [0.2, 0.3], [0.4, 0.5, 0.6]],
-        )
-        self.assertRaises(
-            ValueError,
-            DistanceMatrix,
-            ["Alpha", "Beta", "Gamma", "Delta"],
-            [[0], [0.2, 0], [0.4, 0.5, 0.6]],
-        )
-        self.assertRaises(
-            ValueError,
-            DistanceMatrix,
-            ["Alpha", "Beta", "Gamma", "Delta"],
-            [[0], [0.1], [0.2, 0.3, 0.4], [0.4, 0.5, 0.6]],
-        )
+        with pytest.raises(TypeError):
+            DistanceMatrix(["Alpha", 100, "Gamma", "Delta"], [[0], [0.1, 0], [0.2, 0.3, 0], [0.4, 0.5, 0.6, 0]])
+        with pytest.raises(TypeError):
+            DistanceMatrix(["Alpha", "Beta", "Gamma", "Delta"], [[0], ["a"], [0.2, 0.3], [0.4, 0.5, 0.6]])
+        with pytest.raises(ValueError):
+            DistanceMatrix(["Alpha", "Alpha", "Gamma", "Delta"], [[0], [0.1], [0.2, 0.3], [0.4, 0.5, 0.6]])
+        with pytest.raises(ValueError):
+            DistanceMatrix(["Alpha", "Beta", "Gamma", "Delta"], [[0], [0.2, 0], [0.4, 0.5, 0.6]])
+        with pytest.raises(ValueError):
+            DistanceMatrix(["Alpha", "Beta", "Gamma", "Delta"], [[0], [0.1], [0.2, 0.3, 0.4], [0.4, 0.5, 0.6]])
 
     def test_good_manipulation(self):
         dm = DistanceMatrix(self.names, self.matrix)
         # getitem
-        self.assertEqual(dm[1], [1, 0, 3, 5])
-        self.assertEqual(dm[2, 1], 3)
-        self.assertEqual(dm[2][1], 3)
-        self.assertEqual(dm[1, 2], 3)
-        self.assertEqual(dm[1][2], 3)
-        self.assertEqual(dm["Alpha"], [0, 1, 2, 4])
-        self.assertEqual(dm["Gamma", "Delta"], 6)
+        assert dm[1] == [1, 0, 3, 5]
+        assert dm[2, 1] == 3
+        assert dm[2][1] == 3
+        assert dm[1, 2] == 3
+        assert dm[1][2] == 3
+        assert dm["Alpha"] == [0, 1, 2, 4]
+        assert dm["Gamma", "Delta"] == 6
         # setitem
         dm["Alpha"] = [0, 10, 20, 40]
-        self.assertEqual(dm["Alpha"], [0, 10, 20, 40])
+        assert dm["Alpha"] == [0, 10, 20, 40]
         # delitem insert item
         del dm[1]
-        self.assertEqual(dm.names, ["Alpha", "Gamma", "Delta"])
-        self.assertEqual(dm.matrix, [[0], [20, 0], [40, 6, 0]])
+        assert dm.names == ["Alpha", "Gamma", "Delta"]
+        assert dm.matrix == [[0], [20, 0], [40, 6, 0]]
         dm.insert("Beta", [1, 0, 3, 5], 1)
-        self.assertEqual(dm.names, self.names)
-        self.assertEqual(dm.matrix, [[0], [1, 0], [20, 3, 0], [40, 5, 6, 0]])
+        assert dm.names == self.names
+        assert dm.matrix == [[0], [1, 0], [20, 3, 0], [40, 5, 6, 0]]
         del dm["Alpha"]
-        self.assertEqual(dm.names, ["Beta", "Gamma", "Delta"])
-        self.assertEqual(dm.matrix, [[0], [3, 0], [5, 6, 0]])
+        assert dm.names == ["Beta", "Gamma", "Delta"]
+        assert dm.matrix == [[0], [3, 0], [5, 6, 0]]
         dm.insert("Alpha", [1, 2, 4, 0])
-        self.assertEqual(dm.names, ["Beta", "Gamma", "Delta", "Alpha"])
-        self.assertEqual(dm.matrix, [[0], [3, 0], [5, 6, 0], [1, 2, 4, 0]])
+        assert dm.names == ["Beta", "Gamma", "Delta", "Alpha"]
+        assert dm.matrix == [[0], [3, 0], [5, 6, 0], [1, 2, 4, 0]]
 
     def test_bad_manipulation(self):
         dm = DistanceMatrix(self.names, self.matrix)
         # getitem
-        self.assertRaises(ValueError, dm.__getitem__, "A")
-        self.assertRaises(ValueError, dm.__getitem__, ("Alpha", "A"))
-        self.assertRaises(TypeError, dm.__getitem__, (1, "A"))
-        self.assertRaises(TypeError, dm.__getitem__, (1, 1.2))
-        self.assertRaises(IndexError, dm.__getitem__, 6)
-        self.assertRaises(IndexError, dm.__getitem__, (10, 10))
+        with pytest.raises(ValueError):
+            dm.__getitem__("A")
+        with pytest.raises(ValueError):
+            dm.__getitem__(("Alpha", "A"))
+        with pytest.raises(TypeError):
+            dm.__getitem__((1, "A"))
+        with pytest.raises(TypeError):
+            dm.__getitem__((1, 1.2))
+        with pytest.raises(IndexError):
+            dm.__getitem__(6)
+        with pytest.raises(IndexError):
+            dm.__getitem__((10, 10))
         # setitem: item or index test
-        self.assertRaises(ValueError, dm.__setitem__, "A", [1, 3, 4])
-        self.assertRaises(ValueError, dm.__setitem__, ("Alpha", "A"), 4)
-        self.assertRaises(TypeError, dm.__setitem__, (1, "A"), 3)
-        self.assertRaises(TypeError, dm.__setitem__, (1, 1.2), 2)
-        self.assertRaises(IndexError, dm.__setitem__, 6, [1, 3, 4])
-        self.assertRaises(IndexError, dm.__setitem__, (10, 10), 1)
+        with pytest.raises(ValueError):
+            dm.__setitem__("A", [1, 3, 4])
+        with pytest.raises(ValueError):
+            dm.__setitem__(("Alpha", "A"), 4)
+        with pytest.raises(TypeError):
+            dm.__setitem__((1, "A"), 3)
+        with pytest.raises(TypeError):
+            dm.__setitem__((1, 1.2), 2)
+        with pytest.raises(IndexError):
+            dm.__setitem__(6, [1, 3, 4])
+        with pytest.raises(IndexError):
+            dm.__setitem__((10, 10), 1)
         # setitem: value test
-        self.assertRaises(ValueError, dm.__setitem__, 0, [1, 2])
-        self.assertRaises(TypeError, dm.__setitem__, ("Alpha", "Beta"), "a")
-        self.assertRaises(TypeError, dm.__setitem__, "Alpha", ["a", "b", "c"])
+        with pytest.raises(ValueError):
+            dm.__setitem__(0, [1, 2])
+        with pytest.raises(TypeError):
+            dm.__setitem__(("Alpha", "Beta"), "a")
+        with pytest.raises(TypeError):
+            dm.__setitem__("Alpha", ["a", "b", "c"])
 
     def test_format_phylip(self):
         dm = DistanceMatrix(self.names, self.matrix)
         handle = StringIO()
         dm.format_phylip(handle)
         lines = handle.getvalue().splitlines()
-        self.assertEqual(len(lines), len(dm) + 1)
-        self.assertTrue(lines[0].endswith(str(len(dm))))
+        assert len(lines) == len(dm) + 1
+        assert lines[0].endswith(str(len(dm)))
         for name, line in zip(self.names, lines[1:]):
-            self.assertTrue(line.startswith(name))
+            assert line.startswith(name)
 
 
 class DistanceCalculatorTest(unittest.TestCase):
@@ -146,49 +139,49 @@ class DistanceCalculatorTest(unittest.TestCase):
 
         calculator = DistanceCalculator("identity")
         dm = calculator.get_distance(msa)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 10 / 13)
+        assert dm["Alpha", "Beta"] == 1 - 10 / 13
 
         calculator = DistanceCalculator("blastn")
         dm = calculator.get_distance(msa)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 38 / 65)
+        assert dm["Alpha", "Beta"] == 1 - 38 / 65
 
         calculator = DistanceCalculator("trans")
         dm = calculator.get_distance(msa)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 54 / 65)
+        assert dm["Alpha", "Beta"] == 1 - 54 / 65
 
         calculator = DistanceCalculator("blosum62")
         dm = calculator.get_distance(msa)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 53 / 84)
+        assert dm["Alpha", "Beta"] == 1 - 53 / 84
 
     def test_known_matrices(self):
         aln = Align.read("TreeConstruction/msa.phy", "phylip")
 
         calculator = DistanceCalculator("identity")
         dm = calculator.get_distance(aln)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 10 / 13)
+        assert dm["Alpha", "Beta"] == 1 - 10 / 13
 
         calculator = DistanceCalculator("blastn")
         dm = calculator.get_distance(aln)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 38 / 65)
+        assert dm["Alpha", "Beta"] == 1 - 38 / 65
 
         calculator = DistanceCalculator("trans")
         dm = calculator.get_distance(aln)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 54 / 65)
+        assert dm["Alpha", "Beta"] == 1 - 54 / 65
 
         calculator = DistanceCalculator("blosum62")
         dm = calculator.get_distance(aln)
-        self.assertEqual(dm["Alpha", "Beta"], 1 - 53 / 84)
+        assert dm["Alpha", "Beta"] == 1 - 53 / 84
 
     def test_nonmatching_seqs_msa(self):
         aln = AlignIO.read(StringIO(">Alpha\nA-A--\n>Gamma\n-Y-Y-"), "fasta")
         # With a proper scoring matrix -- no matches
         dmat = DistanceCalculator("blosum62").get_distance(aln)
-        self.assertEqual(dmat["Alpha", "Alpha"], 0.0)
-        self.assertEqual(dmat["Alpha", "Gamma"], 1.0)
+        assert dmat["Alpha", "Alpha"] == 0.0
+        assert dmat["Alpha", "Gamma"] == 1.0
         # Comparing characters only -- 4 misses, 1 match
         dmat = DistanceCalculator().get_distance(aln)
-        self.assertEqual(dmat["Alpha", "Alpha"], 0.0)
-        self.assertAlmostEqual(dmat["Alpha", "Gamma"], 4.0 / 5.0)
+        assert dmat["Alpha", "Alpha"] == 0.0
+        assert dmat["Alpha", "Gamma"] == pytest.approx(4.0 / 5.0, abs=5e-8)
 
     def test_nonmatching_seqs(self):
         aln = Align.read(
@@ -196,12 +189,12 @@ class DistanceCalculatorTest(unittest.TestCase):
         )
         # With a proper scoring matrix -- no matches
         dmat = DistanceCalculator("blosum62").get_distance(aln)
-        self.assertEqual(dmat["Alpha", "Alpha"], 0.0)
-        self.assertEqual(dmat["Alpha", "Gamma"], 1.0)
+        assert dmat["Alpha", "Alpha"] == 0.0
+        assert dmat["Alpha", "Gamma"] == 1.0
         # Comparing characters only -- 4 misses, 1 match
         dmat = DistanceCalculator().get_distance(aln)
-        self.assertEqual(dmat["Alpha", "Alpha"], 0.0)
-        self.assertAlmostEqual(dmat["Alpha", "Gamma"], 4.0 / 5.0)
+        assert dmat["Alpha", "Alpha"] == 0.0
+        assert dmat["Alpha", "Gamma"] == pytest.approx(4.0 / 5.0, abs=5e-8)
 
 
 class DistanceTreeConstructorTest(unittest.TestCase):
@@ -219,35 +212,35 @@ class DistanceTreeConstructorTest(unittest.TestCase):
 
     def test_upgma_msa(self):
         tree = self.constructor.upgma(self.dm_msa)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/upgma.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # ref_tree.close()
 
     def test_upgma(self):
         tree = self.constructor.upgma(self.dm)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/upgma.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # check for equal distance of all terminal nodes from the root
         ref_tree.root_at_midpoint()
         for len1, len2 in combinations(
             [depth for node, depth in ref_tree.depths().items() if node.is_terminal()],
             2,
         ):
-            self.assertAlmostEqual(len1, len2)
+            assert len1 == pytest.approx(len2, abs=5e-8)
 
     def test_nj_msa(self):
         tree = self.constructor.nj(self.dm_msa)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/nj.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # ref_tree.close()
 
         # create a matrix of length 2
@@ -257,18 +250,18 @@ class DistanceTreeConstructorTest(unittest.TestCase):
             del self.min_dm[len(self.min_dm) - 1]
 
         min_tree = self.constructor.nj(self.min_dm)
-        self.assertIsInstance(min_tree, BaseTree.Tree)
+        assert isinstance(min_tree, BaseTree.Tree)
 
         ref_min_tree = Phylo.read("./TreeConstruction/nj_min.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(min_tree, ref_min_tree))
+        assert Consensus._equal_topology(min_tree, ref_min_tree)
 
     def test_nj(self):
         tree = self.constructor.nj(self.dm)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/nj.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # ref_tree.close()
 
         # create a matrix of length 2
@@ -278,27 +271,27 @@ class DistanceTreeConstructorTest(unittest.TestCase):
             del self.min_dm[len(self.min_dm) - 1]
 
         min_tree = self.constructor.nj(self.min_dm)
-        self.assertIsInstance(min_tree, BaseTree.Tree)
+        assert isinstance(min_tree, BaseTree.Tree)
 
         ref_min_tree = Phylo.read("./TreeConstruction/nj_min.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(min_tree, ref_min_tree))
+        assert Consensus._equal_topology(min_tree, ref_min_tree)
 
     def test_built_tree_msa(self):
         tree = self.constructor.build_tree(self.msa)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/nj.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # ref_tree.close()
 
     def test_built_tree(self):
         tree = self.constructor.build_tree(self.alignment)
-        self.assertIsInstance(tree, BaseTree.Tree)
+        assert isinstance(tree, BaseTree.Tree)
         # tree_file = StringIO()
         # Phylo.write(tree, tree_file, 'newick')
         ref_tree = Phylo.read("./TreeConstruction/nj.tre", "newick")
-        self.assertTrue(Consensus._equal_topology(tree, ref_tree))
+        assert Consensus._equal_topology(tree, ref_tree)
         # ref_tree.close()
 
 
@@ -310,14 +303,14 @@ class ParsimonyScorerTest(unittest.TestCase):
         tree = Phylo.read("./TreeConstruction/upgma.tre", "newick")
         scorer = ParsimonyScorer()
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 2 + 1 + 2 + 2 + 1 + 1 + 1 + 3)
+        assert score == 2 + 1 + 2 + 2 + 1 + 1 + 1 + 3
 
         alphabet = ["A", "T", "C", "G"]
         step_matrix = [[0], [2.5, 0], [2.5, 1, 0], [1, 2.5, 2.5, 0]]
         matrix = _Matrix(alphabet, step_matrix)
         scorer = ParsimonyScorer(matrix)
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 3.5 + 2.5 + 3.5 + 3.5 + 2.5 + 1 + 2.5 + 4.5)
+        assert score == 3.5 + 2.5 + 3.5 + 3.5 + 2.5 + 1 + 2.5 + 4.5
 
         alphabet = [
             "A",
@@ -373,21 +366,21 @@ class ParsimonyScorerTest(unittest.TestCase):
         matrix = _Matrix(alphabet, step_matrix)
         scorer = ParsimonyScorer(matrix)
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 3 + 1 + 3 + 3 + 2 + 1 + 2 + 5)
+        assert score == 3 + 1 + 3 + 3 + 2 + 1 + 2 + 5
 
     def test_get_score(self):
         aln = Align.read("TreeConstruction/msa.phy", "phylip")
         tree = Phylo.read("./TreeConstruction/upgma.tre", "newick")
         scorer = ParsimonyScorer()
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 2 + 1 + 2 + 2 + 1 + 1 + 1 + 3)
+        assert score == 2 + 1 + 2 + 2 + 1 + 1 + 1 + 3
 
         alphabet = ["A", "T", "C", "G"]
         step_matrix = [[0], [2.5, 0], [2.5, 1, 0], [1, 2.5, 2.5, 0]]
         matrix = _Matrix(alphabet, step_matrix)
         scorer = ParsimonyScorer(matrix)
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 3.5 + 2.5 + 3.5 + 3.5 + 2.5 + 1 + 2.5 + 4.5)
+        assert score == 3.5 + 2.5 + 3.5 + 3.5 + 2.5 + 1 + 2.5 + 4.5
 
         alphabet = [
             "A",
@@ -443,7 +436,7 @@ class ParsimonyScorerTest(unittest.TestCase):
         matrix = _Matrix(alphabet, step_matrix)
         scorer = ParsimonyScorer(matrix)
         score = scorer.get_score(tree, aln)
-        self.assertEqual(score, 3 + 1 + 3 + 3 + 2 + 1 + 2 + 5)
+        assert score == 3 + 1 + 3 + 3 + 2 + 1 + 2 + 5
 
 
 class NNITreeSearcherTest(unittest.TestCase):
@@ -457,7 +450,7 @@ class NNITreeSearcherTest(unittest.TestCase):
         scorer = ParsimonyScorer(matrix)
         searcher = NNITreeSearcher(scorer)
         trees = searcher._get_neighbors(tree)
-        self.assertEqual(len(trees), 2 * (5 - 3))
+        assert len(trees) == 2 * (5 - 3)
         Phylo.write(trees, os.path.join(temp_dir, "neighbor_trees.tre"), "newick")
 
 
@@ -504,5 +497,4 @@ class ParsimonyTreeConstructorTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

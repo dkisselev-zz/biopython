@@ -11,13 +11,14 @@ import os
 import shutil
 import tempfile
 import unittest
+import pytest
 
-import requires_internet
 
 # We want to test this module:
 from Bio.PDB.PDBList import PDBList
 
-requires_internet.check()
+pytestmark = pytest.mark.online
+
 
 
 class TestPBDListGetList(unittest.TestCase):
@@ -29,7 +30,7 @@ class TestPBDListGetList(unittest.TestCase):
         pdblist = PDBList(obsolete_pdb="unimportant")
         url = pdblist.pdb_server + "/pub/pdb/data/status/latest/added.pdb"
         entries = pdblist.get_status_list(url)
-        self.assertIsNotNone(entries)
+        assert entries is not None
 
     def test_get_all_entries(self):
         """Tests the Bio.PDB.PDBList.get_all_entries method."""
@@ -38,7 +39,7 @@ class TestPBDListGetList(unittest.TestCase):
         entries = pdblist.get_all_entries()
         # As number of entries constantly grow, test checks if a certain number was
         # exceeded
-        self.assertGreater(len(entries), 100000)
+        assert len(entries) > 100000
 
     def test_get_all_obsolete(self):
         """Tests the Bio.PDB.PDBList.get_all_obsolete method."""
@@ -47,7 +48,7 @@ class TestPBDListGetList(unittest.TestCase):
         entries = pdblist.get_all_obsolete()
         # As number of obsolete entries constantly grow, test checks if a certain number
         # was exceeded
-        self.assertGreater(len(entries), 3000)
+        assert len(entries) > 3000
 
     def test_get_all_assemblies(self):
         """Tests the Bio.PDB.PDBList.get_all_assemblies method."""
@@ -56,7 +57,7 @@ class TestPBDListGetList(unittest.TestCase):
         entries = pdblist.get_all_assemblies()
         # As number of obsolete entries constantly grow, test checks if a certain number
         # was exceeded
-        self.assertGreater(len(entries), 100000)
+        assert len(entries) > 100000
 
 
 class TestPDBListGetStructure(unittest.TestCase):
@@ -79,7 +80,7 @@ class TestPDBListGetStructure(unittest.TestCase):
             pdblist.retrieve_pdb_file(
                 structure, obsolete=obsolete, pdir=pdir, file_format=file_format
             )
-            self.assertTrue(os.path.isfile(path))
+            assert os.path.isfile(path)
 
     def test_retrieve_pdb_file_small_pdb(self):
         """Tests retrieving the small molecule in pdb format."""
@@ -150,14 +151,11 @@ class TestPDBListGetStructure(unittest.TestCase):
 
     def test_invalid_file_format(self):
         pdb_list = PDBList()
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             pdb_list.retrieve_pdb_file("127d", file_format="invalid")
 
-        self.assertEqual(
-            "Specified file_format invalid does not exist or is not supported. Please use one of the "
-            "following: pdb, mmCif, xml, mmtf, bundle.",
-            str(context.exception),
-        )
+        assert ("Specified file_format invalid does not exist or is not supported. Please use one of the "
+            "following: pdb, mmCif, xml, mmtf, bundle." == str(context.value))
 
     def test_retrieve_pdb_file_not_existing(self):
         """Tests retrieving a non-existent molecule - returns None and prints error message."""
@@ -165,14 +163,11 @@ class TestPDBListGetStructure(unittest.TestCase):
             pdblist = PDBList(pdb=tmp)
             with unittest.patch("sys.stderr") as mock_stderr:
                 result = pdblist.retrieve_pdb_file("zzzz", file_format="pdb")
-                self.assertIsNone(result)
-                self.assertTrue(
-                    any(
+                assert result is None
+                assert any(
                         "Desired structure not found or download failed." in str(call)
                         for call in mock_stderr.write.call_args_list
-                    ),
-                    "Error message not printed for non-existent molecule",
-                )
+                    ), "Error message not printed for non-existent molecule"
 
     def test_retrieve_pdb_file_bad_url(self):
         """Tests retrieving with bad server URL - returns None and prints error message."""
@@ -180,14 +175,11 @@ class TestPDBListGetStructure(unittest.TestCase):
             pdblist = PDBList(server=" http://something.wrong ", pdb=tmp)
             with unittest.patch("sys.stderr") as mock_stderr:
                 result = pdblist.retrieve_pdb_file("127d", file_format="pdb")
-                self.assertIsNone(result)
-                self.assertTrue(
-                    any(
+                assert result is None
+                assert any(
                         "Desired structure not found or download failed." in str(call)
                         for call in mock_stderr.write.call_args_list
-                    ),
-                    "Error message not printed for bad server URL",
-                )
+                    ), "Error message not printed for bad server URL"
 
 
 class TestPDBListGetAssembly(unittest.TestCase):
@@ -210,7 +202,7 @@ class TestPDBListGetAssembly(unittest.TestCase):
             pdblist.retrieve_assembly_file(
                 structure, assembly_num, pdir=pdir, file_format=file_format
             )
-            self.assertTrue(os.path.isfile(path))
+            assert os.path.isfile(path)
 
     def test_retrieve_assembly_file_mmcif(self):
         """Tests retrieving a small assembly in mmCif format."""
@@ -255,5 +247,4 @@ class TestPDBListGetAssembly(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

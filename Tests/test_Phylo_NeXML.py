@@ -9,6 +9,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 from io import BytesIO
 
 from Bio import Phylo
@@ -52,7 +53,7 @@ class ParseTests(unittest.TestCase):
             path = os.path.join("NeXML", filename)
             msg = f"Failed parser test for {path}"
             trees = list(Phylo.parse(path, "nexml"))
-            self.assertEqual(len(trees), count, msg=msg)
+            assert len(trees) == count, msg
 
 
 class WriterTests(unittest.TestCase):
@@ -93,7 +94,7 @@ class WriterTests(unittest.TestCase):
                 for n in t2.get_terminals()
                 if getattr(n, prop_name)
             )
-            self.assertEqual(p1, p2, msg=msg)
+            assert p1 == p2, msg
 
     def test_write(self):
         """Test for serialization of objects to NeXML format."""
@@ -105,5 +106,4 @@ class WriterTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

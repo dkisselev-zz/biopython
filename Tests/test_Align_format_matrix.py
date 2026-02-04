@@ -24,6 +24,7 @@ styles and substitution matrices.
 """
 
 import unittest
+import pytest
 import numpy as np
 from Bio.Align import PairwiseAligner
 from Bio.Align.substitution_matrices import load, Array
@@ -39,14 +40,11 @@ class TestFormatMatrix(unittest.TestCase):
         aligner.open_gap_score = -1
         aligner.extend_gap_score = -0.5
         aln = aligner.align("GATTACAT", "GATYACAC")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 GATTACAT 8
                   0 |||:|||. 8
 query             0 GATYACAC 8
-""",
-        )
+"""
 
     def test_blastn_like_has_no_colon_only_pipes_for_identities(self):
         """In a BLASTN-like +1/-1 matrix, mismatches are always negative -> no ':' expected."""
@@ -55,14 +53,11 @@ query             0 GATYACAC 8
         aligner.open_gap_score = -1
         aligner.extend_gap_score = -0.5
         aln = aligner.align("GATTACAT", "GATYACAC")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 GATTACAT 8
                   0 |||.|||. 8
 query             0 GATYACAC 8
-""",
-        )
+"""
 
     def test_positive_mismatch_colon_when_passing_aligner_object(self):
         """Passing the aligner object with a substitution matrix should also yield ':' for positive mismatches."""
@@ -72,14 +67,11 @@ query             0 GATYACAC 8
         aligner.open_gap_score = -10
         aligner.extend_gap_score = -2
         aln = aligner.align("GATTACAT", "GATYACAC")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 GATTACAT 8
                   0 |||:|||. 8
 query             0 GATYACAC 8
-""",
-        )
+"""
 
     def test_lowercase_letters_are_case_insensitive_for_matrix_lookup(self):
         """Matrix lookup should be case-insensitive (e.g., 't' vs 'y' behaves like 'T' vs 'Y')."""
@@ -88,14 +80,11 @@ query             0 GATYACAC 8
         aligner.open_gap_score = -10
         aligner.extend_gap_score = -2
         aln = aligner.align("t", "y")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 t 1
                   0 : 1
 query             0 y 1
-""",
-        )
+"""
 
     def test_negative_mismatch_dot_with_blastn_like_matrix(self):
         """In the BLASTN-like matrix, mismatches are negative -> expect '.' in the pattern."""
@@ -104,14 +93,11 @@ query             0 y 1
         aligner.open_gap_score = -10
         aligner.extend_gap_score = -2
         aln = aligner.align("A", "C")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 A 1
                   0 . 1
 query             0 C 1
-""",
-        )
+"""
 
     def test_gap_is_dash_in_pattern(self):
         """Gaps in the alignment should always appear as '-' in the pattern line."""
@@ -120,14 +106,11 @@ query             0 C 1
         aligner.open_gap_score = -1
         aligner.extend_gap_score = -0.5
         aln = aligner.align("AC", "AGC")[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 A-C 2
                   0 |-| 3
 query             0 AGC 3
-""",
-        )
+"""
 
     def test_mixed_block_contains_expected_symbols(self):
         """Construct an alignment that produces all symbols ('|', ':', '.', '-') at least once in the pattern."""
@@ -139,15 +122,12 @@ query             0 AGC 3
         seq1 = "TTTG"
         seq2 = "TYGG"
         aln = aligner.align(seq1, seq2)[0]
-        self.assertEqual(
-            aln.format(scoring=M),
-            """\
+        assert aln.format(scoring=M) == """\
 target            0 TTTG 4
                   0 |:.| 4
 query             0 TYGG 4
-""",
-        )
+"""
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main([__file__, "-v"])

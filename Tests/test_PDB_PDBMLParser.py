@@ -6,6 +6,7 @@ returned by the mmCIF parser for any PDB structure.
 """
 
 import unittest
+import pytest
 import warnings
 
 from Bio.PDB import MMCIFParser
@@ -23,7 +24,7 @@ class TestPDBMLParser(unittest.TestCase):
             for entry in ["1GBT", "6WG6", "3JQH"]:
                 mmcif_structure = mmcif_parser.get_structure(entry, f"PDB/{entry}.cif")
                 pdbml_structure = pdbml_parser.get_structure(f"PDB/{entry}.xml")
-            self.assertEqual(mmcif_structure, pdbml_structure)
+            assert mmcif_structure == pdbml_structure
 
     def test_get_structure_filehandle(self):
         mmcif_parser = MMCIFParser()
@@ -38,8 +39,8 @@ class TestPDBMLParser(unittest.TestCase):
                 ):
                     mmcif_structure = mmcif_parser.get_structure(entry, mmcif_file)
                     pdbml_structure = pdbml_parser.get_structure(pdbml_file)
-                self.assertEqual(mmcif_structure, pdbml_structure)
+                assert mmcif_structure == pdbml_structure
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main([__file__, "-v"])

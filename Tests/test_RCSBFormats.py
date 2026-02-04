@@ -9,22 +9,14 @@
 
 import os
 import unittest
+import pytest
 import warnings
 
-try:
-    import numpy as np
-    from numpy import dot  # Missing on old PyPy's micronumpy
-
-    del dot
-    from numpy.linalg import det  # Missing in PyPy 2.0 numpypy
-    from numpy.linalg import svd  # Missing in PyPy 2.0 numpypy
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
+from numpy import dot  # Missing on old PyPy's micronumpy
+del dot
+from numpy.linalg import det  # Missing in PyPy 2.0 numpypy
+from numpy.linalg import svd  # Missing in PyPy 2.0 numpypy
 from Bio.PDB import PDBParser
 from Bio.PDB.MMCIFParser import MMCIFParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
@@ -53,20 +45,19 @@ class CompareStructures(unittest.TestCase):
         cif_models = [(m.id, len(m.child_list)) for m in self.cifo.get_models()]
         pdb_models = [(m.id, len(m.child_list)) for m in self.pdbo.get_models()]
 
-        self.assertEqual(len(cif_models), len(pdb_models))
-        self.assertEqual([i[0] for i in cif_models], [i[0] for i in pdb_models])
-        self.assertEqual([i[1] for i in cif_models], [i[1] for i in pdb_models])
+        assert len(cif_models) == len(pdb_models)
+        assert [i[0] for i in cif_models] == [i[0] for i in pdb_models]
+        assert [i[1] for i in cif_models] == [i[1] for i in pdb_models]
 
     def test_compare_chains(self):
         """Compare parsed chains."""
         cif_chains = [(c.id, len(c.child_list)) for c in self.cifo.get_chains()]
         pdb_chains = [(c.id, len(c.child_list)) for c in self.pdbo.get_chains()]
 
-        self.assertEqual(len(cif_chains), len(pdb_chains))
-        self.assertEqual([i[0] for i in cif_chains], [i[0] for i in pdb_chains])
-        self.assertEqual([i[1] for i in cif_chains], [i[1] for i in pdb_chains])
+        assert len(cif_chains) == len(pdb_chains)
+        assert [i[0] for i in cif_chains] == [i[0] for i in pdb_chains]
+        assert [i[1] for i in cif_chains] == [i[1] for i in pdb_chains]
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

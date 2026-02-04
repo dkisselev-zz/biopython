@@ -5,6 +5,7 @@
 """Tests for Bio.AlignIO.ClustalIO module."""
 
 import unittest
+import pytest
 from io import StringIO
 
 from Bio.AlignIO.ClustalIO import ClustalIterator
@@ -202,46 +203,40 @@ gi|671626|emb|CAA85685.1|           ------------------
 class TestClustalIO(unittest.TestCase):
     def test_one(self):
         alignments = list(ClustalIterator(StringIO(aln_example1)))
-        self.assertEqual(1, len(alignments))
-        self.assertEqual(alignments[0]._version, "1.81")
+        assert 1 == len(alignments)
+        assert alignments[0]._version == "1.81"
         alignment = alignments[0]
-        self.assertEqual(2, len(alignment))
-        self.assertEqual(alignment[0].id, "gi|4959044|gb|AAD34209.1|AF069")
-        self.assertEqual(alignment[1].id, "gi|671626|emb|CAA85685.1|")
-        self.assertEqual(
-            alignment[0].seq,
-            "MENSDSNDKGSDQSAAQRRSQMDRLDREEAFYQFVNNLSEEDYRLMRDNN"
+        assert 2 == len(alignment)
+        assert alignment[0].id == "gi|4959044|gb|AAD34209.1|AF069"
+        assert alignment[1].id == "gi|671626|emb|CAA85685.1|"
+        assert (alignment[0].seq == "MENSDSNDKGSDQSAAQRRSQMDRLDREEAFYQFVNNLSEEDYRLMRDNN"
             "LLGTPGESTEEELLRRLQQIKEGPPPQSPDENRAGESSDDVTNSDSIIDW"
             "LNSVRQTGNTTRSRQRGNQSWRAVSRTNPNSGDFRFSLEINVNRNNGSQT"
             "SENESEPSTRRLSVENMESSSQRQMENSASESASARPSRAERNSTEAVTE"
-            "VPTTRAQRRA",
-        )
+            "VPTTRAQRRA")
 
     def test_two(self):
         alignments = list(ClustalIterator(StringIO(aln_example2)))
-        self.assertEqual(1, len(alignments))
-        self.assertEqual(alignments[0]._version, "1.83")
+        assert 1 == len(alignments)
+        assert alignments[0]._version == "1.83"
         alignment = alignments[0]
-        self.assertEqual(9, len(alignment))
-        self.assertEqual(alignment[-1].id, "HISJ_E_COLI")
-        self.assertEqual(
-            alignment[-1].seq,
-            "MKKLVLSLSLVLAFSSATAAF-------------------AAIPQNIRIG"
+        assert 9 == len(alignment)
+        assert alignment[-1].id == "HISJ_E_COLI"
+        assert (alignment[-1].seq == "MKKLVLSLSLVLAFSSATAAF-------------------AAIPQNIRIG"
             "TDPTYAPFESKNS-QGELVGFDIDLAKELCKRINTQCTFVENPLDALIPS"
-            "LKAKKIDAIMSSLSITEKRQQEIAFTDKLYAADSRLV",
-        )
+            "LKAKKIDAIMSSLSITEKRQQEIAFTDKLYAADSRLV")
 
     def test_cat_one_two(self):
         alignments = list(ClustalIterator(StringIO(aln_example2 + aln_example1)))
-        self.assertEqual(2, len(alignments))
-        self.assertEqual(9, len(alignments[0]))
-        self.assertEqual(137, alignments[0].get_alignment_length())
-        self.assertEqual(2, len(alignments[1]))
-        self.assertEqual(210, alignments[1].get_alignment_length())
+        assert 2 == len(alignments)
+        assert 9 == len(alignments[0])
+        assert 137 == alignments[0].get_alignment_length()
+        assert 2 == len(alignments[1])
+        assert 210 == alignments[1].get_alignment_length()
 
     def test_empty(self):
         """Checking empty file."""
-        self.assertEqual(0, len(list(ClustalIterator(StringIO("")))))
+        assert 0 == len(list(ClustalIterator(StringIO(""))))
 
     def test_write_read(self):
         """Checking write/read."""
@@ -250,12 +245,10 @@ class TestClustalIO(unittest.TestCase):
             + list(ClustalIterator(StringIO(aln_example2))) * 2
         )
         handle = StringIO()
-        self.assertEqual(3, ClustalWriter(handle).write_file(alignments))
+        assert 3 == ClustalWriter(handle).write_file(alignments)
         handle.seek(0)
         for i, a in enumerate(ClustalIterator(handle)):
-            self.assertEqual(
-                a.get_alignment_length(), alignments[i].get_alignment_length()
-            )
+            assert a.get_alignment_length() == alignments[i].get_alignment_length()
 
     def test_write_read_single(self):
         """Testing write/read when there is only one sequence."""
@@ -266,26 +259,25 @@ class TestClustalIO(unittest.TestCase):
         ClustalWriter(handle).write_file([alignment])
         handle.seek(0)
         for i, a in enumerate(ClustalIterator(handle)):
-            self.assertEqual(a.get_alignment_length(), alignment.get_alignment_length())
-            self.assertEqual(len(a), 1)
+            assert a.get_alignment_length() == alignment.get_alignment_length()
+            assert len(a) == 1
 
     def test_three(self):
         alignments = list(ClustalIterator(StringIO(aln_example3)))
-        self.assertEqual(1, len(alignments))
-        self.assertEqual(alignments[0]._version, "2.0.9")
+        assert 1 == len(alignments)
+        assert alignments[0]._version == "2.0.9"
 
     def test_kalign_header(self):
         """Make sure we can parse the Kalign header."""
         alignment = next(ClustalIterator(StringIO(aln_example4)))
-        self.assertEqual(2, len(alignment))
+        assert 2 == len(alignment)
 
     def test_biopython_header(self):
         """Make sure we can parse the Biopython header."""
         alignment = next(ClustalIterator(StringIO(aln_example5)))
-        self.assertEqual(2, len(alignment))
-        self.assertEqual(alignment._version, "1.80.dev0")
+        assert 2 == len(alignment)
+        assert alignment._version == "1.80.dev0"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

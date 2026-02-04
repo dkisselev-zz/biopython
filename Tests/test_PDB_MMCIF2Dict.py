@@ -11,16 +11,9 @@
 """Unit tests for the Bio.PDB.MMCIF2Dict module."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 import io
 import textwrap
 
@@ -31,12 +24,10 @@ class MMCIF2dictTests(unittest.TestCase):
     def test_MMCIF2dict(self):
         filename = "PDB/1A8O.cif"
         mmcif = MMCIF2Dict(filename)
-        self.assertEqual(len(mmcif.keys()), 575)
+        assert len(mmcif.keys()) == 575
         # Turn black code style off
         # fmt: off
-        self.assertEqual(
-            mmcif["_entity_poly_seq.mon_id"],
-            [
+        assert mmcif["_entity_poly_seq.mon_id"] == [
                 "MSE", "ASP", "ILE", "ARG", "GLN", "GLY", "PRO", "LYS", "GLU", "PRO",
                 "PHE", "ARG", "ASP", "TYR", "VAL", "ASP", "ARG", "PHE", "TYR", "LYS",
                 "THR", "LEU", "ARG", "ALA", "GLU", "GLN", "ALA", "SER", "GLN", "GLU",
@@ -45,10 +36,7 @@ class MMCIF2dictTests(unittest.TestCase):
                 "ILE", "LEU", "LYS", "ALA", "LEU", "GLY", "PRO", "GLY", "ALA", "THR",
                 "LEU", "GLU", "GLU", "MSE", "MSE", "THR", "ALA", "CYS", "GLN", "GLY",
             ]
-        )
-        self.assertEqual(
-            mmcif["_atom_site.Cartn_x"],
-            [
+        assert mmcif["_atom_site.Cartn_x"] == [
                 "19.594", "20.255", "20.351", "19.362", "19.457", "20.022", "21.718",
                 "21.424", "21.554", "21.835", "21.947", "21.678", "23.126", "23.098",
                 "23.433", "22.749", "22.322", "22.498", "21.220", "20.214", "23.062",
@@ -142,12 +130,9 @@ class MMCIF2dictTests(unittest.TestCase):
                 "13.681", "26.728", "10.004", "30.553", "23.569", "10.927", "17.983",
                 "8.191", "32.095", "11.520", "13.249", "15.919", "11.187", "16.743",
             ]
-        )
         # Turn black code style on
         # fmt: on
-        self.assertEqual(
-            mmcif["_struct_ref.pdbx_seq_one_letter_code"],
-            [
+        assert mmcif["_struct_ref.pdbx_seq_one_letter_code"] == [
                 "GARASVLSGGELDKWEKIRLRPGGKKQYKLKHIVWASRELERFAVNPGLLETSEGCRQILGQLQPSLQTG"
                 "SEELRSLYNT\n"
                 "IAVLYCVHQRIDVKDTKEALDKIEEEQNKSKKKAQQAAADTGNNSQVSQNYPIVQNLQGQMVHQAISPRT"
@@ -161,32 +146,26 @@ class MMCIF2dictTests(unittest.TestCase):
                 "AKNCRAPRKKGCWKCGKEGHQMKDCTERQANFLGKIWPSHKGRPGNFLQSRPEPTAPPEESFRFGEETTT"
                 "PSQKQEPIDK\n"
                 "ELYPLASLRSLFGSDPSSQ"
-            ],
-        )
+            ]
 
     def test_underscores(self):
         # Test values starting with an underscore are not treated as keys
         filename = "PDB/4Q9R_min.cif"
         mmcif = MMCIF2Dict(filename)
-        self.assertEqual(len(mmcif.keys()), 5)
-        self.assertEqual(
-            mmcif["_pdbx_audit_revision_item.item"],
-            [
+        assert len(mmcif.keys()) == 5
+        assert mmcif["_pdbx_audit_revision_item.item"] == [
                 "_atom_site.B_iso_or_equiv",
                 "_atom_site.Cartn_x",
                 "_atom_site.Cartn_y",
                 "_atom_site.Cartn_z",
-            ],
-        )
+            ]
 
     def test_quotefix(self):
         # Test quote characters parse correctly
         filename = "PDB/1MOM_min.cif"
         mmcif = MMCIF2Dict(filename)
-        self.assertEqual(len(mmcif.keys()), 21)
-        self.assertEqual(
-            mmcif["_struct_conf.pdbx_PDB_helix_id"],
-            [
+        assert len(mmcif.keys()) == 21
+        assert mmcif["_struct_conf.pdbx_PDB_helix_id"] == [
                 "A",
                 "A'",
                 "B",
@@ -204,40 +183,40 @@ class MMCIF2dictTests(unittest.TestCase):
                 "BC",
                 "CD",
                 "DE",
-            ],
-        )
+            ]
 
     def test_splitline(self):
         filename = "PDB/4Q9R_min.cif"
         mmcif = MMCIF2Dict(filename)
-        self.assertEqual(list(mmcif._splitline("foo bar")), ["foo", "bar"])
-        self.assertEqual(list(mmcif._splitline("  foo bar  ")), ["foo", "bar"])
-        self.assertEqual(list(mmcif._splitline("'foo' bar")), ["foo", "bar"])
-        self.assertEqual(list(mmcif._splitline('foo "bar"')), ["foo", "bar"])
-        self.assertEqual(list(mmcif._splitline("foo 'bar a' b")), ["foo", "bar a", "b"])
-        self.assertEqual(list(mmcif._splitline("foo 'bar'a' b")), ["foo", "bar'a", "b"])
-        self.assertEqual(
-            list(mmcif._splitline('foo "bar\' a" b')), ["foo", "bar' a", "b"]
-        )
-        self.assertEqual(list(mmcif._splitline("foo '' b")), ["foo", "", "b"])
-        self.assertEqual(list(mmcif._splitline("foo bar' b")), ["foo", "bar'", "b"])
-        self.assertEqual(list(mmcif._splitline("foo bar b'")), ["foo", "bar", "b'"])
+        assert list(mmcif._splitline("foo bar")) == ["foo", "bar"]
+        assert list(mmcif._splitline("  foo bar  ")) == ["foo", "bar"]
+        assert list(mmcif._splitline("'foo' bar")) == ["foo", "bar"]
+        assert list(mmcif._splitline('foo "bar"')) == ["foo", "bar"]
+        assert list(mmcif._splitline("foo 'bar a' b")) == ["foo", "bar a", "b"]
+        assert list(mmcif._splitline("foo 'bar'a' b")) == ["foo", "bar'a", "b"]
+        assert list(mmcif._splitline('foo "bar\' a" b')) == ["foo", "bar' a", "b"]
+        assert list(mmcif._splitline("foo '' b")) == ["foo", "", "b"]
+        assert list(mmcif._splitline("foo bar' b")) == ["foo", "bar'", "b"]
+        assert list(mmcif._splitline("foo bar b'")) == ["foo", "bar", "b'"]
 
         # A hash (#) starts a comment iff it is preceded by whitespace or is at
         # the beginning of a line:
         # https://www.iucr.org/resources/cif/spec/version1.1/cifsyntax#lex
-        self.assertEqual(list(mmcif._splitline("foo#bar")), ["foo#bar"])
-        self.assertEqual(list(mmcif._splitline("foo #bar")), ["foo"])
-        self.assertEqual(list(mmcif._splitline("foo# bar")), ["foo#", "bar"])
-        self.assertEqual(list(mmcif._splitline("#foo bar")), [])
+        assert list(mmcif._splitline("foo#bar")) == ["foo#bar"]
+        assert list(mmcif._splitline("foo #bar")) == ["foo"]
+        assert list(mmcif._splitline("foo# bar")) == ["foo#", "bar"]
+        assert list(mmcif._splitline("#foo bar")) == []
 
-        self.assertRaises(ValueError, list, mmcif._splitline("foo 'bar"))
-        self.assertRaises(ValueError, list, mmcif._splitline("foo 'ba'r  "))
-        self.assertRaises(ValueError, list, mmcif._splitline("foo \"bar'"))
+        with pytest.raises(ValueError):
+            list(mmcif._splitline("foo 'bar"))
+        with pytest.raises(ValueError):
+            list(mmcif._splitline("foo 'ba'r  "))
+        with pytest.raises(ValueError):
+            list(mmcif._splitline("foo \"bar'"))
 
         # quotes are allowed if not followed by whitespace
-        self.assertEqual(list(mmcif._splitline("foo b'ar'")), ["foo", "b'ar'"])
-        self.assertEqual(list(mmcif._splitline("foo 'b'ar'")), ["foo", "b'ar"])
+        assert list(mmcif._splitline("foo b'ar'")) == ["foo", "b'ar'"]
+        assert list(mmcif._splitline("foo 'b'ar'")) == ["foo", "b'ar"]
 
     def test_verbatim_block(self):
         """Verbatim blocks parsed correctly.
@@ -256,25 +235,21 @@ class MMCIF2dictTests(unittest.TestCase):
                 ";\n"
             )
         )
-        self.assertEqual(
-            mmcif_dict["_test_value"], ["First line\n    Second line\nThird line"]
-        )
+        assert mmcif_dict["_test_value"] == ["First line\n    Second line\nThird line"]
 
     def test_token_after_multiline(self):
         """Multi-line string followed by token on the same line."""
         stream = io.StringIO("data_test _key1\n;foo bar\n; _key2 'value 2'\n")
         mmcif_dict = MMCIF2Dict(stream)
-        self.assertEqual(
-            mmcif_dict, {"data_": "test", "_key1": ["foo bar"], "_key2": ["value 2"]}
-        )
+        assert mmcif_dict == {"data_": "test", "_key1": ["foo bar"], "_key2": ["value 2"]}
 
         stream = io.StringIO("data_test _key1\n;foo bar\n;# missing space here")
-        with self.assertRaisesRegex(ValueError, "Missing whitespace"):
+        with pytest.raises(ValueError, match="Missing whitespace"):
             mmcif_dict = MMCIF2Dict(stream)
 
     def test_truncated_multiline(self):
         stream = io.StringIO("data_test\n_key1\n;foo bar\n")
-        with self.assertRaisesRegex(ValueError, "Missing closing semicolon"):
+        with pytest.raises(ValueError, match="Missing closing semicolon"):
             mmcif_dict = MMCIF2Dict(stream)
 
     def test_inline_comments(self):
@@ -291,9 +266,9 @@ class MMCIF2dictTests(unittest.TestCase):
                 "\n"
             )
         )
-        self.assertEqual(mmcif_dict["_test_key_value_1"], ["foo"])
-        self.assertEqual(mmcif_dict["_test_key_value_2"], ["foo#NotIgnored"])
-        self.assertEqual(mmcif_dict["_test_loop"], list("abcdefg"))
+        assert mmcif_dict["_test_key_value_1"] == ["foo"]
+        assert mmcif_dict["_test_key_value_2"] == ["foo#NotIgnored"]
+        assert mmcif_dict["_test_loop"] == list("abcdefg")
 
     def test_loop_keyword_case_insensitive(self):
         """Comments may begin outside of column 1."""
@@ -311,17 +286,17 @@ class MMCIF2dictTests(unittest.TestCase):
         mmcif_dict2 = MMCIF2Dict(
             io.StringIO(textwrap.dedent(test_data.replace("loop_", "LOOP_")))
         )
-        self.assertEqual(mmcif_dict, mmcif_dict2)
+        assert mmcif_dict == mmcif_dict2
 
         mmcif_dict2 = MMCIF2Dict(
             io.StringIO(textwrap.dedent(test_data.replace("loop_", "looP_")))
         )
-        self.assertEqual(mmcif_dict, mmcif_dict2)
+        assert mmcif_dict == mmcif_dict2
 
         mmcif_dict2 = MMCIF2Dict(
             io.StringIO(textwrap.dedent(test_data.replace("_loop", "_LOOP")))
         )
-        self.assertNotEqual(mmcif_dict, mmcif_dict2)
+        assert mmcif_dict != mmcif_dict2
 
     def test_file_not_starting_with_data_raises_error(self):
         test_data = """\
@@ -343,10 +318,11 @@ class MMCIF2dictTests(unittest.TestCase):
         """
         file = io.StringIO(textwrap.dedent(test_data))
         file2 = io.StringIO(textwrap.dedent(test_data2))
-        self.assertRaises(ValueError, MMCIF2Dict, file)
-        self.assertRaises(ValueError, MMCIF2Dict, file2)
+        with pytest.raises(ValueError):
+            MMCIF2Dict(file)
+        with pytest.raises(ValueError):
+            MMCIF2Dict(file2)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

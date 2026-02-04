@@ -15,17 +15,10 @@
 """Unit tests for the Bio.PDB exposure classes."""
 
 import unittest
+import pytest
 import warnings
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import ExposureCN
 from Bio.PDB import HSExposureCA
 from Bio.PDB import HSExposureCB
@@ -45,15 +38,15 @@ class Exposure(unittest.TestCase):
         self.model = structure[1]
         # Look at first chain only
         a_residues = list(self.model["A"].child_list)
-        self.assertEqual(86, len(a_residues))
-        self.assertEqual(a_residues[0].get_resname(), "CYS")
-        self.assertEqual(a_residues[1].get_resname(), "ARG")
-        self.assertEqual(a_residues[2].get_resname(), "CYS")
-        self.assertEqual(a_residues[3].get_resname(), "GLY")
+        assert 86 == len(a_residues)
+        assert a_residues[0].get_resname() == "CYS"
+        assert a_residues[1].get_resname() == "ARG"
+        assert a_residues[2].get_resname() == "CYS"
+        assert a_residues[3].get_resname() == "GLY"
         # ...
-        self.assertEqual(a_residues[-3].get_resname(), "TYR")
-        self.assertEqual(a_residues[-2].get_resname(), "ARG")
-        self.assertEqual(a_residues[-1].get_resname(), "CYS")
+        assert a_residues[-3].get_resname() == "TYR"
+        assert a_residues[-2].get_resname() == "ARG"
+        assert a_residues[-1].get_resname() == "CYS"
         self.a_residues = a_residues
         self.radius = 13.0
 
@@ -61,67 +54,62 @@ class Exposure(unittest.TestCase):
         """HSExposureCA."""
         _ = HSExposureCA(self.model, self.radius)
         residues = self.a_residues
-        self.assertEqual(0, len(residues[0].xtra))
-        self.assertEqual(0, len(residues[1].xtra))
-        self.assertEqual(3, len(residues[2].xtra))
-        self.assertAlmostEqual(
-            0.81250973133184456, residues[2].xtra["EXP_CB_PCB_ANGLE"]
-        )
-        self.assertEqual(14, residues[2].xtra["EXP_HSE_A_D"])
-        self.assertEqual(14, residues[2].xtra["EXP_HSE_A_U"])
-        self.assertEqual(3, len(residues[3].xtra))
-        self.assertAlmostEqual(1.3383737, residues[3].xtra["EXP_CB_PCB_ANGLE"])
-        self.assertEqual(13, residues[3].xtra["EXP_HSE_A_D"])
-        self.assertEqual(16, residues[3].xtra["EXP_HSE_A_U"])
+        assert 0 == len(residues[0].xtra)
+        assert 0 == len(residues[1].xtra)
+        assert 3 == len(residues[2].xtra)
+        assert 0.81250973133184456 == pytest.approx(residues[2].xtra["EXP_CB_PCB_ANGLE"], abs=5e-8)
+        assert 14 == residues[2].xtra["EXP_HSE_A_D"]
+        assert 14 == residues[2].xtra["EXP_HSE_A_U"]
+        assert 3 == len(residues[3].xtra)
+        assert 1.3383737 == pytest.approx(residues[3].xtra["EXP_CB_PCB_ANGLE"], abs=5e-8)
+        assert 13 == residues[3].xtra["EXP_HSE_A_D"]
+        assert 16 == residues[3].xtra["EXP_HSE_A_U"]
         # ...
-        self.assertEqual(3, len(residues[-2].xtra))
-        self.assertAlmostEqual(
-            0.77124014456278489, residues[-2].xtra["EXP_CB_PCB_ANGLE"]
-        )
-        self.assertEqual(24, residues[-2].xtra["EXP_HSE_A_D"])
-        self.assertEqual(24, residues[-2].xtra["EXP_HSE_A_U"])
-        self.assertEqual(0, len(residues[-1].xtra))
+        assert 3 == len(residues[-2].xtra)
+        assert 0.77124014456278489 == pytest.approx(residues[-2].xtra["EXP_CB_PCB_ANGLE"], abs=5e-8)
+        assert 24 == residues[-2].xtra["EXP_HSE_A_D"]
+        assert 24 == residues[-2].xtra["EXP_HSE_A_U"]
+        assert 0 == len(residues[-1].xtra)
 
     def test_HSExposureCB(self):
         """HSExposureCB."""
         _ = HSExposureCB(self.model, self.radius)
         residues = self.a_residues
-        self.assertEqual(0, len(residues[0].xtra))
-        self.assertEqual(2, len(residues[1].xtra))
-        self.assertEqual(20, residues[1].xtra["EXP_HSE_B_D"])
-        self.assertEqual(5, residues[1].xtra["EXP_HSE_B_U"])
-        self.assertEqual(2, len(residues[2].xtra))
-        self.assertEqual(10, residues[2].xtra["EXP_HSE_B_D"])
-        self.assertEqual(18, residues[2].xtra["EXP_HSE_B_U"])
-        self.assertEqual(2, len(residues[3].xtra))
-        self.assertEqual(7, residues[3].xtra["EXP_HSE_B_D"])
-        self.assertEqual(22, residues[3].xtra["EXP_HSE_B_U"])
+        assert 0 == len(residues[0].xtra)
+        assert 2 == len(residues[1].xtra)
+        assert 20 == residues[1].xtra["EXP_HSE_B_D"]
+        assert 5 == residues[1].xtra["EXP_HSE_B_U"]
+        assert 2 == len(residues[2].xtra)
+        assert 10 == residues[2].xtra["EXP_HSE_B_D"]
+        assert 18 == residues[2].xtra["EXP_HSE_B_U"]
+        assert 2 == len(residues[3].xtra)
+        assert 7 == residues[3].xtra["EXP_HSE_B_D"]
+        assert 22 == residues[3].xtra["EXP_HSE_B_U"]
         # ...
-        self.assertEqual(2, len(residues[-2].xtra))
-        self.assertEqual(14, residues[-2].xtra["EXP_HSE_B_D"])
-        self.assertEqual(34, residues[-2].xtra["EXP_HSE_B_U"])
-        self.assertEqual(2, len(residues[-1].xtra))
-        self.assertEqual(23, residues[-1].xtra["EXP_HSE_B_D"])
-        self.assertEqual(15, residues[-1].xtra["EXP_HSE_B_U"])
+        assert 2 == len(residues[-2].xtra)
+        assert 14 == residues[-2].xtra["EXP_HSE_B_D"]
+        assert 34 == residues[-2].xtra["EXP_HSE_B_U"]
+        assert 2 == len(residues[-1].xtra)
+        assert 23 == residues[-1].xtra["EXP_HSE_B_D"]
+        assert 15 == residues[-1].xtra["EXP_HSE_B_U"]
 
     def test_ExposureCN(self):
         """HSExposureCN."""
         _ = ExposureCN(self.model, self.radius)
         residues = self.a_residues
-        self.assertEqual(0, len(residues[0].xtra))
-        self.assertEqual(1, len(residues[1].xtra))
-        self.assertEqual(25, residues[1].xtra["EXP_CN"])
-        self.assertEqual(1, len(residues[2].xtra))
-        self.assertEqual(28, residues[2].xtra["EXP_CN"])
-        self.assertEqual(1, len(residues[3].xtra))
-        self.assertEqual(29, residues[3].xtra["EXP_CN"])
+        assert 0 == len(residues[0].xtra)
+        assert 1 == len(residues[1].xtra)
+        assert 25 == residues[1].xtra["EXP_CN"]
+        assert 1 == len(residues[2].xtra)
+        assert 28 == residues[2].xtra["EXP_CN"]
+        assert 1 == len(residues[3].xtra)
+        assert 29 == residues[3].xtra["EXP_CN"]
         # ...
-        self.assertEqual(1, len(residues[-2].xtra))
-        self.assertEqual(48, residues[-2].xtra["EXP_CN"])
-        self.assertEqual(1, len(residues[-1].xtra))
-        self.assertEqual(38, residues[-1].xtra["EXP_CN"])
+        assert 1 == len(residues[-2].xtra)
+        assert 48 == residues[-2].xtra["EXP_CN"]
+        assert 1 == len(residues[-1].xtra)
+        assert 38 == residues[-1].xtra["EXP_CN"]
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

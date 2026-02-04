@@ -5,6 +5,7 @@
 """Unit tests for Bio.SeqIO.convert(...) function."""
 
 import unittest
+import pytest
 from io import StringIO
 
 from Bio import AlignIO
@@ -33,8 +34,8 @@ class ConvertTests(unittest.TestCase):
             )
         except ValueError:
             count2 = 0
-        self.assertEqual(count, count2, msg=msg)
-        self.assertEqual(handle.getvalue(), handle2.getvalue(), msg=msg)
+        assert count == count2, msg
+        assert handle.getvalue() == handle2.getvalue(), msg
         # Write it out using convert passing handle and handle
         handle2 = StringIO()
         try:
@@ -44,8 +45,8 @@ class ConvertTests(unittest.TestCase):
                 )
         except ValueError:
             count2 = 0
-        self.assertEqual(count, count2, msg=msg)
-        self.assertEqual(handle.getvalue(), handle2.getvalue(), msg=msg)
+        assert count == count2, msg
+        assert handle.getvalue() == handle2.getvalue(), msg
         # TODO - convert passing an output filename?
 
     def test_convert(self):
@@ -68,27 +69,17 @@ class ConvertTests(unittest.TestCase):
     def test_clustal_to_nexus_without_mol_type(self):
         """Converting Clustal to NEXUS without a molecule type."""
         handle = StringIO()
-        self.assertRaises(
-            ValueError,
-            AlignIO.convert,
-            "Clustalw/protein.aln",
-            "clustal",
-            handle,
-            "nexus",
-        )
+        with pytest.raises(ValueError):
+            AlignIO.convert("Clustalw/protein.aln", "clustal", handle, "nexus")
 
     def test_clustal_to_nexus_with_mol_type(self):
         """Converting Clustal to NEXUS with a molecule type."""
         handle = StringIO()
-        self.assertEqual(
-            1,
-            AlignIO.convert(
+        assert 1 == AlignIO.convert(
                 "Clustalw/protein.aln", "clustal", handle, "nexus", "protein"
-            ),
-        )
-        self.assertIn(" datatype=protein ", handle.getvalue())
+            )
+        assert " datatype=protein " in handle.getvalue()
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

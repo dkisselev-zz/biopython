@@ -16,6 +16,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+import pytest
 
 from seq_tests_common import SeqRecordTestBaseClass
 
@@ -43,10 +44,11 @@ class StaticMethodTest(unittest.TestCase):
         ]
 
         for x, y, z in data:
-            self.assertEqual(MafIndex._region2bin(x, y), z)
+            assert MafIndex._region2bin(x, y) == z
 
         for x, y, z in data:
-            self.assertRaises(TypeError, MafIndex._region2bin, str(x), str(y))
+            with pytest.raises(TypeError):
+                MafIndex._region2bin(str(x), str(y))
 
     def test_ucscbin(self):
         data = [
@@ -63,10 +65,11 @@ class StaticMethodTest(unittest.TestCase):
         ]
 
         for x, y, z in data:
-            self.assertEqual(MafIndex._ucscbin(x, y), z)
+            assert MafIndex._ucscbin(x, y) == z
 
         for x, y, z in data:
-            self.assertRaises(TypeError, MafIndex._ucscbin, str(x), str(y))
+            with pytest.raises(TypeError):
+                MafIndex._ucscbin(str(x), str(y))
 
 
 if sqlite3:
@@ -78,70 +81,35 @@ if sqlite3:
             idx = MafIndex(
                 "MAF/ucsc_mm9_chr10.mafindex", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10"
             )
-            self.assertEqual(len(idx), 48)
+            assert len(idx) == 48
 
         def test_old_wrong_target_seqname(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/ucsc_mm9_chr10.mafindex",
-                "MAF/ucsc_mm9_chr10.maf",
-                "mm9.chr11",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/ucsc_mm9_chr10.mafindex", "MAF/ucsc_mm9_chr10.maf", "mm9.chr11")
 
         def test_old_wrong_filename(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/ucsc_mm9_chr10.mafindex",
-                "MAF/humor.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/ucsc_mm9_chr10.mafindex", "MAF/humor.maf", "mm9.chr10")
 
         def test_old_file_not_found(self):
-            self.assertRaises(
-                FileNotFoundError,
-                MafIndex,
-                "MAF/ucsc_mm9_chr11.mafindex",
-                "MAF/ucsc_mm9_chr11.maf",
-                "mm9.chr11",
-            )
+            with pytest.raises(FileNotFoundError):
+                MafIndex("MAF/ucsc_mm9_chr11.mafindex", "MAF/ucsc_mm9_chr11.maf", "mm9.chr11")
 
         def test_old_wrong_version(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/wrong_version.idx",
-                "MAF/ucsc_mm9_chr10.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/wrong_version.idx", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10")
 
         def test_old_unfinished_index(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/unfinished.idx",
-                "MAF/ucsc_mm9_chr10.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/unfinished.idx", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10")
 
         def test_old_corrupt_index(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/corrupt.idx",
-                "MAF/ucsc_mm9_chr10.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/corrupt.idx", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10")
 
         def test_old_invalid_sqlite(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                "MAF/invalid.idx",
-                "MAF/ucsc_mm9_chr10.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex("MAF/invalid.idx", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10")
 
     class NewIndexTest(unittest.TestCase):
         """Test creation of new indices."""
@@ -156,31 +124,21 @@ if sqlite3:
 
         def test_good_small(self):
             idx = MafIndex(self.tmpfile, "MAF/ucsc_mm9_chr10.maf", "mm9.chr10")
-            self.assertEqual(len(idx), 48)
+            assert len(idx) == 48
             idx.close()
 
         def test_good_big(self):
             idx = MafIndex(self.tmpfile, "MAF/ucsc_mm9_chr10_big.maf", "mm9.chr10")
-            self.assertEqual(len(idx), 983)
+            assert len(idx) == 983
             idx.close()
 
         def test_bundle_without_target(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                self.tmpfile,
-                "MAF/bundle_without_target.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex(self.tmpfile, "MAF/bundle_without_target.maf", "mm9.chr10")
 
         def test_length_coords_mismatch(self):
-            self.assertRaises(
-                ValueError,
-                MafIndex,
-                self.tmpfile,
-                "MAF/length_coords_mismatch.maf",
-                "mm9.chr10",
-            )
+            with pytest.raises(ValueError):
+                MafIndex(self.tmpfile, "MAF/length_coords_mismatch.maf", "mm9.chr10")
 
     class TestGetRecord(SeqRecordTestBaseClass):
         """Make sure we can seek and fetch records properly."""
@@ -189,7 +147,7 @@ if sqlite3:
             self.idx = MafIndex(
                 "MAF/ucsc_mm9_chr10.mafindex", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10"
             )
-            self.assertEqual(len(self.idx), 48)
+            assert len(self.idx) == 48
 
         def tearDown(self):
             self.idx.close()
@@ -329,40 +287,42 @@ if sqlite3:
             self.idx = MafIndex(
                 "MAF/ucsc_mm9_chr10.mafindex", "MAF/ucsc_mm9_chr10.maf", "mm9.chr10"
             )
-            self.assertEqual(len(self.idx), 48)
+            assert len(self.idx) == 48
 
         def test_invalid_type_1(self):
             search = self.idx.search((500, 1000), ("string", 1500))
-            self.assertRaises(TypeError, next, search)
+            with pytest.raises(TypeError):
+                next(search)
 
         def test_invalid_type_2(self):
             search = self.idx.search((500, 1000), (750, 1500.25))
-            self.assertRaises(TypeError, next, search)
+            with pytest.raises(TypeError):
+                next(search)
 
         def test_invalid_exon_count(self):
             search = self.idx.search((0, 1000, 2000), (500, 1500))
-            self.assertRaises(ValueError, next, search)
+            with pytest.raises(ValueError):
+                next(search)
 
         def test_invalid_exon_schema(self):
             search = self.idx.search((0, 1000, 2000), (250, 500, 2500))
-            self.assertRaises(ValueError, next, search)
+            with pytest.raises(ValueError):
+                next(search)
 
         def test_correct_retrieval_1(self):
             """Correct retrieval of Cnksr3 in mouse."""
             search = self.idx.search((3014742, 3018161), (3015028, 3018644))
             results = list(search)
 
-            self.assertEqual(len(results), 4 + 4)
+            assert len(results) == 4 + 4
 
-            self.assertEqual({len(x) for x in results}, {1, 3, 4, 5, 9, 10})
+            assert {len(x) for x in results} == {1, 3, 4, 5, 9, 10}
 
             # Code formatting note:
             # Expected start coordinates are grouped by alignment blocks
             # Turn black code style off
             # fmt: off
-            self.assertEqual(
-                {x.annotations["start"] for y in results for x in y},
-                {
+            assert {x.annotations["start"] for y in results for x in y} == {
                     3014742, 6283, 184202, 1257,
                     3014778,
                     3014795, 184257, 6365, 15871286, 16389854, 16169492, 171521, 7816, 1309,
@@ -371,7 +331,6 @@ if sqlite3:
                     3018230, 15871676, 16390243,
                     3018359, 16390338, 15871771, 184712, 16169976, 3018482
                 }
-            )
             # Turn black code style on
             # fmt: on
 
@@ -379,17 +338,15 @@ if sqlite3:
             search = self.idx.search((3009319, 3021421), (3012566, 3021536))
             results = list(search)
 
-            self.assertEqual(len(results), 6)
+            assert len(results) == 6
 
-            self.assertEqual({len(x) for x in results}, {2, 4, 5, 14, 7, 6})
+            assert {len(x) for x in results} == {2, 4, 5, 14, 7, 6}
 
             # Code formatting note:
             # Expected start coordinates are grouped by alignment blocks
             # Turn black code style off
             # fmt: off
-            self.assertEqual(
-                {x.annotations["start"] for y in results for x in y},
-                {
+            assert {x.annotations["start"] for y in results for x in y} == {
                     3009319, 11087,
                     3012076, 16160203, 16379004, 15860456,
                     3012441, 15860899, 16379447, 16160646, 180525,
@@ -397,7 +354,6 @@ if sqlite3:
                     3021465, 9957, 16173483, 16393831, 15875265, 78072243, 14757099,
                     3021494, 16173516, 16393864, 15875298, 78072287, 14757144
                 }
-            )
             # Turn black code style on
             # fmt: on
 
@@ -411,21 +367,18 @@ if sqlite3:
             )
             results = list(search)
 
-            self.assertEqual(len(results), 2)
+            assert len(results) == 2
 
-            self.assertEqual({len(x) for x in results}, {4, 5})
+            assert {len(x) for x in results} == {4, 5}
 
             # Code formatting note:
             # Expected start coordinates are grouped by alignment blocks
             # Turn black code style off
             # fmt: off
-            self.assertEqual(
-                {x.annotations["start"] for y in results for x in y},
-                {
+            assert {x.annotations["start"] for y in results for x in y} == {
                     3012076, 16160203, 16379004, 15860456,
                     3012441, 15860899, 16379447, 16160646, 180525
                 }
-            )
             # Turn black code style on
             # fmt: on
 
@@ -475,23 +428,23 @@ if sqlite3:
             """
             # Segments ending at the end of the first block
             search = self.idx.search([3014687], [3014689])
-            self.assertEqual(len(list(search)), 1)
+            assert len(list(search)) == 1
             search = self.idx.search([3014688], [3014689])
-            self.assertEqual(len(list(search)), 1)
+            assert len(list(search)) == 1
 
             # Segments starting at the beginning of the second block
             search = self.idx.search([3014689], [3014690])
-            self.assertEqual(len(list(search)), 1)
+            assert len(list(search)) == 1
             search = self.idx.search([3014689], [3014691])
-            self.assertEqual(len(list(search)), 1)
+            assert len(list(search)) == 1
 
             # Segments overlapping the 2 blocks
             search = self.idx.search([3014688], [3014690])
-            self.assertEqual(len(list(search)), 2)
+            assert len(list(search)) == 2
             search = self.idx.search([3014687], [3014690])
-            self.assertEqual(len(list(search)), 2)
+            assert len(list(search)) == 2
             search = self.idx.search([3014687], [3014691])
-            self.assertEqual(len(list(search)), 2)
+            assert len(list(search)) == 2
 
         def test_correct_block_length(self):
             """Following issues 504 and 1086.
@@ -532,7 +485,7 @@ if sqlite3:
                 "loxAfr1.scaffold_75566": 54,
             }
             for seq_id, length in correct_lengths.items():
-                self.assertEqual(len(seq_dict[seq_id].replace("-", "")), length)
+                assert len(seq_dict[seq_id].replace("-", "")) == length
 
         def test_correct_spliced_sequences_1(self):
             """Checking that spliced sequences are correct.
@@ -570,7 +523,7 @@ if sqlite3:
                 "loxAfr1.scaffold_75566": "GGGAGTATAAACCATTTAGTCTGCGAAATGCCAAATCTTCAGGGGAAAAAGCTG",
             }
             for seq_id, sequence in correct_sequences.items():
-                self.assertEqual(seq_dict[seq_id].replace("-", ""), sequence)
+                assert seq_dict[seq_id].replace("-", "") == sequence
 
         def test_correct_spliced_sequences_2(self):
             """Checking that spliced sequences are correct.
@@ -625,7 +578,7 @@ if sqlite3:
                 "loxAfr1.scaffold_75566": "TTTGGTTAGAATTATGCTTTAATTCAAAACTTCCGGGAGTATAAACCATTTAGTCTGCGAAATGCCAAATCTTCAGGGGAAAAAGCTG",
             }
             for seq_id, sequence in correct_sequences.items():
-                self.assertEqual(seq_dict[seq_id].replace("-", ""), sequence)
+                assert seq_dict[seq_id].replace("-", "") == sequence
 
     class TestSearchBadMAF(unittest.TestCase):
         """Test index searching on an incorrectly-formatted MAF."""
@@ -636,11 +589,12 @@ if sqlite3:
                 "MAF/ucsc_mm9_chr10_bad.maf",
                 "mm9.chr10",
             )
-            self.assertEqual(len(self.idx), 48)
+            assert len(self.idx) == 48
 
         def test_incorrect_bundle_coords(self):
             search = self.idx.search((3013219,), (3013319,))
-            self.assertRaises(ValueError, next, search)
+            with pytest.raises(ValueError):
+                next(search)
 
     class TestSpliceGoodMAF(unittest.TestCase):
         """Test in silico splicing on a correctly-formatted MAF."""
@@ -651,18 +605,17 @@ if sqlite3:
                 "MAF/ucsc_mm9_chr10_big.maf",
                 "mm9.chr10",
             )
-            self.assertEqual(len(self.idx), 983)
+            assert len(self.idx) == 983
 
         def test_invalid_strand(self):
-            self.assertRaises(
-                ValueError, self.idx.get_spliced, (0, 1000), (500, 1500), "."
-            )
+            with pytest.raises(ValueError):
+                self.idx.get_spliced((0, 1000), (500, 1500), ".")
 
         def test_no_alignment(self):
             result = self.idx.get_spliced((0, 1000), (500, 1500), 1)
 
-            self.assertEqual(len(result), 1)
-            self.assertEqual(result[0].seq, "N" * 1000)
+            assert len(result) == 1
+            assert result[0].seq == "N" * 1000
 
         def test_correct_retrieval_1(self):
             """Correct retrieval of Cnksr3 in mouse.
@@ -715,7 +668,7 @@ if sqlite3:
                 [str(x.seq) for x in result if x.id.startswith("mm9")]
             ).replace("-", "")
 
-            self.assertEqual(mm9_seq, cnksr3)
+            assert mm9_seq == cnksr3
 
     class TestSpliceBadMAF(unittest.TestCase):
         """Test in silico splicing on an incorrectly-formatted MAF."""
@@ -726,19 +679,16 @@ if sqlite3:
                 "MAF/ucsc_mm9_chr10_bad.maf",
                 "mm9.chr10",
             )
-            self.assertEqual(len(self.idx), 48)
+            assert len(self.idx) == 48
 
         def test_inconsistent_strand(self):
-            self.assertRaises(
-                ValueError, self.idx.get_spliced, (0, 3021421), (1000, 3022000), 1
-            )
+            with pytest.raises(ValueError):
+                self.idx.get_spliced((0, 3021421), (1000, 3022000), 1)
 
         def test_bundle_without_target(self):
-            self.assertRaises(
-                ValueError, self.idx.get_spliced, (3009319,), (3009900,), 1
-            )
+            with pytest.raises(ValueError):
+                self.idx.get_spliced((3009319,), (3009900,), 1)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

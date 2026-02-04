@@ -6,6 +6,7 @@
 
 import os
 import unittest
+import pytest
 import warnings
 from io import BytesIO
 from io import StringIO
@@ -247,23 +248,20 @@ class WriterTests(SeqIOTestBaseClass):
         elif mode == "b":
             handle = BytesIO()
         count = SeqIO.write(records, handle, fmt)
-        self.assertEqual(count, len(records), msg=msg)
+        assert count == len(records), msg
         # Now read them back...
         handle.seek(0)
         new_records = list(SeqIO.parse(handle, fmt))
-        self.assertEqual(len(new_records), len(records), msg=msg)
+        assert len(new_records) == len(records), msg
         for record, new_record in zip(records, new_records):
             # Using compare_record(record, new_record) is too strict
             if fmt == "nexus":
                 # The nexus parser will dis-ambiguate repeated record ids.
-                self.assertTrue(
-                    record.id == new_record.id
-                    or new_record.id.startswith(record.id + ".copy"),
-                    msg=msg,
-                )
+                assert (record.id == new_record.id
+                    or new_record.id.startswith(record.id + ".copy")), msg
             else:
-                self.assertEqual(record.id, new_record.id, msg=msg)
-            self.assertEqual(record.seq, new_record.seq, msg=msg)
+                assert record.id == new_record.id, msg
+            assert record.seq == new_record.seq, msg
         handle.close()
 
     def check_write_fails(self, records, fmt, descr, err_type, err_msg=""):
@@ -274,13 +272,13 @@ class WriterTests(SeqIOTestBaseClass):
         elif mode == "b":
             handle = BytesIO()
         if err_msg:
-            with self.assertRaises(err_type, msg=msg) as cm:
+            with pytest.raises(err_type) as cm:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", BiopythonWarning)
                     SeqIO.write(records, handle, fmt)
-            self.assertEqual(str(cm.exception), err_msg, msg=msg)
+            assert str(cm.value) == err_msg, msg
         else:
-            with self.assertRaises(err_type, msg=msg) as cm:
+            with pytest.raises(err_type) as cm:
                 SeqIO.write(records, handle, fmt)
         handle.close()
 
@@ -290,9 +288,11 @@ class WriterTests(SeqIOTestBaseClass):
         records = [record]
         fmt = "fasta"
         # These deliberately mix up the handle and record order:
-        self.assertRaises(TypeError, SeqIO.write, handle, record, fmt)
-        self.assertRaises(TypeError, SeqIO.write, handle, records, fmt)
-        self.assertEqual(1, SeqIO.write(records, handle, fmt))
+        with pytest.raises(TypeError):
+            SeqIO.write(handle, record, fmt)
+        with pytest.raises(TypeError):
+            SeqIO.write(handle, records, fmt)
+        assert 1 == SeqIO.write(records, handle, fmt)
 
     def test_alignment_formats(self):
         for records, descr, errs in test_records:
@@ -306,5 +306,4 @@ class WriterTests(SeqIOTestBaseClass):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

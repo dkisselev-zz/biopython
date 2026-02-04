@@ -9,21 +9,15 @@
 import colorsys
 import os
 import unittest
+import pytest
 from cmath import rect
 from math import pi
 
 # Do we have ReportLab?  Raise error if not present.
-from Bio import MissingPythonDependencyError
 
-try:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen.canvas import Canvas
-except ImportError:
-    raise MissingPythonDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
-
-
+pytest.importorskip("reportlab")
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen.canvas import Canvas
 # Biopython Bio.Graphics.ColorSpiral
 from Bio.Graphics.ColorSpiral import ColorSpiral
 from Bio.Graphics.ColorSpiral import get_color_dict
@@ -55,7 +49,7 @@ class SpiralTest(unittest.TestCase):
             "(0.24, 0.54, 0.06)",
             "(0.01, 0.50, -0.00)",
         ]
-        self.assertEqual(cstr, expected)
+        assert cstr == expected
 
     def test_colorspiral(self):
         """Get set of 16 colours, no jitter, using ColorSpiral."""
@@ -121,9 +115,8 @@ class DictTest(unittest.TestCase):
             "C: (0.59, 0.13, 0.47)",
             "D: (0.50, 0.00, 0.00)",
         ]
-        self.assertEqual(cstr, expected)
+        assert cstr == expected
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

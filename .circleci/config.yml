@@ -20,7 +20,7 @@ jobs:
           command: |
             python --version
             pip install -r .circleci/requirements-sphinx.txt
-            pip install coverage numpy scipy mmtf-python mysqlclient mysql-connector-python rdflib networkx matplotlib
+            pip install coverage numpy scipy mmtf-python mysqlclient mysql-connector-python rdflib networkx matplotlib pytest
             echo "Python dependencies installed"
       - run:
           name: Installation
@@ -46,7 +46,7 @@ jobs:
           command: |
             # Use the unzipped tar-ball where built wheel
             cd biopython-*/Tests/
-            coverage run --source Bio,BioSQL --source Bio,BioSQL run_tests.py --offline
+            coverage run --source Bio,BioSQL -m pytest --offline
             echo "Tests run"
             coverage xml
       - codecov/upload:

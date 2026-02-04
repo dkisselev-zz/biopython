@@ -7,6 +7,7 @@
 
 import os
 import unittest
+import pytest
 
 from search_tests_common import SearchTestBaseClass
 
@@ -218,5 +219,4 @@ class BlatPslWriteCases(WriteCases):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -7,17 +7,10 @@
 """Tests for the vector code in Bio.PDB."""
 
 import unittest
+import pytest
 
-try:
-    import numpy as np
-    from numpy.random import random
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
+np = pytest.importorskip("numpy")
+from numpy.random import random
 from Bio.PDB import calc_angle, calc_dihedral, m2rotaxis, refmat, rotaxis, rotmat
 from Bio.PDB.vectors import (
     Vector,
@@ -35,7 +28,7 @@ class VectorTests(unittest.TestCase):
     def test_division(self):
         """Confirm division works."""
         v = Vector(1, 1, 1) / 2
-        self.assertEqual(repr(v), "<Vector 0.50, 0.50, 0.50>")
+        assert repr(v) == "<Vector 0.50, 0.50, 0.50>"
 
     def test_Vector(self):
         """Test Vector object."""
@@ -44,76 +37,58 @@ class VectorTests(unittest.TestCase):
         v3 = Vector(0, 1, 0)
         v4 = Vector(1, 1, 0)
 
-        self.assertEqual(calc_angle(v1, v2, v3), 1.5707963267948966)
-        self.assertEqual(calc_dihedral(v1, v2, v3, v4), 1.5707963267948966)
-        self.assertTrue(
-            np.array_equal((v1 - v2).get_array(), np.array([0.0, 0.0, 1.0]))
-        )
-        self.assertTrue(
-            np.array_equal((v1 - 1).get_array(), np.array([-1.0, -1.0, 0.0]))
-        )
-        self.assertTrue(
-            np.array_equal((v1 - (1, 2, 3)).get_array(), np.array([-1.0, -2.0, -2.0]))
-        )
-        self.assertTrue(
-            np.array_equal((v1 + v2).get_array(), np.array([0.0, 0.0, 1.0]))
-        )
-        self.assertTrue(np.array_equal((v1 + 3).get_array(), np.array([3.0, 3.0, 4.0])))
-        self.assertTrue(
-            np.array_equal((v1 + (1, 2, 3)).get_array(), np.array([1.0, 2.0, 4.0]))
-        )
-        self.assertTrue(np.array_equal(v1.get_array() / 2, np.array([0, 0, 0.5])))
-        self.assertTrue(np.array_equal(v1.get_array() / 2, np.array([0, 0, 0.5])))
-        self.assertEqual(v1 * v2, 0.0)
-        self.assertTrue(
-            np.array_equal((v1**v2).get_array(), np.array([0.0, -0.0, 0.0]))
-        )
-        self.assertTrue(np.array_equal((v1**2).get_array(), np.array([0.0, 0.0, 2.0])))
-        self.assertTrue(
-            np.array_equal((v1 ** (1, 2, 3)).get_array(), np.array([0.0, 0.0, 3.0]))
-        )
-        self.assertEqual(v1.norm(), 1.0)
-        self.assertEqual(v1.normsq(), 1.0)
+        assert calc_angle(v1, v2, v3) == 1.5707963267948966
+        assert calc_dihedral(v1, v2, v3, v4) == 1.5707963267948966
+        assert np.array_equal((v1 - v2).get_array(), np.array([0.0, 0.0, 1.0]))
+        assert np.array_equal((v1 - 1).get_array(), np.array([-1.0, -1.0, 0.0]))
+        assert np.array_equal((v1 - (1, 2, 3)).get_array(), np.array([-1.0, -2.0, -2.0]))
+        assert np.array_equal((v1 + v2).get_array(), np.array([0.0, 0.0, 1.0]))
+        assert np.array_equal((v1 + 3).get_array(), np.array([3.0, 3.0, 4.0]))
+        assert np.array_equal((v1 + (1, 2, 3)).get_array(), np.array([1.0, 2.0, 4.0]))
+        assert np.array_equal(v1.get_array() / 2, np.array([0, 0, 0.5]))
+        assert np.array_equal(v1.get_array() / 2, np.array([0, 0, 0.5]))
+        assert v1 * v2 == 0.0
+        assert np.array_equal((v1**v2).get_array(), np.array([0.0, -0.0, 0.0]))
+        assert np.array_equal((v1**2).get_array(), np.array([0.0, 0.0, 2.0]))
+        assert np.array_equal((v1 ** (1, 2, 3)).get_array(), np.array([0.0, 0.0, 3.0]))
+        assert v1.norm() == 1.0
+        assert v1.normsq() == 1.0
         v1[2] = 10
-        self.assertEqual(v1.__getitem__(2), 10)
+        assert v1.__getitem__(2) == 10
 
     def test_normalization(self):
         """Test Vector normalization."""
         v1 = Vector([2, 0, 0])
-        self.assertTrue(
-            np.array_equal(v1.normalized().get_array(), np.array([1, 0, 0]))
-        )
+        assert np.array_equal(v1.normalized().get_array(), np.array([1, 0, 0]))
         # State of v1 should not be affected by `normalized`
-        self.assertTrue(np.array_equal(v1.get_array(), np.array([2, 0, 0])))
+        assert np.array_equal(v1.get_array(), np.array([2, 0, 0]))
         v1.normalize()
         # State of v1 should be affected by `normalize`
-        self.assertTrue(np.array_equal(v1.get_array(), np.array([1, 0, 0])))
+        assert np.array_equal(v1.get_array(), np.array([1, 0, 0]))
 
     def test_refmat(self):
         """Test refmat can mirror one matrix to another."""
         v1 = Vector(0, 0, 1)
         v2 = Vector(0, 1, 0)
         ref = refmat(v1, v2)
-        self.assertTrue(np.allclose(ref[0], [1.0, 0.0, 0.0]))
-        self.assertTrue(np.allclose(ref[1], [0.0, 0.0, 1.0]))
-        self.assertTrue(np.allclose(ref[2], [0.0, 1.0, 0.0]))
-        self.assertTrue(np.allclose(v1.left_multiply(ref).get_array(), [0.0, 1.0, 0.0]))
+        assert np.allclose(ref[0], [1.0, 0.0, 0.0])
+        assert np.allclose(ref[1], [0.0, 0.0, 1.0])
+        assert np.allclose(ref[2], [0.0, 1.0, 0.0])
+        assert np.allclose(v1.left_multiply(ref).get_array(), [0.0, 1.0, 0.0])
 
     def test_rotmat_90(self):
         """Test regular 90 deg rotation."""
         v1 = Vector(0, 0, 1)
         v2 = Vector(0, 1, 0)
         rot = rotmat(v1, v2)
-        self.assertTrue(np.allclose(rot[0], np.array([1.0, 0.0, 0.0])))
-        self.assertTrue(np.allclose(rot[1], np.array([0.0, 0.0, 1.0])))
-        self.assertTrue(np.allclose(rot[2], np.array([0.0, -1.0, 0.0])))
-        self.assertTrue(np.allclose(v1.left_multiply(rot).get_array(), [0.0, 1.0, 0.0]))
-        self.assertTrue(
-            np.allclose(
+        assert np.allclose(rot[0], np.array([1.0, 0.0, 0.0]))
+        assert np.allclose(rot[1], np.array([0.0, 0.0, 1.0]))
+        assert np.allclose(rot[2], np.array([0.0, -1.0, 0.0]))
+        assert np.allclose(v1.left_multiply(rot).get_array(), [0.0, 1.0, 0.0])
+        assert np.allclose(
                 v1.right_multiply(np.transpose(rot)).get_array(),
                 [0.0, 1.0, 0.0],
             )
-        )
 
     def test_rotmat_180(self):
         """Test rotmat when the rotation is 180 deg (singularity)."""
@@ -121,7 +96,7 @@ class VectorTests(unittest.TestCase):
         v2 = Vector([-1.0, -0.8, 0])
         rot = rotmat(v1, v2)
         v3 = v1.left_multiply(rot)
-        self.assertTrue(np.allclose(v2.get_array(), v3.get_array()))
+        assert np.allclose(v2.get_array(), v3.get_array())
 
     def test_rotmat_0(self):
         """Test rotmat when the rotation is 0 deg (singularity)."""
@@ -129,7 +104,7 @@ class VectorTests(unittest.TestCase):
         v2 = Vector([1.0, 0.8, 0])
         rot = rotmat(v1, v2)
         v3 = v1.left_multiply(rot)
-        self.assertTrue(np.allclose(v1.get_array(), v3.get_array()))
+        assert np.allclose(v1.get_array(), v3.get_array())
 
     def test_m2rotaxis_90(self):
         """Test 90 deg rotation."""
@@ -137,8 +112,8 @@ class VectorTests(unittest.TestCase):
         v2 = Vector(0, 1, 0)
         rot = rotmat(v1, v2)
         angle, axis = m2rotaxis(rot)
-        self.assertTrue(np.allclose(axis.get_array(), [-1.0, 0.0, 0.0]))
-        self.assertLess(abs(angle - np.pi / 2), 1e-5)
+        assert np.allclose(axis.get_array(), [-1.0, 0.0, 0.0])
+        assert abs(angle - np.pi / 2) < 1e-5
 
     def test_m2rotaxis_180(self):
         """Test 180 deg rotation."""
@@ -146,8 +121,8 @@ class VectorTests(unittest.TestCase):
         v2 = Vector([-1.0, -0.8, 0])
         rot = rotmat(v1, v2)
         angle, axis = m2rotaxis(rot)
-        self.assertLess(abs(axis * v1), 1e-5)  # axis orthogonal to v1
-        self.assertLess(abs(angle - np.pi), 1e-5)
+        assert abs(axis * v1) < 1e-5  # axis orthogonal to v1
+        assert abs(angle - np.pi) < 1e-5
 
     def test_m2rotaxis_0(self):
         """Test 0 deg rotation. Axis must be [1, 0, 0] as per Vector docs."""
@@ -155,8 +130,8 @@ class VectorTests(unittest.TestCase):
         v2 = Vector([1.0, 0.8, 0])
         rot = rotmat(v1, v2)
         angle, axis = m2rotaxis(rot)
-        self.assertTrue(np.allclose(axis.get_array(), [1, 0, 0]))
-        self.assertLess(abs(angle), 1e-5)
+        assert np.allclose(axis.get_array(), [1, 0, 0])
+        assert abs(angle) < 1e-5
 
     def test_Vector_angles(self):
         """Test Vector angles."""
@@ -165,11 +140,8 @@ class VectorTests(unittest.TestCase):
         axis.normalize()
         m = rotaxis(angle, axis)
         cangle, caxis = m2rotaxis(m)
-        self.assertAlmostEqual(angle, cangle, places=3)
-        self.assertTrue(
-            np.allclose(list(map(int, (axis - caxis).get_array())), [0, 0, 0]),
-            f"Want {axis.get_array()!r} and {caxis.get_array()!r} to be almost equal",
-        )
+        assert angle == pytest.approx(cangle, abs=0.0005)
+        assert np.allclose(list(map(int, (axis - caxis).get_array())), [0, 0, 0]), f"Want {axis.get_array()!r} and {caxis.get_array()!r} to be almost equal"
 
     def test_get_spherical_coordinates(self):
         """Test spherical coordinates."""
@@ -188,11 +160,9 @@ class VectorTests(unittest.TestCase):
                         ]
                     )
                     # print(sc[0], np.degrees(sc[1]), np.degrees(sc[2]))
-                    self.assertEqual(1.0, sc[0])  # r
-                    self.assertEqual(
-                        (1 if j else -1) * (r45 if i else r135), sc[1]
-                    )  # azimuth
-                    self.assertEqual((r45 if k else r135), sc[2])  # polar angle
+                    assert 1.0 == sc[0]  # r
+                    assert (1 if j else -1) * (r45 if i else r135) == sc[1]  # azimuth
+                    assert (r45 if k else r135) == sc[2]  # polar angle
 
     def test_coord_space(self):
         """Confirm can generate coordinate space transform for 3 points."""
@@ -206,7 +176,7 @@ class VectorTests(unittest.TestCase):
         homog_id = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         mtxs = coord_space(point_set[0], point_set[1], point_set[2], True)
         for i in range(2):
-            self.assertTrue(np.array_equal(mtxs[i], homog_id))
+            assert np.array_equal(mtxs[i], homog_id)
         # test in every quadrant
         for i in range(2):
             for j in range(2):
@@ -224,12 +194,12 @@ class VectorTests(unittest.TestCase):
                     rslt = [1, 2, 3]
                     for i in range(3):
                         rslt[i] = mtxs[0].dot(ps2[i])
-                    self.assertTrue(np.array_equal(rslt, point_set))
+                    assert np.array_equal(rslt, point_set)
 
                     # confirm reverse transform returns translated points
                     for i in range(3):
                         rslt[i] = mtxs[1].dot(rslt[i])
-                    self.assertTrue(np.array_equal(rslt, ps2))
+                    assert np.array_equal(rslt, ps2)
 
     def test_multi_coord_space(self):
         """Confirm multi_coord_space computes forward, reverse transforms."""
@@ -247,7 +217,7 @@ class VectorTests(unittest.TestCase):
         homog_id = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         mtxs = multi_coord_space(point_set, 1, True)
         for i in range(2):
-            self.assertTrue(np.array_equal(mtxs[i][0], homog_id))
+            assert np.array_equal(mtxs[i][0], homog_id)
         # test in every quadrant
         test_set = np.empty([8, 3, 4], dtype=np.float64)
         m = 0
@@ -268,12 +238,12 @@ class VectorTests(unittest.TestCase):
             rslt = [1, 2, 3]
             for i in range(3):
                 rslt[i] = mtxs[0][m].dot(test_set[m][i])
-            self.assertTrue(np.array_equal(rslt, point_set[0]))
+            assert np.array_equal(rslt, point_set[0])
 
             # confirm reverse transform returns translated points
             for i in range(3):
                 rslt[i] = mtxs[1][m].dot(rslt[i])
-            self.assertTrue(np.array_equal(rslt, test_set[m]))
+            assert np.array_equal(rslt, test_set[m])
 
     def test_vector_to_axis(self):
         """Test vector_to_axis function for correctness"""
@@ -283,7 +253,7 @@ class VectorTests(unittest.TestCase):
         point = Vector([1, 1, 0])
         expected_result = Vector([0, 1, 0])
         result = vector_to_axis(line, point)
-        self.assertTrue(np.array_equal(result.get_array(), expected_result.get_array()))
+        assert np.array_equal(result.get_array(), expected_result.get_array())
 
         # Case 2: the line direction is along -x. The point (-2,2,0) lies 2 units above the line
         # the perpendicular vector from point to line is (0,2,0)
@@ -291,7 +261,7 @@ class VectorTests(unittest.TestCase):
         point = Vector([-2, 2, 0])
         expected_result = Vector([0, 2, 0])
         result = vector_to_axis(line, point)
-        self.assertTrue(np.array_equal(result.get_array(), expected_result.get_array()))
+        assert np.array_equal(result.get_array(), expected_result.get_array())
 
         # Case 3: the line direction is along -x. The point (3,2,0) lies 2 units above the line
         # the perpendicular vector from point to line is (0,2,0)
@@ -299,9 +269,8 @@ class VectorTests(unittest.TestCase):
         point = Vector([3, 2, 0])
         expected_result = Vector([0, 2, 0])
         result = vector_to_axis(line, point)
-        self.assertTrue(np.array_equal(result.get_array(), expected_result.get_array()))
+        assert np.array_equal(result.get_array(), expected_result.get_array())
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

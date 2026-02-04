@@ -15,8 +15,8 @@ The example itself is essentially a repeat from test_GraphicsGeneral.py.
 import os
 import random
 import unittest
+import pytest
 
-from Bio import MissingExternalDependencyError
 from Bio import MissingPythonDependencyError
 
 try:
@@ -96,9 +96,7 @@ def real_test():
         pass
     except OSError as err:
         if "encoder zip not available" in str(err):
-            raise MissingExternalDependencyError(
-                "Check zip encoder installed for PIL and ReportLab renderPM"
-            ) from None
+            pytest.skip("Check zip encoder installed for PIL and ReportLab renderPM", allow_module_level=True)
         else:
             raise
     except RenderPMError as err:
@@ -107,14 +105,10 @@ def real_test():
         ):
             # TODO - can we raise the error BEFORE the unit test function
             # is run? That way it can be skipped in run_tests.py
-            raise MissingExternalDependencyError(
-                "Check the fonts needed by ReportLab if you want "
-                "bitmaps from Bio.Graphics\n" + str(err)
-            ) from None
+            pytest.skip("Check the fonts needed by ReportLab if you want "
+                "bitmaps from Bio.Graphics\n" + str(err), allow_module_level=True)
         elif str(err).startswith("cannot import desired renderPM backend rlPyCairo"):
-            raise MissingExternalDependencyError(
-                "Reportlab module rlPyCairo unavailable\n" + str(err)
-            ) from None
+            pytest.skip("Reportlab module rlPyCairo unavailable\n" + str(err), allow_module_level=True)
         else:
             raise
     return True
@@ -133,5 +127,4 @@ class ComparativeTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -7,6 +7,7 @@
 
 import os
 import unittest
+import pytest
 
 from search_tests_common import CheckIndex
 from search_tests_common import CheckRaw
@@ -507,5 +508,4 @@ class Hmmer2TextIndexCases(CheckIndex):
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -18,17 +18,9 @@
 
 import subprocess
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.PDB."
-    ) from None
-
-
+np = pytest.importorskip("numpy")
 from Bio.PDB import PDBParser
 from Bio.PDB.NACCESS import NACCESS
 from Bio.PDB.NACCESS import process_asa_data
@@ -42,13 +34,13 @@ class NACCESS_test(unittest.TestCase):
         """Test parsing of pregenerated rsa NACCESS file."""
         with open("PDB/1A8O.rsa") as rsa:
             naccess = process_rsa_data(rsa)
-        self.assertEqual(len(naccess), 66)
+        assert len(naccess) == 66
 
     def test_NACCESS_asa_file(self):
         """Test parsing of pregenerated asa NACCESS file."""
         with open("PDB/1A8O.asa") as asa:
             naccess = process_asa_data(asa)
-        self.assertEqual(len(naccess), 524)
+        assert len(naccess) == 524
 
     def test_NACCESS(self):
         """Test calling NACCESS from Bio.PDB."""
@@ -64,9 +56,8 @@ class NACCESS_test(unittest.TestCase):
         pdbfile = "PDB/1A8O.pdb"
         model = p.get_structure("1A8O", pdbfile)[0]
         naccess = NACCESS(model, pdbfile)
-        self.assertEqual(len(naccess), 66)
+        assert len(naccess) == 66
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

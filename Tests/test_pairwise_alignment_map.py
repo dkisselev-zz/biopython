@@ -8,16 +8,9 @@
 import os
 import random
 import unittest
+import pytest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
-
-    raise MissingPythonDependencyError(
-        "Install numpy if you want to use Bio.Align.Alignment.map."
-    ) from None
-
+np = pytest.importorskip("numpy")
 from Bio import Align
 from Bio import SeqIO
 from Bio.Align import Alignment
@@ -43,52 +36,34 @@ class TestSimple(unittest.TestCase):
         sequence = Seq("GGCCCCCGGG")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertTrue(
-            np.array_equal(alignment1.coordinates, np.array([[12, 31], [0, 19]]))
-        )
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert np.array_equal(alignment1.coordinates, np.array([[12, 31], [0, 19]]))
+        assert str(alignment1) == """\
 chromosom        12 GGGGGGGCCCCCGGGGGGA 31
                   0 ||||||||||||||||||| 19
 transcrip         0 GGGGGGGCCCCCGGGGGGA 19
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertTrue(
-            np.array_equal(alignment2.coordinates, np.array([[5, 15], [0, 10]]))
-        )
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert np.array_equal(alignment2.coordinates, np.array([[5, 15], [0, 10]]))
+        assert str(alignment2) == """\
 transcrip         5 GGCCCCCGGG 15
                   0 |||||||||| 10
 sequence          0 GGCCCCCGGG 10
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
+        assert str(alignment) == """\
 chromosom        17 GGCCCCCGGG 27
                   0 |||||||||| 10
 sequence          0 GGCCCCCGGG 10
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 10	0	0	0	0	0	0	0	+	sequence	10	0	10	chromosome	40	17	27	1	10,	0,	17,
-""",
-        )
+"""
 
     def test_left_overhang(self):
         aligner = self.aligner
@@ -99,46 +74,32 @@ sequence          0 GGCCCCCGGG 10
         sequence = Seq("GGGGGCCCCCGGG")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert str(alignment1) == """\
 chromosom         0 GGGCCCCCGGGGGGA 15
                   0 ||||||||||||||| 15
 transcrip         3 GGGCCCCCGGGGGGA 18
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert str(alignment2) == """\
 transcrip         1 GGGGGCCCCCGGG 14
                   0 ||||||||||||| 13
 sequence          0 GGGGGCCCCCGGG 13
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[0, 11], [2, 13]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[0, 11], [2, 13]]))
+        assert str(alignment) == """\
 chromosom         0 GGGCCCCCGGG 11
                   0 ||||||||||| 11
 sequence          2 GGGCCCCCGGG 13
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 11	0	0	0	0	0	0	0	+	sequence	13	2	13	chromosome	24	0	11	1	11,	2,	0,
-""",
-        )
+"""
 
     def test_right_overhang(self):
         aligner = self.aligner
@@ -149,46 +110,32 @@ sequence          2 GGGCCCCCGGG 13
         sequence = Seq("GGCCCCCGGGGG")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert str(alignment1) == """\
 chromosom        12 GGGGGGGCCCCCGGG 27
                   0 ||||||||||||||| 15
 transcrip         0 GGGGGGGCCCCCGGG 15
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert str(alignment2) == """\
 transcrip         5 GGCCCCCGGGGG 17
                   0 |||||||||||| 12
 sequence          0 GGCCCCCGGGGG 12
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
+        assert str(alignment) == """\
 chromosom        17 GGCCCCCGGG 27
                   0 |||||||||| 10
 sequence          0 GGCCCCCGGG 10
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 10	0	0	0	0	0	0	0	+	sequence	12	0	10	chromosome	27	17	27	1	10,	0,	17,
-""",
-        )
+"""
 
     def test_reverse_transcript(self):
         aligner = self.aligner
@@ -199,52 +146,34 @@ sequence          0 GGCCCCCGGG 10
         sequence = Seq("GGCCCCCGGG")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript, strand="-")
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertTrue(
-            np.array_equal(alignment1.coordinates, np.array([[12, 31], [19, 0]]))
-        )
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert np.array_equal(alignment1.coordinates, np.array([[12, 31], [19, 0]]))
+        assert str(alignment1) == """\
 chromosom        12 GGGGGGGCCCCCGGGGGGA 31
                   0 ||||||||||||||||||| 19
 transcrip        19 GGGGGGGCCCCCGGGGGGA  0
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence, strand="-")
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertTrue(
-            np.array_equal(alignment2.coordinates, np.array([[4, 14], [10, 0]]))
-        )
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert np.array_equal(alignment2.coordinates, np.array([[4, 14], [10, 0]]))
+        assert str(alignment2) == """\
 transcrip         4 CCCGGGGGCC 14
                   0 |||||||||| 10
 sequence         10 CCCGGGGGCC  0
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[17, 27], [0, 10]]))
+        assert str(alignment) == """\
 chromosom        17 GGCCCCCGGG 27
                   0 |||||||||| 10
 sequence          0 GGCCCCCGGG 10
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 10	0	0	0	0	0	0	0	+	sequence	10	0	10	chromosome	40	17	27	1	10,	0,	17,
-""",
-        )
+"""
 
     def test_reverse_sequence(self):
         aligner = self.aligner
@@ -255,52 +184,34 @@ sequence          0 GGCCCCCGGG 10
         sequence = Seq("CCCGGGGGCC")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertTrue(
-            np.array_equal(alignment1.coordinates, np.array([[12, 31], [0, 19]]))
-        )
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert np.array_equal(alignment1.coordinates, np.array([[12, 31], [0, 19]]))
+        assert str(alignment1) == """\
 chromosom        12 GGGGGGGCCCCCGGGGGGA 31
                   0 ||||||||||||||||||| 19
 transcrip         0 GGGGGGGCCCCCGGGGGGA 19
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence, "-")
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertTrue(
-            np.array_equal(alignment2.coordinates, np.array([[5, 15], [10, 0]]))
-        )
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert np.array_equal(alignment2.coordinates, np.array([[5, 15], [10, 0]]))
+        assert str(alignment2) == """\
 transcrip         5 GGCCCCCGGG 15
                   0 |||||||||| 10
 sequence         10 GGCCCCCGGG  0
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[17, 27], [10, 0]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[17, 27], [10, 0]]))
+        assert str(alignment) == """\
 chromosom        17 GGCCCCCGGG 27
                   0 |||||||||| 10
 sequence         10 GGCCCCCGGG  0
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 10	0	0	0	0	0	0	0	-	sequence	10	0	10	chromosome	40	17	27	1	10,	0,	17,
-""",
-        )
+"""
 
     def test_reverse_transcript_sequence(self):
         aligner = self.aligner
@@ -311,52 +222,34 @@ sequence         10 GGCCCCCGGG  0
         sequence = Seq("CCCGGGGGCC")
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript, "-")
-        self.assertEqual(len(alignments1), 1)
+        assert len(alignments1) == 1
         alignment1 = alignments1[0]
-        self.assertTrue(
-            np.array_equal(alignment1.coordinates, np.array([[12, 31], [19, 0]]))
-        )
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert np.array_equal(alignment1.coordinates, np.array([[12, 31], [19, 0]]))
+        assert str(alignment1) == """\
 chromosom        12 GGGGGGGCCCCCGGGGGGA 31
                   0 ||||||||||||||||||| 19
 transcrip        19 GGGGGGGCCCCCGGGGGGA  0
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
-        self.assertEqual(len(alignments2), 1)
+        assert len(alignments2) == 1
         alignment2 = alignments2[0]
-        self.assertTrue(
-            np.array_equal(alignment2.coordinates, np.array([[4, 14], [0, 10]]))
-        )
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert np.array_equal(alignment2.coordinates, np.array([[4, 14], [0, 10]]))
+        assert str(alignment2) == """\
 transcrip         4 CCCGGGGGCC 14
                   0 |||||||||| 10
 sequence          0 CCCGGGGGCC 10
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(alignment.coordinates, np.array([[17, 27], [10, 0]]))
-        )
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert np.array_equal(alignment.coordinates, np.array([[17, 27], [10, 0]]))
+        assert str(alignment) == """\
 chromosom        17 GGCCCCCGGG 27
                   0 |||||||||| 10
 sequence         10 GGCCCCCGGG  0
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 10	0	0	0	0	0	0	0	-	sequence	10	0	10	chromosome	40	17	27	1	10,	0,	17,
-""",
-        )
+"""
 
 
 class TestComplex(unittest.TestCase):
@@ -383,10 +276,8 @@ class TestComplex(unittest.TestCase):
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
         alignment1 = alignments1[0]
-        self.assertEqual(alignment1.coordinates.shape[1], 164)
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert alignment1.coordinates.shape[1] == 164
+        assert str(alignment1) == """\
 chromosom        14 AATGGTTATA------ATACAAGG-CGG----TCATAATTAAAGGGAGTG---CAGCAAC
                   0 |||--||-||------|---||||-|||----||------.|||||---|---|||||--
 transcrip         2 AAT--TT-TAGCAGCCA---AAGGACGGATCCTC------CAAGGG---GCCCCAGCA--
@@ -422,14 +313,11 @@ transcrip       269 -----GGT----TT--TA--TGAAAAGAAAGTGCA-TTAACTG----TTA------AAGC
 chromosom       405 GAGCGGAAGGTC-TAACAG-GGCACCGAATTC 435
                 480 ---|-----|||-||.|.|-||----|--||| 512
 transcrip       305 ---C-----GTCATATCGGTGG----G--TTC 323
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
         alignment2 = alignments2[0]
-        self.assertEqual(alignment2.coordinates.shape[1], 12)
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert alignment2.coordinates.shape[1] == 12
+        assert str(alignment2) == """\
 transcrip        28 TCCAAGGGGCCCCAGCACAGCACATTTTTAACGCGAACTAAGCGGGAGCGCATGTGGGAC
                   0 |||||||||||||||||||||||||||||||||||--------------------|||||
 sequence          0 TCCAAGGGGCCCCAGCACAGCACATTTTTAACGCG--------------------GGGAC
@@ -449,13 +337,10 @@ sequence         89 GTACGACGAAGC--------------------------------GGTTGGGTCGAAAAAC
 transcrip       268 AGGTTTTATGAAAAGAAAGTGCATTAACTGTTAAAGCCGTCATATCGGTGGGTTC 323
                 240 |||||------------------------------|||||||||||||||||||| 295
 sequence        117 AGGTT------------------------------GCCGTCATATCGGTGGGTTC 142
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertEqual(alignment.coordinates.shape[1], 76)
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.coordinates.shape[1] == 76
+        assert str(alignment) == """\
 chromosom        35 TCATAATTAAAGGGAGTG---CAGCAACGGCCTGCTCTCCAAAAAAACAGGTTTTATGAA
                   0 ||------.|||||---|---|||||-----|.||-----------|||--||||-|---
 sequence          0 TC------CAAGGG---GCCCCAGCA-----CAGC-----------ACA--TTTT-T---
@@ -487,15 +372,11 @@ sequence        120 T----T------------------------------------GC---C-----GTCATAT
 chromosom       420 CAG-GGCACCGAATTC 435
                 420 |.|-||----|--||| 436
 sequence        132 CGGTGG----G--TTC 142
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 96	10	0	0	11	36	27	294	+	sequence	142	0	142	chromosome	440	35	435	37	2,6,1,5,4,3,4,1,6,2,2,2,1,1,2,6,3,2,1,4,3,3,3,2,1,2,2,10,3,1,2,1,3,6,2,1,3,	0,2,8,12,17,21,24,28,29,35,41,43,45,46,47,49,55,58,63,67,71,81,84,87,90,95,99,108,118,121,122,124,125,129,136,138,139,	35,43,52,53,63,78,83,88,95,129,131,135,139,141,144,148,155,248,250,251,257,302,306,315,317,318,320,339,359,366,403,408,414,417,423,429,432,
-""",
-        )
+"""
 
     def test2(self):
         aligner = self.aligner
@@ -513,10 +394,8 @@ sequence        132 CGGTGG----G--TTC 142
         sequence.id = "sequence"
         alignments1 = aligner.align(chromosome, transcript)
         alignment1 = alignments1[0]
-        self.assertEqual(alignment1.coordinates.shape[1], 126)
-        self.assertEqual(
-            str(alignment1),
-            """\
+        assert alignment1.coordinates.shape[1] == 126
+        assert str(alignment1) == """\
 chromosom         5 GCGCCTTGGTTTTGGCTTAACTAGA-------AGCAACC-TGTAAGATTGCCAATTCTTC
                   0 |||--|.|||---------||.|||-------||-.|||-||||------------||--
 transcrip         5 GCG--TCGGT---------ACCAGAGGGCGTGAG-TACCTTGTA------------CT--
@@ -552,14 +431,11 @@ transcrip       281 TA-A--A----------------AT----------A---ACC--TCA--------ATC--
 chromosom       409 CCAACT 415
                 480 ---||| 486
 transcrip       297 ---ACT 300
-""",
-        )
+"""
         alignments2 = aligner.align(transcript, sequence)
         alignment2 = alignments2[0]
-        self.assertEqual(alignment2.coordinates.shape[1], 66)
-        self.assertEqual(
-            str(alignment2),
-            """\
+        assert alignment2.coordinates.shape[1] == 66
+        assert str(alignment2) == """\
 transcrip         8 TCGGTACCAGAGGGCGTGAGTACCTTGTACTAGTACTCATTGGAATAATGCTCTTAGAAG
                   0 ||------------|-------||||---|||------|-||||||--------------
 sequence          0 TC------------C-------CCTT---CTA------A-TGGAAT--------------
@@ -579,13 +455,10 @@ sequence         63 ---CACGCCTC--AGG-----TTG--GA--C-----TT----------------GT----
 transcrip       243 CCACGCACGACTAAGGACCATTTTCTG--CGTGCGA 277
                 240 -----|||-|||-------------||--|--|||| 276
 sequence         84 -----CAC-ACT-------------TGTAC--GCGA  99
-""",
-        )
+"""
         alignment = alignment1.map(alignment2)
-        self.assertEqual(alignment.coordinates.shape[1], 78)
-        self.assertEqual(
-            str(alignment),
-            """\
+        assert alignment.coordinates.shape[1] == 78
+        assert str(alignment) == """\
 chromosom        10 TTGGTTTTGGCTTAACTAGAAGCAA-CC-TGTAAGATTGCCAATTCTTCAGTCGAAGTAA
                   0 |.------------------------||-|---------------||--------|----
 sequence          0 TC-----------------------CCCTT---------------CT--------A----
@@ -613,15 +486,11 @@ sequence         80 ---TTGT--------------CAC-ACT---------------TGTAC--G-----CGA
 chromosom       337
                 359
 sequence         99
-""",
-        )
+"""
         line = format(alignment, "psl")
-        self.assertEqual(
-            line,
-            """\
+        assert line == """\
 61	6	0	0	14	32	28	260	+	sequence	100	0	99	chromosome	440	10	337	35	2,2,1,2,1,1,4,1,2,1,1,1,2,2,3,2,3,1,1,4,2,2,2,3,2,1,2,1,2,3,3,2,1,1,3,	0,3,6,7,9,10,11,21,22,24,27,28,29,35,37,42,44,49,50,52,57,61,63,68,74,76,77,79,82,84,87,90,94,95,96,	10,35,37,53,63,74,81,124,127,132,133,135,137,139,146,151,154,157,167,183,194,197,210,212,216,222,231,235,285,301,305,323,325,328,334,
-""",
-        )
+"""
 
 
 def map_check(alignment1, alignment2):
@@ -752,11 +621,9 @@ class TestZeroGaps(unittest.TestCase):
         ]
         alignment2 = Alignment(sequences, coordinates)
         alignment = alignment1.map(alignment2)
-        self.assertTrue(
-            np.array_equal(
+        assert np.array_equal(
                 alignment.coordinates, np.array([[0, 3, 6, 9], [0, 3, 6, 9]])
             )
-        )
 
     def test2(self):
         coordinates = np.array([[0, 69], [0, 69]])
@@ -773,11 +640,9 @@ class TestZeroGaps(unittest.TestCase):
         alignment2 = Alignment(sequences, coordinates)
         alignment = alignment1.map(alignment2)
         # fmt: off
-        self.assertTrue(
-            np.array_equal(alignment.coordinates,
+        assert np.array_equal(alignment.coordinates,
                            np.array([[0, 24, 69],   # noqa: E128
                                      [0, 24, 69]]))
-        )
         # fmt: on
 
     def test3(self):
@@ -795,11 +660,9 @@ class TestZeroGaps(unittest.TestCase):
         alignment2 = Alignment(sequences, coordinates)
         alignment = alignment1.map(alignment2)
         # fmt: off
-        self.assertTrue(
-            np.array_equal(alignment.coordinates,
+        assert np.array_equal(alignment.coordinates,
                            np.array([[0, 24, 24, 69],  # noqa: E128
                                      [0, 24, 23, 68]]))
-        )
         # fmt: on
 
     def test4(self):
@@ -817,11 +680,9 @@ class TestZeroGaps(unittest.TestCase):
         alignment2 = Alignment(sequences, coordinates)
         alignment = alignment1.map(alignment2)
         # fmt: off
-        self.assertTrue(
-            np.array_equal(alignment.coordinates,
+        assert np.array_equal(alignment.coordinates,
                            np.array([[0, 18, 18, 102, 102, 210],
                                      [0, 18, 17, 101, 100, 208]]))
-        )
         # fmt: on
 
     def test5(self):
@@ -839,11 +700,9 @@ class TestZeroGaps(unittest.TestCase):
         alignment2 = Alignment(sequences, coordinates)
         alignment = alignment1.map(alignment2)
         # fmt: off
-        self.assertTrue(
-            np.array_equal(alignment.coordinates,
+        assert np.array_equal(alignment.coordinates,
                            np.array([[0, 51, 51, 210],
                                      [0, 51, 49, 208]]))
-        )
         # fmt: on
 
 
@@ -851,12 +710,12 @@ class TestLiftOver(unittest.TestCase):
     def test_chimp(self):
         chain = Align.read("Blat/panTro5ToPanTro6.over.chain", "chain")
         alignment = Align.read("Blat/est.panTro5.psl", "psl")
-        self.assertEqual(chain.target.id, alignment.target.id)
-        self.assertEqual(len(chain.target.seq), len(alignment.target.seq))
+        assert chain.target.id == alignment.target.id
+        assert len(chain.target.seq) == len(alignment.target.seq)
         chain = chain[::-1]
         record = SeqIO.read("Blat/est.fa", "fasta")
-        self.assertEqual(record.id, alignment.query.id)
-        self.assertEqual(len(record.seq), len(alignment.query.seq))
+        assert record.id == alignment.query.id
+        assert len(record.seq) == len(alignment.query.seq)
         alignment.query = record.seq
         record = SeqIO.read("Blat/panTro5.fa", "fasta")
         chromosome, start_end = record.id.split(":")
@@ -920,14 +779,12 @@ $"""
         self.assertRegex(str(alignment).replace("|", ":").replace(".", "X"), text)
         lifted_alignment = chain.map(alignment)
         # fmt: off
-        self.assertTrue(
-            np.array_equal(lifted_alignment.coordinates,
+        assert np.array_equal(lifted_alignment.coordinates,
                            np.array([[111982717, 111982775, 111987921,
                                       111988073, 112009200, 112009302],
                                      [       32,        90,        90,
                                             242,       242,       344]])
                           )
-        )
         # fmt: on
         record = SeqIO.read("Blat/panTro6.fa", "fasta")
         chromosome, start_end = record.id.split(":")
@@ -994,5 +851,4 @@ $"""
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

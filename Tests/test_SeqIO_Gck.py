@@ -7,6 +7,7 @@
 """Tests for the SeqIO Gck module."""
 
 import unittest
+import pytest
 from io import BytesIO
 
 from Bio import SeqIO
@@ -21,22 +22,22 @@ class TestGckWithArtificialData(unittest.TestCase):
         """Read an artificial sample file."""
         h = BytesIO(self.buffer)
         record = SeqIO.read(h, "gck")
-        self.assertEqual("ACGTACGTACGT", record.seq)
-        self.assertEqual("Sample construct", record.description)
-        self.assertEqual("linear", record.annotations["topology"])
-        self.assertEqual(2, len(record.features))
+        assert "ACGTACGTACGT" == record.seq
+        assert "Sample construct" == record.description
+        assert "linear" == record.annotations["topology"]
+        assert 2 == len(record.features)
 
-        self.assertEqual(2, record.features[0].location.start)
-        self.assertEqual(6, record.features[0].location.end)
-        self.assertEqual(1, record.features[0].location.strand)
-        self.assertEqual("misc_feature", record.features[0].type)
-        self.assertEqual("FeatureA", record.features[0].qualifiers["label"][0])
+        assert 2 == record.features[0].location.start
+        assert 6 == record.features[0].location.end
+        assert 1 == record.features[0].location.strand
+        assert "misc_feature" == record.features[0].type
+        assert "FeatureA" == record.features[0].qualifiers["label"][0]
 
-        self.assertEqual(7, record.features[1].location.start)
-        self.assertEqual(11, record.features[1].location.end)
-        self.assertEqual(-1, record.features[1].location.strand)
-        self.assertEqual("CDS", record.features[1].type)
-        self.assertEqual("FeatureB", record.features[1].qualifiers["label"][0])
+        assert 7 == record.features[1].location.start
+        assert 11 == record.features[1].location.end
+        assert -1 == record.features[1].location.strand
+        assert "CDS" == record.features[1].type
+        assert "FeatureB" == record.features[1].qualifiers["label"][0]
 
         h.close()
 
@@ -52,29 +53,25 @@ class TestGckWithArtificialData(unittest.TestCase):
         """Read a file with incorrect length."""
         # Change the sequence length as indicated in the sequence packet
         h = self.munge_buffer(0x1C, [0x00, 0x00, 0x20, 0x15])
-        with self.assertRaisesRegex(ValueError, "Conflicting sequence length values"):
+        with pytest.raises(ValueError, match="Conflicting sequence length values"):
             SeqIO.read(h, "gck")
         h.close()
 
         # Change the sequence length as indicated in the features packet
         h = self.munge_buffer(0x36, [0x00, 0x00, 0x20, 0x15])
-        with self.assertRaisesRegex(ValueError, "Conflicting sequence length values"):
+        with pytest.raises(ValueError, match="Conflicting sequence length values"):
             SeqIO.read(h, "gck")
         h.close()
 
         # Change the number of features
         h = self.munge_buffer(0x3B, 0x30)
-        with self.assertRaisesRegex(
-            ValueError, "Features packet size inconsistent with number of features"
-        ):
+        with pytest.raises(ValueError, match="Features packet size inconsistent with number of features"):
             SeqIO.read(h, "gck")
         h.close()
 
         # Change the number of restriction sites
         h = self.munge_buffer(0x137, 0x30)
-        with self.assertRaisesRegex(
-            ValueError, "Sites packet size inconsistent with number of sites"
-        ):
+        with pytest.raises(ValueError, match="Sites packet size inconsistent with number of sites"):
             SeqIO.read(h, "gck")
         h.close()
 
@@ -83,13 +80,10 @@ class TestGckWithImproperHeader(unittest.TestCase):
     def test_read(self):
         """Read a file with an incomplete header."""
         stream = BytesIO(b"tiny")
-        with self.assertRaisesRegex(
-            ValueError, "Improper header, cannot read 24 bytes from stream"
-        ):
+        with pytest.raises(ValueError, match="Improper header, cannot read 24 bytes from stream"):
             SeqIO.read(stream, "gck")
         stream.close()
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

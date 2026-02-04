@@ -10,6 +10,7 @@
 """
 
 import unittest
+import pytest
 import warnings
 from http.client import HTTPMessage
 from unittest import mock
@@ -141,7 +142,7 @@ class TestURLConstruction(unittest.TestCase):
         try:
             with warnings.catch_warnings(record=True) as w:
                 Entrez._construct_params(params=None)
-                self.assertEqual(len(w), 1)
+                assert len(w) == 1
         finally:
             Entrez.email = email
 
@@ -162,14 +163,12 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.ecitmatch(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "ecitmatch.cgi")
+        assert base_url == URL_HEAD + "ecitmatch.cgi"
         query.pop("bdata")  # TODO
-        self.assertDictEqual(
-            query, {"retmode": ["xml"], "db": [variables["db"]], **QUERY_DEFAULTS}
-        )
+        assert query == {"retmode": ["xml"], "db": [variables["db"]], **QUERY_DEFAULTS}
 
     def test_construct_cgi_einfo(self):
         """Test constructed url for request to Entrez."""
@@ -177,11 +176,11 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.einfo()
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "einfo.fcgi")
-        self.assertDictEqual(query, QUERY_DEFAULTS)
+        assert base_url == URL_HEAD + "einfo.fcgi"
+        assert query == QUERY_DEFAULTS
 
     def test_construct_cgi_epost1(self):
         variables = {"db": "nuccore", "id": "186972394,160418"}
@@ -190,13 +189,11 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.epost(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "POST")
+        assert request.method == "POST"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "epost.fcgi")  # Params in POST data
-        self.assertDictEqual(
-            query, {"db": [variables["db"]], "id": [variables["id"]], **QUERY_DEFAULTS}
-        )
+        assert base_url == URL_HEAD + "epost.fcgi"  # Params in POST data
+        assert query == {"db": [variables["db"]], "id": [variables["id"]], **QUERY_DEFAULTS}
 
     def test_construct_cgi_epost2(self):
         variables = {"db": "nuccore", "id": ["160418", "160351"]}
@@ -205,19 +202,16 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.epost(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "POST")
+        assert request.method == "POST"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "epost.fcgi")  # Params in POST data
+        assert base_url == URL_HEAD + "epost.fcgi"  # Params in POST data
         check_request_ids(self, query, variables["id"])
-        self.assertDictEqual(
-            query,
-            {
+        assert query == {
                 "db": [variables["db"]],
                 "id": query["id"],
                 **QUERY_DEFAULTS,
-            },
-        )
+            }
 
     def test_construct_cgi_elink1(self):
         variables = {
@@ -233,20 +227,17 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.elink(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "elink.fcgi")
-        self.assertDictEqual(
-            query,
-            {
+        assert base_url == URL_HEAD + "elink.fcgi"
+        assert query == {
                 "cmd": [variables["cmd"]],
                 "db": [variables["db"]],
                 "dbfrom": [variables["dbfrom"]],
                 "id": [variables["id"]],  # UIDs joined in single string
                 **QUERY_DEFAULTS,
-            },
-        )
+            }
 
     def test_construct_cgi_elink2(self):
         """Commas: Link from protein to gene."""
@@ -260,19 +251,16 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.elink(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "elink.fcgi")
-        self.assertDictEqual(
-            query,
-            {
+        assert base_url == URL_HEAD + "elink.fcgi"
+        assert query == {
                 "db": [variables["db"]],
                 "dbfrom": [variables["dbfrom"]],
                 "id": [variables["id"]],  # UIDs joined in single string
                 **QUERY_DEFAULTS,
-            },
-        )
+            }
 
     def test_construct_cgi_elink3(self):
         """Multiple ID entries: Find one-to-one links from protein to gene."""
@@ -286,19 +274,16 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.elink(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "elink.fcgi")
-        self.assertDictEqual(
-            query,
-            {
+        assert base_url == URL_HEAD + "elink.fcgi"
+        assert query == {
                 "db": [variables["db"]],
                 "dbfrom": [variables["dbfrom"]],
                 "id": query["id"],  # UIDs in multiple separate "id" parameters
                 **QUERY_DEFAULTS,
-            },
-        )
+            }
 
     def test_construct_cgi_efetch(self):
         variables = {
@@ -311,19 +296,16 @@ class TestURLConstruction(unittest.TestCase):
             Entrez.efetch(**variables)
 
         request = get_patched_request(patched, self)
-        self.assertEqual(request.method, "GET")
+        assert request.method == "GET"
         base_url, query = deconstruct_request(request, self)
 
-        self.assertEqual(base_url, URL_HEAD + "efetch.fcgi")
-        self.assertDictEqual(
-            query,
-            {
+        assert base_url == URL_HEAD + "efetch.fcgi"
+        assert query == {
                 "db": [variables["db"]],
                 "id": [variables["id"]],
                 "retmode": [variables["retmode"]],
                 **QUERY_DEFAULTS,
-            },
-        )
+            }
 
     def test_default_params(self):
         """Test overriding default values for the "email", "api_key", and "tool" parameters."""
@@ -365,7 +347,7 @@ class TestURLConstruction(unittest.TestCase):
                     else:
                         expected[param] = [alt_value]
 
-                    self.assertDictEqual(query, expected)
+                    assert query == expected
 
     def test_has_api_key(self):
         """Test checking whether a Request object specifies an API key.
@@ -403,19 +385,19 @@ class TestURLConstruction(unittest.TestCase):
 
         # Single integers or strings should just be converted to string
         for id_ in ids:
-            self.assertEqual(Entrez._format_ids(id_), str(id_))
+            assert Entrez._format_ids(id_) == str(id_)
 
         # List:
-        self.assertEqual(Entrez._format_ids(ids), ids_formatted)
-        self.assertEqual(Entrez._format_ids(ids_str), ids_formatted)
+        assert Entrez._format_ids(ids) == ids_formatted
+        assert Entrez._format_ids(ids_str) == ids_formatted
         # Multiple IDs already joined by commas:
-        self.assertEqual(Entrez._format_ids(ids_formatted), ids_formatted)
+        assert Entrez._format_ids(ids_formatted) == ids_formatted
         # Other iterable types:
-        self.assertEqual(Entrez._format_ids(tuple(ids)), ids_formatted)
-        self.assertEqual(Entrez._format_ids(tuple(ids_str)), ids_formatted)
+        assert Entrez._format_ids(tuple(ids)) == ids_formatted
+        assert Entrez._format_ids(tuple(ids_str)) == ids_formatted
         # As set, compare up to reordering
-        self.assertCountEqual(Entrez._format_ids(set(ids)).split(","), ids_str)
-        self.assertCountEqual(Entrez._format_ids(set(ids_str)).split(","), ids_str)
+        assert sorted(Entrez._format_ids(set(ids)).split(",")) == sorted(ids_str)
+        assert sorted(Entrez._format_ids(set(ids_str)).split(",")) == sorted(ids_str)
 
 
 class CustomDirectoryTest(unittest.TestCase):
@@ -440,19 +422,14 @@ class CustomDirectoryTest(unittest.TestCase):
         Parser.DataHandler.directory = tmpdir
 
         # Confirm that the two temp directories are named what we want.
-        self.assertEqual(
-            handler.local_dtd_dir, os.path.join(tmpdir, "Bio", "Entrez", "DTDs")
-        )
-        self.assertEqual(
-            handler.local_xsd_dir, os.path.join(tmpdir, "Bio", "Entrez", "XSDs")
-        )
+        assert handler.local_dtd_dir == os.path.join(tmpdir, "Bio", "Entrez", "DTDs")
+        assert handler.local_xsd_dir == os.path.join(tmpdir, "Bio", "Entrez", "XSDs")
 
         # And that they were created.
-        self.assertTrue(os.path.isdir(handler.local_dtd_dir))
-        self.assertTrue(os.path.isdir(handler.local_xsd_dir))
+        assert os.path.isdir(handler.local_dtd_dir)
+        assert os.path.isdir(handler.local_xsd_dir)
         shutil.rmtree(tmpdir)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

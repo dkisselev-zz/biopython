@@ -7,6 +7,7 @@
 
 import os
 import unittest
+import pytest
 
 from seq_tests_common import SeqRecordTestBaseClass
 
@@ -25,39 +26,29 @@ class ParserTests(SeqRecordTestBaseClass):
         datafile = os.path.join("SwissProt", filename)
 
         with open(datafile) as handle:
-            with self.assertRaises(ValueError) as cm:
+            with pytest.raises(ValueError) as cm:
                 SeqIO.read(handle, "uniprot-xml")
-            self.assertEqual(
-                str(cm.exception), "UniProt XML files must be opened in binary mode."
-            )
+            assert str(cm.value) == "UniProt XML files must be opened in binary mode."
 
         with open(datafile, "rb") as handle:
             seq_record = SeqIO.read(handle, "uniprot-xml")
 
-        self.assertIsInstance(seq_record, SeqRecord)
+        assert isinstance(seq_record, SeqRecord)
 
         # test a couple of things on the record -- this is not exhaustive
-        self.assertEqual(seq_record.id, "Q91G55")
-        self.assertEqual(seq_record.name, "043L_IIV6")
-        self.assertEqual(seq_record.description, "Uncharacterized protein 043L")
-        self.assertEqual(
-            repr(seq_record.seq),
-            "Seq('MDLINNKLNIEIQKFCLDLEKKYNINYNNLIDLWFNKESTERLIKCEVNLENKI...IPI')",
-        )
+        assert seq_record.id == "Q91G55"
+        assert seq_record.name == "043L_IIV6"
+        assert seq_record.description == "Uncharacterized protein 043L"
+        assert repr(seq_record.seq) == "Seq('MDLINNKLNIEIQKFCLDLEKKYNINYNNLIDLWFNKESTERLIKCEVNLENKI...IPI')"
 
         # self.assertEqual(seq_record.accessions, ['Q91G55']) #seq_record.accessions does not exist
         # self.assertEqual(seq_record.organism_classification, ['Eukaryota', 'Metazoa', 'Chordata', 'Craniata', 'Vertebrata', 'Mammalia', 'Eutheria', 'Primates', 'Catarrhini', 'Hominidae', 'Homo'])
         # self.assertEqual(record.seqinfo, (348, 39676, '75818910'))
 
-        self.assertEqual(len(seq_record.features), 1)
-        self.assertEqual(
-            repr(seq_record.features[0]),
-            "SeqFeature(SimpleLocation(ExactPosition(0), ExactPosition(116)), type='chain', id='PRO_0000377969', qualifiers=...)",
-        )
+        assert len(seq_record.features) == 1
+        assert repr(seq_record.features[0]) == "SeqFeature(SimpleLocation(ExactPosition(0), ExactPosition(116)), type='chain', id='PRO_0000377969', qualifiers=...)"
 
-        self.assertEqual(
-            str(seq_record.features[0]),
-            "\n".join(
+        assert str(seq_record.features[0]) == "\n".join(
                 [
                     "type: chain",
                     "location: [0:116]",
@@ -68,52 +59,29 @@ class ParserTests(SeqRecordTestBaseClass):
                     "    Key: type, Value: chain",
                     "",
                 ]
-            ),
-        )
+            )
 
-        self.assertEqual(len(seq_record.annotations["references"]), 2)
-        self.assertEqual(
-            seq_record.annotations["references"][0].authors,
-            "Jakob N.J., Mueller K., Bahr U., Darai G.",
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][0].title,
-            "Analysis of the first complete DNA sequence of an invertebrate iridovirus: coding strategy of the genome of Chilo iridescent virus.",
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][0].journal,
-            "Virology 286:182-196(2001)",
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][0].comment,
-            "journal article | 2001 | Scope: NUCLEOTIDE SEQUENCE [LARGE SCALE GENOMIC DNA] | ",
-        )
+        assert len(seq_record.annotations["references"]) == 2
+        assert seq_record.annotations["references"][0].authors == "Jakob N.J., Mueller K., Bahr U., Darai G."
+        assert seq_record.annotations["references"][0].title == "Analysis of the first complete DNA sequence of an invertebrate iridovirus: coding strategy of the genome of Chilo iridescent virus."
+        assert seq_record.annotations["references"][0].journal == "Virology 286:182-196(2001)"
+        assert seq_record.annotations["references"][0].comment == "journal article | 2001 | Scope: NUCLEOTIDE SEQUENCE [LARGE SCALE GENOMIC DNA] | "
 
-        self.assertEqual(len(seq_record.dbxrefs), 11)
-        self.assertEqual(seq_record.dbxrefs[0], "DOI:10.1006/viro.2001.0963")
+        assert len(seq_record.dbxrefs) == 11
+        assert seq_record.dbxrefs[0] == "DOI:10.1006/viro.2001.0963"
 
-        self.assertEqual(seq_record.annotations["sequence_length"], 116)
-        self.assertEqual(
-            seq_record.annotations["sequence_checksum"], "4A29B35FB716523C"
-        )
-        self.assertEqual(seq_record.annotations["modified"], "2009-07-07")
-        self.assertEqual(seq_record.annotations["accessions"], ["Q91G55"])
-        self.assertEqual(
-            seq_record.annotations["taxonomy"],
-            ["Viruses", "dsDNA viruses, no RNA stage", "Iridoviridae", "Iridovirus"],
-        )
-        self.assertEqual(seq_record.annotations["sequence_mass"], 13673)
-        self.assertEqual(seq_record.annotations["dataset"], "Swiss-Prot")
-        self.assertEqual(seq_record.annotations["gene_name_ORF"], ["IIV6-043L"])
-        self.assertEqual(seq_record.annotations["version"], 21)
-        self.assertEqual(seq_record.annotations["sequence_modified"], "2001-12-01")
-        self.assertEqual(
-            seq_record.annotations["keywords"],
-            ["Complete proteome", "Virus reference strain"],
-        )
-        self.assertEqual(
-            seq_record.annotations["organism_host"],
-            [
+        assert seq_record.annotations["sequence_length"] == 116
+        assert seq_record.annotations["sequence_checksum"] == "4A29B35FB716523C"
+        assert seq_record.annotations["modified"] == "2009-07-07"
+        assert seq_record.annotations["accessions"] == ["Q91G55"]
+        assert seq_record.annotations["taxonomy"] == ["Viruses", "dsDNA viruses, no RNA stage", "Iridoviridae", "Iridovirus"]
+        assert seq_record.annotations["sequence_mass"] == 13673
+        assert seq_record.annotations["dataset"] == "Swiss-Prot"
+        assert seq_record.annotations["gene_name_ORF"] == ["IIV6-043L"]
+        assert seq_record.annotations["version"] == 21
+        assert seq_record.annotations["sequence_modified"] == "2001-12-01"
+        assert seq_record.annotations["keywords"] == ["Complete proteome", "Virus reference strain"]
+        assert seq_record.annotations["organism_host"] == [
                 "Acheta domesticus",
                 "House cricket",
                 "Chilo suppressalis",
@@ -123,22 +91,13 @@ class ParserTests(SeqRecordTestBaseClass):
                 "Gryllus campestris",
                 "Spodoptera frugiperda",
                 "Fall armyworm",
-            ],
-        )
-        self.assertEqual(seq_record.annotations["created"], "2009-06-16")
-        self.assertEqual(
-            seq_record.annotations["organism_name"], ["Chilo iridescent virus"]
-        )
-        self.assertEqual(
-            seq_record.annotations["organism"],
-            "Invertebrate iridescent virus 6 (IIV-6)",
-        )
-        self.assertEqual(
-            seq_record.annotations["recommendedName_fullName"],
-            ["Uncharacterized protein 043L"],
-        )
-        self.assertEqual(seq_record.annotations["sequence_version"], 1)
-        self.assertEqual(seq_record.annotations["proteinExistence"], ["Predicted"])
+            ]
+        assert seq_record.annotations["created"] == "2009-06-16"
+        assert seq_record.annotations["organism_name"] == ["Chilo iridescent virus"]
+        assert seq_record.annotations["organism"] == "Invertebrate iridescent virus 6 (IIV-6)"
+        assert seq_record.annotations["recommendedName_fullName"] == ["Uncharacterized protein 043L"]
+        assert seq_record.annotations["sequence_version"] == 1
+        assert seq_record.annotations["proteinExistence"] == ["Predicted"]
 
     def test_uni003(self):
         """Parsing Uniprot file uni003."""
@@ -148,53 +107,35 @@ class ParserTests(SeqRecordTestBaseClass):
         datafile = os.path.join("SwissProt", filename)
 
         with open(datafile) as handle:
-            with self.assertRaises(ValueError) as cm:
+            with pytest.raises(ValueError) as cm:
                 SeqIO.read(handle, "uniprot-xml")
-            self.assertEqual(
-                str(cm.exception), "UniProt XML files must be opened in binary mode."
-            )
+            assert str(cm.value) == "UniProt XML files must be opened in binary mode."
 
         with open(datafile, "rb") as handle:
             seq_record = SeqIO.read(handle, "uniprot-xml")
 
-        self.assertIsInstance(seq_record, SeqRecord)
+        assert isinstance(seq_record, SeqRecord)
 
         # test general record entries
-        self.assertEqual(seq_record.id, "O44185")
-        self.assertEqual(seq_record.name, "FLP13_CAEEL")
-        self.assertEqual(seq_record.description, "FMRFamide-like neuropeptides 13")
-        self.assertEqual(
-            repr(seq_record.seq),
-            "Seq('MMTSLLTISMFVVAIQAFDSSEIRMLDEQYDTKNPFFQFLENSKRSDRPTRAMD...GRK')",
-        )
+        assert seq_record.id == "O44185"
+        assert seq_record.name == "FLP13_CAEEL"
+        assert seq_record.description == "FMRFamide-like neuropeptides 13"
+        assert repr(seq_record.seq) == "Seq('MMTSLLTISMFVVAIQAFDSSEIRMLDEQYDTKNPFFQFLENSKRSDRPTRAMD...GRK')"
 
-        self.assertEqual(len(seq_record.annotations["references"]), 7)
-        self.assertEqual(
-            seq_record.annotations["references"][5].authors, "Kim K., Li C."
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][5].title,
-            "Expression and regulation of an FMRFamide-related "
-            "neuropeptide gene family in Caenorhabditis elegans.",
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][5].journal,
-            "J. Comp. Neurol. 475:540-550(2004)",
-        )
-        self.assertEqual(
-            seq_record.annotations["references"][5].comment,
-            "journal article | 2004 | Scope: TISSUE SPECIFICITY, "
-            "DEVELOPMENTAL STAGE | ",
-        )
+        assert len(seq_record.annotations["references"]) == 7
+        assert seq_record.annotations["references"][5].authors == "Kim K., Li C."
+        assert (seq_record.annotations["references"][5].title == "Expression and regulation of an FMRFamide-related "
+            "neuropeptide gene family in Caenorhabditis elegans.")
+        assert seq_record.annotations["references"][5].journal == "J. Comp. Neurol. 475:540-550(2004)"
+        assert (seq_record.annotations["references"][5].comment == "journal article | 2004 | Scope: TISSUE SPECIFICITY, "
+            "DEVELOPMENTAL STAGE | ")
 
-        self.assertEqual(seq_record.annotations["accessions"], ["O44185"])
-        self.assertEqual(seq_record.annotations["created"], "2004-05-10")
-        self.assertEqual(seq_record.annotations["dataset"], "Swiss-Prot")
-        self.assertEqual(seq_record.annotations["gene_name_ORF"], ["F33D4.3"])
-        self.assertEqual(seq_record.annotations["gene_name_primary"], "flp-13")
-        self.assertEqual(
-            seq_record.annotations["keywords"],
-            [
+        assert seq_record.annotations["accessions"] == ["O44185"]
+        assert seq_record.annotations["created"] == "2004-05-10"
+        assert seq_record.annotations["dataset"] == "Swiss-Prot"
+        assert seq_record.annotations["gene_name_ORF"] == ["F33D4.3"]
+        assert seq_record.annotations["gene_name_primary"] == "flp-13"
+        assert seq_record.annotations["keywords"] == [
                 "Amidation",
                 "Cleavage on pair of basic residues",
                 "Complete proteome",
@@ -204,28 +145,18 @@ class ParserTests(SeqRecordTestBaseClass):
                 "Repeat",
                 "Secreted",
                 "Signal",
-            ],
-        )
-        self.assertEqual(seq_record.annotations["modified"], "2012-11-28")
-        self.assertEqual(seq_record.annotations["organism"], "Caenorhabditis elegans")
-        self.assertEqual(
-            seq_record.annotations["proteinExistence"], ["evidence at protein level"]
-        )
-        self.assertEqual(
-            seq_record.annotations["recommendedName_fullName"],
-            ["FMRFamide-like neuropeptides 13"],
-        )
-        self.assertEqual(seq_record.annotations["sequence_length"], 160)
-        self.assertEqual(
-            seq_record.annotations["sequence_checksum"], "BE4C24E9B85FCD11"
-        )
-        self.assertEqual(seq_record.annotations["sequence_mass"], 17736)
-        self.assertEqual(seq_record.annotations["sequence_modified"], "1998-06-01")
-        self.assertEqual(seq_record.annotations["sequence_precursor"], "true")
-        self.assertEqual(seq_record.annotations["sequence_version"], 1)
-        self.assertEqual(
-            seq_record.annotations["taxonomy"],
-            [
+            ]
+        assert seq_record.annotations["modified"] == "2012-11-28"
+        assert seq_record.annotations["organism"] == "Caenorhabditis elegans"
+        assert seq_record.annotations["proteinExistence"] == ["evidence at protein level"]
+        assert seq_record.annotations["recommendedName_fullName"] == ["FMRFamide-like neuropeptides 13"]
+        assert seq_record.annotations["sequence_length"] == 160
+        assert seq_record.annotations["sequence_checksum"] == "BE4C24E9B85FCD11"
+        assert seq_record.annotations["sequence_mass"] == 17736
+        assert seq_record.annotations["sequence_modified"] == "1998-06-01"
+        assert seq_record.annotations["sequence_precursor"] == "true"
+        assert seq_record.annotations["sequence_version"] == 1
+        assert seq_record.annotations["taxonomy"] == [
                 "Eukaryota",
                 "Metazoa",
                 "Ecdysozoa",
@@ -236,23 +167,14 @@ class ParserTests(SeqRecordTestBaseClass):
                 "Rhabditidae",
                 "Peloderinae",
                 "Caenorhabditis",
-            ],
-        )
-        self.assertEqual(seq_record.annotations["type"], ["ECO:0000006", "ECO:0000001"])
-        self.assertEqual(seq_record.annotations["version"], 74)
+            ]
+        assert seq_record.annotations["type"] == ["ECO:0000006", "ECO:0000001"]
+        assert seq_record.annotations["version"] == 74
 
         # test comment entries
-        self.assertEqual(
-            seq_record.annotations["comment_allergen"],
-            ["Causes an allergic reaction in human."],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_alternativeproducts_isoform"],
-            ["Q8W1X2-1", "Q8W1X2-2"],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_biotechnology"],
-            [
+        assert seq_record.annotations["comment_allergen"] == ["Causes an allergic reaction in human."]
+        assert seq_record.annotations["comment_alternativeproducts_isoform"] == ["Q8W1X2-1", "Q8W1X2-2"]
+        assert seq_record.annotations["comment_biotechnology"] == [
                 "Green fluorescent protein has been engineered to "
                 "produce a vast number of variously colored "
                 "mutants, fusion proteins, and biosensors. "
@@ -273,44 +195,29 @@ class ParserTests(SeqRecordTestBaseClass):
                 "fluids. The measurement process relies on the "
                 "detection of the blinking of GFP using "
                 "fluorescence correlation spectroscopy.",
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_catalyticactivity"],
-            [
+            ]
+        assert seq_record.annotations["comment_catalyticactivity"] == [
                 "ATP + acetyl-CoA + HCO(3)(-) = ADP + phosphate + malonyl-CoA.",
                 "ATP + biotin-[carboxyl-carrier-protein] "
                 "+ CO(2) = ADP + phosphate + "
                 "carboxy-biotin-[carboxyl-carrier-protein].",
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_caution"],
-            [
+            ]
+        assert seq_record.annotations["comment_caution"] == [
                 "Could be the product of a pseudogene. The "
                 "existence of a transcript at this locus is "
                 "supported by only one sequence submission "
                 "(PubMed:2174397)."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_cofactor"],
-            [
+            ]
+        assert seq_record.annotations["comment_cofactor"] == [
                 "Biotin (By similarity).",
                 "Binds 2 manganese ions per subunit (By similarity).",
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_developmentalstage"],
-            [
+            ]
+        assert seq_record.annotations["comment_developmentalstage"] == [
                 "Expressed from the comma stage of embryogenesis, "
                 "during all larval stages, and in low levels in "
                 "adults."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_disease"],
-            [
+            ]
+        assert seq_record.annotations["comment_disease"] == [
                 "Defects in MC2R are the cause of glucocorticoid "
                 "deficiency type 1 (GCCD1) [MIM:202200]; also known "
                 "as familial glucocorticoid deficiency type 1 "
@@ -319,78 +226,45 @@ class ParserTests(SeqRecordTestBaseClass):
                 "adrenocorticotropin (ACTH). It is characterized by "
                 "progressive primary adrenal insufficiency, without "
                 "mineralocorticoid deficiency."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_disruptionphenotype"],
-            [
+            ]
+        assert seq_record.annotations["comment_disruptionphenotype"] == [
                 "Mice display impaired B-cell development which "
                 "does not progress pass the progenitor stage."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_domain"],
-            [
+            ]
+        assert seq_record.annotations["comment_domain"] == [
                 "Two regions, an N-terminal (aa 96-107) and a "
                 "C-terminal (aa 274-311) are required for binding "
                 "FGF2."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_enzymeregulation"],
-            [
+            ]
+        assert seq_record.annotations["comment_enzymeregulation"] == [
                 "By phosphorylation. The catalytic activity is "
                 "inhibited by soraphen A, a polyketide isolated "
                 "from the myxobacterium Sorangium cellulosum and "
                 "a potent inhibitor of fungal growth."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_function"],
-            [
+            ]
+        assert seq_record.annotations["comment_function"] == [
                 "FMRFamides and FMRFamide-like peptides are "
                 "neuropeptides. AADGAPLIRF-amide and "
                 "APEASPFIRF-amide inhibit muscle tension in somatic "
                 "muscle. APEASPFIRF-amide is a potent inhibitor of "
                 "the activity of dissected pharyngeal myogenic "
                 "muscle system."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_induction"],
-            [
+            ]
+        assert seq_record.annotations["comment_induction"] == [
                 "Repressed in presence of fatty acids. Repressed "
                 "3-fold by lipid precursors, inositol and "
                 "choline, and also controlled by regulatory "
                 "factors INO2, INO4 and OPI1."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_interaction_intactId"],
-            ["EBI-356720", "EBI-746969", "EBI-720116"],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_massspectrometry"],
-            ["88..98:1032|MALDI", "100..110:1133.7|MALDI"],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_miscellaneous"],
-            ["Present with 20200 molecules/cell in log phase SD medium."],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_onlineinformation"],
-            ["NIEHS-SNPs@http://egp.gs.washington.edu/data/api5/"],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_pathway"],
-            [
+            ]
+        assert seq_record.annotations["comment_interaction_intactId"] == ["EBI-356720", "EBI-746969", "EBI-720116"]
+        assert seq_record.annotations["comment_massspectrometry"] == ["88..98:1032|MALDI", "100..110:1133.7|MALDI"]
+        assert seq_record.annotations["comment_miscellaneous"] == ["Present with 20200 molecules/cell in log phase SD medium."]
+        assert seq_record.annotations["comment_onlineinformation"] == ["NIEHS-SNPs@http://egp.gs.washington.edu/data/api5/"]
+        assert seq_record.annotations["comment_pathway"] == [
                 "Lipid metabolism; malonyl-CoA biosynthesis; "
                 "malonyl-CoA from acetyl-CoA: step 1/1."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_RNAediting"],
-            [
+            ]
+        assert seq_record.annotations["comment_RNAediting"] == [
                 "Partially edited. RNA editing generates receptor "
                 "isoforms that differ in their ability to interact "
                 "with the phospholipase C signaling cascade in a "
@@ -398,62 +272,36 @@ class ParserTests(SeqRecordTestBaseClass):
                 "processing event may contribute to the modulation "
                 "of serotonergic neurotransmission in the central "
                 "nervous system."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_PTM"],
-            ["Acetylation at Lys-251 impairs antiapoptotic function."],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_pharmaceutical"],
-            [
+            ]
+        assert seq_record.annotations["comment_PTM"] == ["Acetylation at Lys-251 impairs antiapoptotic function."]
+        assert seq_record.annotations["comment_pharmaceutical"] == [
                 "Could be used as a possible therapeutic agent for "
                 "treating rheumatoid arthritis."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_polymorphism"],
-            [
+            ]
+        assert seq_record.annotations["comment_polymorphism"] == [
                 "Position 23 is polymorphic; the frequencies in "
                 "unrelated Caucasians are 0.87 for Cys and 0.13 "
                 "for Ser."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_similarity"],
-            ["Belongs to the FARP (FMRFamide related peptide) family."],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_subcellularlocation_location"], ["Secreted"]
-        )
-        self.assertEqual(seq_record.annotations["comment_subunit"], ["Homodimer."])
-        self.assertEqual(
-            seq_record.annotations["comment_tissuespecificity"],
-            [
+            ]
+        assert seq_record.annotations["comment_similarity"] == ["Belongs to the FARP (FMRFamide related peptide) family."]
+        assert seq_record.annotations["comment_subcellularlocation_location"] == ["Secreted"]
+        assert seq_record.annotations["comment_subunit"] == ["Homodimer."]
+        assert seq_record.annotations["comment_tissuespecificity"] == [
                 "Each flp gene is expressed in a distinct set of "
                 "neurons. Flp-13 is expressed in the ASE sensory "
                 "neurons, the DD motor neurons, the 15, M3 and M5 "
                 "cholinergic pharyngeal motoneurons, and the ASG, "
                 "ASK and BAG neurons."
-            ],
-        )
-        self.assertEqual(
-            seq_record.annotations["comment_toxicdose"],
-            [
+            ]
+        assert seq_record.annotations["comment_toxicdose"] == [
                 "LD(50) is 50 ug/kg in mouse by "
                 "intracerebroventricular injection "
                 "and 600 ng/g in Blatella germanica."
-            ],
-        )
+            ]
 
-        self.assertEqual(
-            repr(seq_record.features[1]),
-            "SeqFeature(SimpleLocation(ExactPosition(17), ExactPosition(43)), type='propeptide', id='PRO_0000009556', qualifiers=...)",
-        )
+        assert repr(seq_record.features[1]) == "SeqFeature(SimpleLocation(ExactPosition(17), ExactPosition(43)), type='propeptide', id='PRO_0000009556', qualifiers=...)"
 
-        self.assertEqual(
-            str(seq_record.features[1]),
-            "\n".join(
+        assert str(seq_record.features[1]) == "\n".join(
                 [
                     "type: propeptide",
                     "location: [17:43]",
@@ -465,8 +313,7 @@ class ParserTests(SeqRecordTestBaseClass):
                     "    Key: type, Value: propeptide",
                     "",
                 ]
-            ),
-        )
+            )
 
     def test_sp016(self):
         """Parsing SwissProt file sp016."""
@@ -478,14 +325,14 @@ class ParserTests(SeqRecordTestBaseClass):
         with open(datafile) as handle:
             seq_record = SeqIO.read(handle, "swiss")
 
-        self.assertIsInstance(seq_record, SeqRecord)
+        assert isinstance(seq_record, SeqRecord)
 
         # test ProteinExistence (the numerical value describing the evidence for the existence of the protein)
-        self.assertEqual(seq_record.annotations["protein_existence"], 1)
+        assert seq_record.annotations["protein_existence"] == 1
         # test Sequence version
-        self.assertEqual(seq_record.annotations["sequence_version"], 1)
+        assert seq_record.annotations["sequence_version"] == 1
         # test Entry version
-        self.assertEqual(seq_record.annotations["entry_version"], 93)
+        assert seq_record.annotations["entry_version"] == 93
 
     def test_P60904(self):
         """Parsing SwissProt file P60904.txt."""
@@ -497,12 +344,12 @@ class ParserTests(SeqRecordTestBaseClass):
         with open(datafile) as handle:
             seq_record = SeqIO.read(handle, "swiss")
 
-        self.assertIsInstance(seq_record, SeqRecord)
+        assert isinstance(seq_record, SeqRecord)
 
         # test Sequence version
-        self.assertEqual(seq_record.annotations["sequence_version"], 1)
+        assert seq_record.annotations["sequence_version"] == 1
         # test Entry version
-        self.assertEqual(seq_record.annotations["entry_version"], 158)
+        assert seq_record.annotations["entry_version"] == 158
 
     def test_P62330_ligand(self):
         """Test parsing of <ligand> in UniProt XML (P62330)."""
@@ -510,9 +357,9 @@ class ParserTests(SeqRecordTestBaseClass):
         all_ligands = []
         for f in record.features:
             all_ligands.extend(f.qualifiers.get("ligands", []))
-        self.assertEqual(len(all_ligands), 5)
-        self.assertEqual(all_ligands[0]["name"], "GTP")
-        self.assertEqual(all_ligands[0]["db_ref"], "CHEBI:37565")
+        assert len(all_ligands) == 5
+        assert all_ligands[0]["name"] == "GTP"
+        assert all_ligands[0]["db_ref"] == "CHEBI:37565"
 
     def test_multiligand_binding_site(self):
         """Test parsing of binding site with multiple ligands in UniProt XML."""
@@ -522,27 +369,25 @@ class ParserTests(SeqRecordTestBaseClass):
             for f in record.features
             if f.type == "binding site" and "ligands" in f.qualifiers
         ]
-        self.assertTrue(sites, "No binding site with ligands found")
-        self.assertEqual(len(sites[0].qualifiers["ligands"]), 2)
+        assert sites, "No binding site with ligands found"
+        assert len(sites[0].qualifiers["ligands"]) == 2
         ligand_names = {lig["name"] for lig in sites[0].qualifiers["ligands"]}
-        self.assertIn("ATP", ligand_names)
-        self.assertIn("ADP", ligand_names)
+        assert "ATP" in ligand_names
+        assert "ADP" in ligand_names
 
     def compare_txt_xml(self, old, new):
         """Compare text and XML based parser output."""
-        self.assertEqual(old.id, new.id)
-        self.assertEqual(old.name, new.name)
-        self.assertEqual(len(old), len(new))
-        self.assertEqual(old.seq, new.seq)
+        assert old.id == new.id
+        assert old.name == new.name
+        assert len(old) == len(new)
+        assert old.seq == new.seq
         for key in set(old.annotations).intersection(new.annotations):
             if key in ["date"]:
                 # TODO - Why is this a list vs str?
                 continue
-            self.assertIsInstance(
-                old.annotations[key], type(new.annotations[key]), msg=f"key={key}"
-            )
+            assert isinstance(old.annotations[key], type(new.annotations[key])), f"key={key}"
             if key == "references":
-                self.assertEqual(len(old.annotations[key]), len(new.annotations[key]))
+                assert len(old.annotations[key]) == len(new.annotations[key])
                 for r1, r2 in zip(old.annotations[key], new.annotations[key]):
                     # Tweak for line breaks in plain text SwissProt
                     r1.title = r1.title.replace("- ", "-")
@@ -556,29 +401,15 @@ class ParserTests(SeqRecordTestBaseClass):
                         r1.journal = ""
                     self.compare_reference(r1, r2)
             elif key in ["organism"]:
-                self.assertTrue(
-                    old.annotations[key] == new.annotations[key]
-                    or old.annotations[key].startswith(new.annotations[key] + " ")
-                )
+                assert (old.annotations[key] == new.annotations[key]
+                    or old.annotations[key].startswith(new.annotations[key] + " "))
             elif isinstance(old.annotations[key], list):
-                self.assertEqual(
-                    sorted(old.annotations[key]), sorted(new.annotations[key])
-                )
+                assert sorted(old.annotations[key]) == sorted(new.annotations[key])
             else:
-                self.assertEqual(
-                    old.annotations[key], new.annotations[key], msg=f"key={key}"
-                )
-        self.assertEqual(
-            len(old.features),
-            len(new.features),
-            "Features in %s, %i vs %i" % (old.id, len(old.features), len(new.features)),
-        )
+                assert old.annotations[key] == new.annotations[key], f"key={key}"
+        assert len(old.features) == len(new.features), "Features in %s, %i vs %i" % (old.id, len(old.features), len(new.features))
         for f1, f2 in zip(old.features, new.features):
-            self.assertEqual(
-                repr(f1.location),
-                repr(f2.location),
-                f"{f1.location} {f1.type} vs {f2.location} {f2.type}",
-            )
+            assert repr(f1.location) == repr(f2.location), f"{f1.location} {f1.type} vs {f2.location} {f2.type}"
 
     def test_Q13639(self):
         """Compare SwissProt text and uniprot XML versions of Q13639."""
@@ -602,23 +433,17 @@ class ParserTests(SeqRecordTestBaseClass):
         self.compare_txt_xml(old, new)
         # TODO - Why the mismatch gene_name vs gene_name_primary?
         # TODO - Handle evidence codes on GN line (see GitHub isse #416)
-        self.assertEqual(
-            old.annotations["gene_name"],
-            [{"Name": "HvPIP2;8 {ECO:0000313|EMBL:BAN04711.1}"}],
-        )
-        self.assertEqual(new.annotations["gene_name_primary"], "HvPIP2;8")
-        self.assertEqual(old.name, "F2CXE6_HORVD")
-        self.assertEqual(new.name, "F2CXE6_HORVD")
+        assert old.annotations["gene_name"] == [{"Name": "HvPIP2;8 {ECO:0000313|EMBL:BAN04711.1}"}]
+        assert new.annotations["gene_name_primary"] == "HvPIP2;8"
+        assert old.name == "F2CXE6_HORVD"
+        assert new.name == "F2CXE6_HORVD"
 
     def test_P84001(self):
         """Parse mass spec structured comment with unknown loc."""
         xml = list(SeqIO.parse("SwissProt/P84001.xml", "uniprot-xml"))[0]
-        self.assertEqual(xml.id, "P84001")
-        self.assertEqual(len(xml.annotations["comment_massspectrometry"]), 1)
-        self.assertEqual(
-            xml.annotations["comment_massspectrometry"][0],
-            "undefined:9571|Electrospray",
-        )
+        assert xml.id == "P84001"
+        assert len(xml.annotations["comment_massspectrometry"]) == 1
+        assert xml.annotations["comment_massspectrometry"][0] == "undefined:9571|Electrospray"
 
     def test_multi_ex(self):
         """Compare SwissProt text and uniprot XML versions of several examples."""
@@ -627,13 +452,13 @@ class ParserTests(SeqRecordTestBaseClass):
         fas_list = list(SeqIO.parse("SwissProt/multi_ex.fasta", "fasta"))
         with open("SwissProt/multi_ex.list") as handle:
             ids = [x.strip() for x in handle]
-        self.assertEqual(len(txt_list), len(ids))
-        self.assertEqual(len(txt_list), len(fas_list))
-        self.assertEqual(len(txt_list), len(xml_list))
+        assert len(txt_list) == len(ids)
+        assert len(txt_list) == len(fas_list)
+        assert len(txt_list) == len(xml_list)
         for txt, xml, fas, id in zip(txt_list, xml_list, fas_list, ids):
-            self.assertEqual(txt.id, id)
-            self.assertIn(txt.id, fas.id.split("|"))
-            self.assertEqual(txt.seq, fas.seq)
+            assert txt.id == id
+            assert txt.id in fas.id.split("|")
+            assert txt.seq == fas.seq
             self.compare_txt_xml(txt, xml)
 
     def test_multi_ex_index(self):
@@ -644,8 +469,8 @@ class ParserTests(SeqRecordTestBaseClass):
             ids = [x.strip() for x in handle]
         txt_index = SeqIO.index("SwissProt/multi_ex.txt", "swiss")
         xml_index = SeqIO.index("SwissProt/multi_ex.xml", "uniprot-xml")
-        self.assertEqual(sorted(txt_index), sorted(ids))
-        self.assertEqual(sorted(xml_index), sorted(ids))
+        assert sorted(txt_index) == sorted(ids)
+        assert sorted(xml_index) == sorted(ids)
         # Check SeqIO.parse() versus SeqIO.index() for plain text "swiss"
         for old in txt_list:
             new = txt_index[old.id]
@@ -661,10 +486,9 @@ class ParserTests(SeqRecordTestBaseClass):
         """Checks if parser supports new XML Element (submittedName)."""
         with open("SwissProt/R5HY77.xml", "rb") as handle:
             for entry in SeqIO.parse(handle, "uniprot-xml"):
-                self.assertEqual(entry.id, "R5HY77")
-                self.assertEqual(entry.description, "Elongation factor Ts")
+                assert entry.id == "R5HY77"
+                assert entry.description == "Elongation factor Ts"
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

@@ -15,20 +15,15 @@ import os
 import random
 import sys
 import unittest
+import pytest
 import warnings
 from io import StringIO
 
 from Bio import BiopythonWarning
-from Bio import MissingPythonDependencyError
 
-try:
-    # reportlab
-    from reportlab.lib import colors
-except ImportError:
-    raise MissingPythonDependencyError(
-        "Install reportlab if you want to use Bio.Graphics."
-    ) from None
-
+pytest.importorskip("reportlab")
+# reportlab
+from reportlab.lib import colors
 # local stuff
 from Bio.Graphics import BasicChromosome
 from Bio.Graphics.DisplayRepresentation import ChromosomeCounts
@@ -244,25 +239,13 @@ class OrganismGraphicTest(unittest.TestCase):
         properties = new_stdout.getvalue()
         sys.stdout = save_stdout
 
-        self.assertIn(
-            expected_string,
-            properties,
-            f"Unexpected results from dumpProperties: \n {properties}",
-        )
+        assert expected_string in properties, f"Unexpected results from dumpProperties: \n {properties}"
 
         properties = test_widget.getProperties()
-        self.assertEqual(
-            properties["label_size"],
-            6,
-            f"Unexpected results from getProperties: {properties}",
-        )
+        assert properties["label_size"] == 6, f"Unexpected results from getProperties: {properties}"
 
         test_widget.setProperties({"start_x_position": 12})
-        self.assertEqual(
-            test_widget.start_x_position,
-            12,
-            f"setProperties doesn't seem to work right: {test_widget.start_x_position}",
-        )
+        assert test_widget.start_x_position == 12, f"setProperties doesn't seem to work right: {test_widget.start_x_position}"
 
 
 class OrganismSubAnnotationsTest(unittest.TestCase):
@@ -424,28 +407,30 @@ class ChromosomeCountTest(unittest.TestCase):
         """Add counts to specific chromosome segments."""
         self.count_display.add_count(self.names[1])
         self.count_display.add_count(self.names[2], 5)
-        self.assertRaises(KeyError, self.count_display.add_count, "Non-existent")
+        with pytest.raises(KeyError):
+            self.count_display.add_count("Non-existent")
 
     def test_add_label(self):
         """Add labels to chromosome segments."""
         self.count_display.add_label(self.names[1], "Rules")
-        self.assertRaises(
-            KeyError, self.count_display.add_label, "Non-existent", "elephant"
-        )
+        with pytest.raises(KeyError):
+            self.count_display.add_label("Non-existent", "elephant")
 
     def test_set_scale(self):
         """Set the scale for a chromosome segment."""
         self.count_display.set_scale(self.names[1], 1.5)
-        self.assertRaises(KeyError, self.count_display.set_scale, "Non-existent", 5)
+        with pytest.raises(KeyError):
+            self.count_display.set_scale("Non-existent", 5)
 
     def test_color_from_count(self):
         """Retrieve a color from a count number with the default color scheme."""
         test_color = self.count_display._color_from_count(3)
-        self.assertEqual(test_color, colors.blue)
+        assert test_color == colors.blue
 
         test_color = self.count_display._color_from_count(9)
-        self.assertEqual(test_color, colors.red)
-        self.assertRaises(ValueError, self.count_display._color_from_count, 200)
+        assert test_color == colors.red
+        with pytest.raises(ValueError):
+            self.count_display._color_from_count(200)
 
     def test_fill_chromosome(self):
         """Test filling out the information on a chromosome."""
@@ -469,18 +454,9 @@ class ChromosomeCountTest(unittest.TestCase):
 
         seg_info = self.count_display.get_segment_info()
 
-        self.assertEqual(
-            seg_info[test_count_num][0],
-            test_count_value,
-            "Did not set and retrieve counts correctly.",
-        )
-        self.assertEqual(
-            seg_info[test_label_num][1],
-            test_label_value,
-            "Did not set and retrieve label correctly.",
-        )
+        assert seg_info[test_count_num][0] == test_count_value, "Did not set and retrieve counts correctly."
+        assert seg_info[test_label_num][1] == test_label_value, "Did not set and retrieve label correctly."
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

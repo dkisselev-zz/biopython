@@ -9,6 +9,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 
 from Bio.NMR import NOEtools
 from Bio.NMR import xpktools
@@ -23,47 +24,35 @@ class NmrTests(unittest.TestCase):
 
         self.peaklist = xpktools.Peaklist(self.xpk_file)
         # Peaklist attributes checks
-        self.assertEqual(self.peaklist.firstline, "label dataset sw sf ")
-        self.assertEqual(self.peaklist.axislabels, "H1 15N2 N15 ")
-        self.assertEqual(self.peaklist.dataset, "test.nv")
-        self.assertEqual(self.peaklist.sw, "{1571.86 } {1460.01 } {1460.00 }")
-        self.assertEqual(self.peaklist.sf, "{599.8230 } { 60.7860 } { 60.7860 }")
-        self.assertEqual(
-            self.peaklist.datalabels,
-            " H1.L  H1.P  H1.W  H1.B  H1.E  "
+        assert self.peaklist.firstline == "label dataset sw sf "
+        assert self.peaklist.axislabels == "H1 15N2 N15 "
+        assert self.peaklist.dataset == "test.nv"
+        assert self.peaklist.sw == "{1571.86 } {1460.01 } {1460.00 }"
+        assert self.peaklist.sf == "{599.8230 } { 60.7860 } { 60.7860 }"
+        assert (self.peaklist.datalabels == " H1.L  H1.P  H1.W  H1.B  H1.E  "
             "H1.J  15N2.L  15N2.P  15N2.W  15N2.B  "
             "15N2.E  15N2.J  N15.L  N15.P  N15.W  "
-            "N15.B  N15.E  N15.J  vol  int  stat ",
-        )
+            "N15.B  N15.E  N15.J  vol  int  stat ")
         # Peaklist data check
-        self.assertEqual(len(self.peaklist.data), 8)
-        self.assertEqual(
-            self.peaklist.data[0],
-            "0  3.hn   8.853   0.021   0.010   ++   "
+        assert len(self.peaklist.data) == 8
+        assert (self.peaklist.data[0] == "0  3.hn   8.853   0.021   0.010   ++   "
             "0.000   3.n   120.104   0.344   0.010   PP"
             "   0.000   3.n   120.117   0.344   0.010   "
-            "PP   0.000  1.18200 1.18200 0",
-        )
-        self.assertEqual(
-            self.peaklist.data[7],
-            "8  10.hn   7.663   0.021   0.010   ++   "
+            "PP   0.000  1.18200 1.18200 0")
+        assert (self.peaklist.data[7] == "8  10.hn   7.663   0.021   0.010   ++   "
             "0.000   10.n   118.341   0.324   0.010   "
             "+E   0.000   10.n   118.476   0.324   "
-            "0.010   +E   0.000  0.49840 0.49840 0",
-        )
+            "0.010   +E   0.000  0.49840 0.49840 0")
 
         # Peaklist residue dict check
-        self.assertEqual(len(self.peaklist.residue_dict("H1")["10"]), 1)
-        self.assertEqual(
-            self.peaklist.residue_dict("H1")["10"][0],
-            "8  10.hn   7.663   0.021"
+        assert len(self.peaklist.residue_dict("H1")["10"]) == 1
+        assert (self.peaklist.residue_dict("H1")["10"][0] == "8  10.hn   7.663   0.021"
             "   0.010   ++   0.000   "
             "10.n   118.341   0.324   "
             "0.010   +E   0.000   10.n"
             "   118.476   0.324   0.010"
             "   +E   0.000  0.49840 "
-            "0.49840 0",
-        )
+            "0.49840 0")
 
     def test_noetools(self):
         """Self test for NMR.NOEtools.
@@ -118,12 +107,11 @@ class NmrTests(unittest.TestCase):
             # Compare the content of the predicted output file with expected file
             pre_content = open(self.f_predicted).read()
             exp_content = open(self.xpk_expected).read()
-            self.assertEqual(pre_content, exp_content)
+            assert pre_content == exp_content
 
         finally:
             os.remove(self.f_predicted)
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])

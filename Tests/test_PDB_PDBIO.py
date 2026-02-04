@@ -16,6 +16,7 @@
 import os
 import tempfile
 import unittest
+import pytest
 import warnings
 
 from Bio import BiopythonWarning
@@ -48,7 +49,7 @@ class WriteTest(unittest.TestCase):
 
         # Write full model to temp file
         self.io.set_structure(struct1)
-        self.assertIs(parent, struct1.parent)
+        assert parent is struct1.parent
 
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
@@ -65,8 +66,8 @@ class WriteTest(unittest.TestCase):
                 struct2 = self.parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
 
-            self.assertEqual(len(struct2), 1)
-            self.assertEqual(nresidues, 158)
+            assert len(struct2) == 1
+            assert nresidues == 158
         finally:
             os.remove(filename)
 
@@ -86,7 +87,7 @@ class WriteTest(unittest.TestCase):
                 struct = self.parser.get_structure("1a8o", filename)
             serials = [a.serial_number for a in struct.get_atoms()]
             og_serials = list(range(1, len(serials) + 1))
-            self.assertEqual(og_serials, serials)
+            assert og_serials == serials
         finally:
             os.remove(filename)
 
@@ -102,11 +103,11 @@ class WriteTest(unittest.TestCase):
         self.io.set_structure(structure)
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
-        with self.assertRaises(PDBIOException):
+        with pytest.raises(PDBIOException):
             self.io.save(filename)
         structure[0]["AA"].id = "A"
         # Assert structure was removed along with exception
-        self.assertFalse(os.path.exists(filename))
+        assert not os.path.exists(filename)
 
         # Residue id
         het, ori, ins = structure[0]["A"][152].id
@@ -114,20 +115,20 @@ class WriteTest(unittest.TestCase):
         self.io.set_structure(structure)
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
-        with self.assertRaises(PDBIOException):
+        with pytest.raises(PDBIOException):
             self.io.save(filename)
         structure[0]["A"][10000].id = (het, ori, ins)
-        self.assertFalse(os.path.exists(filename))
+        assert not os.path.exists(filename)
 
         # Atom id
         structure[0]["A"][152]["CA"].serial_number = 1e6
         self.io.set_structure(structure)
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
-        with self.assertRaises(PDBIOException):
+        with pytest.raises(PDBIOException):
             # perserve_... must be True for exception to trigger
             self.io.save(filename, preserve_atom_numbering=True)
-        self.assertFalse(os.path.exists(filename))
+        assert not os.path.exists(filename)
 
     def test_pdbio_write_preserve_numbering(self):
         """Test writing PDB can preserve atom numbering."""
@@ -149,7 +150,7 @@ class WriteTest(unittest.TestCase):
             serials = [a.serial_number for a in struct.get_atoms()]
             og_serials = [a.serial_number for a in self.structure.get_atoms()]
 
-            self.assertEqual(og_serials, serials)
+            assert og_serials == serials
         finally:
             os.remove(filename)
 
@@ -163,7 +164,7 @@ class WriteTest(unittest.TestCase):
 
         # Write full model to temp file
         self.io.set_structure(residue1)
-        self.assertIs(parent, residue1.parent)
+        assert parent is residue1.parent
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
         try:
@@ -176,7 +177,7 @@ class WriteTest(unittest.TestCase):
                 warnings.simplefilter("ignore", PDBConstructionWarning)
                 struct2 = self.parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
         finally:
             os.remove(filename)
 
@@ -203,11 +204,11 @@ class WriteTest(unittest.TestCase):
                 warnings.simplefilter("ignore", PDBConstructionWarning)
                 struct2 = self.parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
 
             # Assert chain remained the same
             chain_id = [c.id for c in struct2.get_chains()][0]
-            self.assertEqual(chain_id, "X")
+            assert chain_id == "X"
         finally:
             os.remove(filename)
 
@@ -233,11 +234,11 @@ class WriteTest(unittest.TestCase):
                 warnings.simplefilter("ignore", PDBConstructionWarning)
                 struct2 = self.parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 1)
+            assert nresidues == 1
 
             # Assert chain is default: "A"
             chain_id = [c.id for c in struct2.get_chains()][0]
-            self.assertEqual(chain_id, "A")
+            assert chain_id == "A"
         finally:
             os.remove(filename)
 
@@ -253,17 +254,17 @@ class WriteTest(unittest.TestCase):
         # Write full model to temp file
         self.io.set_structure(res)
 
-        self.assertIs(parent, res.parent)
+        assert parent is res.parent
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
         try:
             self.io.save(filename)
             struct2 = self.parser.get_structure("res", filename)
             latoms = list(struct2.get_atoms())
-            self.assertEqual(len(latoms), 1)
-            self.assertEqual(latoms[0].name, "CA")
-            self.assertEqual(latoms[0].parent.resname, "DUM")
-            self.assertEqual(latoms[0].parent.parent.id, "A")
+            assert len(latoms) == 1
+            assert latoms[0].name == "CA"
+            assert latoms[0].parent.resname == "DUM"
+            assert latoms[0].parent.parent.id == "A"
         finally:
             os.remove(filename)
 
@@ -285,14 +286,14 @@ class WriteTest(unittest.TestCase):
         # Write to temp file
         self.io.set_structure(struct1)
 
-        self.assertIs(parent, struct1.parent)
+        assert parent is struct1.parent
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
         try:
             self.io.save(filename, CAonly())
             struct2 = self.parser.get_structure("1a8o", filename)
             nresidues = len(list(struct2.get_residues()))
-            self.assertEqual(nresidues, 70)
+            assert nresidues == 70
         finally:
             os.remove(filename)
 
@@ -309,12 +310,12 @@ class WriteTest(unittest.TestCase):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always", BiopythonWarning)
                 self.io.save(filename)
-                self.assertEqual(len(w), 1, w)
+                assert len(w) == 1, w
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", PDBConstructionWarning)
                 struct2 = self.parser.get_structure("test", filename)
             atoms = struct2[0]["A"][(" ", 152, " ")]
-            self.assertIsNone(atoms["N"].get_occupancy())
+            assert atoms["N"].get_occupancy() is None
         finally:
             os.remove(filename)
 
@@ -344,7 +345,7 @@ class WriteTest(unittest.TestCase):
                 "END\n",
                 "END   ",
             }
-            self.assertEqual(len(record_set), 0)
+            assert len(record_set) == 0
         finally:
             os.remove(filename)
 
@@ -352,10 +353,10 @@ class WriteTest(unittest.TestCase):
         """Preserve model serial numbers during I/O."""
 
         def confirm_numbering(struct):
-            self.assertEqual(len(struct), 3)
+            assert len(struct) == 3
             for idx, model in enumerate(struct):
-                self.assertEqual(model.serial_num, idx + 1)
-                self.assertEqual(model.serial_num, model.id + 1)
+                assert model.serial_num == idx + 1
+                assert model.serial_num == model.id + 1
 
         def confirm_single_end(fname):
             """Ensure there is only one END statement in multi-model files."""
@@ -364,8 +365,8 @@ class WriteTest(unittest.TestCase):
                 for iline, line in enumerate(handle):
                     if line.strip() == "END":
                         end_stment.append((line, iline))
-            self.assertEqual(len(end_stment), 1)  # Only one?
-            self.assertEqual(end_stment[0][1], iline)  # Last line of the file?
+            assert len(end_stment) == 1  # Only one?
+            assert end_stment[0][1] == iline  # Last line of the file?
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", PDBConstructionWarning)
@@ -420,9 +421,9 @@ class WriteTest(unittest.TestCase):
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
 
-        with self.assertRaises(PDBIOException):
+        with pytest.raises(PDBIOException):
             self.io.save(filename)
-        self.assertFalse(os.path.exists(filename))
+        assert not os.path.exists(filename)
 
     def test_pdbio_write_high_b_factor(self):
         def check_pdb(filename, expected_bfactor):
@@ -431,7 +432,7 @@ class WriteTest(unittest.TestCase):
                 warnings.simplefilter("ignore", PDBConstructionWarning)
                 struct = self.parser.get_structure("high_b", filename)
             atom = next(struct.get_atoms())
-            self.assertEqual(atom.bfactor, expected_bfactor)
+            assert atom.bfactor == expected_bfactor
 
         def test_b_factor(
             b_factor: float, expected_bfactor: float, assert_warn: bool = False
@@ -443,7 +444,7 @@ class WriteTest(unittest.TestCase):
             filenumber, filename = tempfile.mkstemp()
             os.close(filenumber)
             if assert_warn:
-                with self.assertWarns(PDBIOWarning):
+                with pytest.warns(PDBIOWarning):
                     self.io.save(filename)
             else:
                 self.io.save(filename)
@@ -474,7 +475,7 @@ class WriteTest(unittest.TestCase):
                 output_lines = f.read().splitlines()
             with open("PDB/1A8O.pdb") as f:
                 expected_lines = f.read().splitlines()
-            self.assertEqual(output_lines[296:304], expected_lines[635:643])
+            assert output_lines[296:304] == expected_lines[635:643]
         finally:
             os.remove(filename)
 
@@ -489,11 +490,11 @@ class WriteTest(unittest.TestCase):
         self.io.set_structure(structure)
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
-        with self.assertRaises(PDBIOException):
+        with pytest.raises(PDBIOException):
             self.io.save(filename)
 
         # Assert structure was removed along with exception
-        self.assertFalse(os.path.exists(filename))
+        assert not os.path.exists(filename)
 
     def test_pdbio_revert_write_on_file_handle_1(self):
         """Test removing file when exception is caught (handle)."""
@@ -506,12 +507,12 @@ class WriteTest(unittest.TestCase):
         filenumber, filename = tempfile.mkstemp()
         os.close(filenumber)
         with open(filename, "w") as handle:
-            with self.assertRaises(PDBIOException):
+            with pytest.raises(PDBIOException):
                 self.io.save(handle)
 
         # File should not be removed as we did not create it;
         # the user did.
-        self.assertTrue(os.path.exists(filename))
+        assert os.path.exists(filename)
 
     def test_pdbio_revert_write_on_file_handle_2(self):
         """Test removing file when exception is caught (handle + data)."""
@@ -527,19 +528,18 @@ class WriteTest(unittest.TestCase):
         os.close(filenumber)
         with open(filename, "w") as handle:
             handle.write(blurb)
-            with self.assertRaises(PDBIOException):
+            with pytest.raises(PDBIOException):
                 self.io.save(handle)
 
         # File should not be removed as we did not create it;
         # the user did.
-        self.assertTrue(os.path.exists(filename))
+        assert os.path.exists(filename)
 
         # File should contain the data we wrote previous to saving
         with open(filename) as handle:
             data = handle.read()
-            self.assertEqual(data, blurb)
+            assert data == blurb
 
 
 if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2)
-    unittest.main(testRunner=runner)
+    pytest.main([__file__, "-v"])
