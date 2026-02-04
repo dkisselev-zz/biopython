@@ -16,6 +16,8 @@ import doctest
 import sys
 import unittest
 
+import pytest
+
 import requires_internet
 
 from Bio import Entrez
@@ -33,6 +35,7 @@ Entrez.api_key = "5cfd4026f9df285d6cfc723c662d74bcbe09"
 URL_HEAD = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
 
 
+@pytest.mark.online
 class EntrezOnlineCase(unittest.TestCase):
     def test_no_api_key(self):
         """Test Entrez.read without API key."""

@@ -20,6 +20,8 @@ from io import BytesIO
 from io import StringIO
 from pathlib import Path
 
+import pytest
+
 from seq_tests_common import SeqRecordTestBaseClass
 from test_SeqIO import SeqIOTestBaseClass
 
@@ -27,6 +29,10 @@ from Bio import BiopythonParserWarning
 from Bio import SeqIO
 from Bio.SeqIO._index import _FormatToRandomAccess
 from Bio.SeqRecord import SeqRecord
+
+# This module has tests that explicitly change working directory
+# Use strict fixture to ensure CWD is properly enforced per-test
+pytestmark = pytest.mark.usefixtures("enforce_working_directory_strict")
 
 CUR_DIR = os.getcwd()
 

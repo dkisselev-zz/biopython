@@ -7,6 +7,8 @@
 # package.
 """Tests for the Bio.phenotype module's fitting functionality."""
 
+import pytest
+
 try:
     import numpy as np
 

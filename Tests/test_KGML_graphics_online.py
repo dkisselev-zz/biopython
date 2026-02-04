@@ -10,6 +10,8 @@
 import os
 import unittest
 
+import pytest
+
 # Biopython
 # Do we have ReportLab?  Raise error if not present.
 from Bio import MissingExternalDependencyError
@@ -44,6 +46,7 @@ from Bio.KEGG.KGML.KGML_parser import read
 requires_internet.check()
 
 
+@pytest.mark.online
 class KGMLPathwayOnlineTest(unittest.TestCase):
     """Import XML file and write KGML - online tests.
 

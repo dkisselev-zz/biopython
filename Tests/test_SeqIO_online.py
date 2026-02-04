@@ -16,6 +16,8 @@ Goals:
 
 import unittest
 
+import pytest
+
 import requires_internet
 
 from Bio import Entrez  # Testing this
@@ -30,6 +32,7 @@ requires_internet.check()
 Entrez.email = "biopython@biopython.org"
 
 
+@pytest.mark.online
 class ExPASyTests(unittest.TestCase):
     """Tests for Bio.ExPASy module."""
 
@@ -51,6 +54,7 @@ class ExPASyTests(unittest.TestCase):
         self.assertEqual(seguid(record.seq), "5Y08l+HJRDIlhLKzFEfkcKd1dkM")
 
 
+@pytest.mark.online
 class EntrezTests(unittest.TestCase):
     def simple(self, database, formats, entry, length, checksum):
         for f in formats:

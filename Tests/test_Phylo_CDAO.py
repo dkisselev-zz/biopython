@@ -10,6 +10,8 @@ import os
 import tempfile
 import unittest
 
+import pytest
+
 import Bio.Phylo as bp
 from Bio import MissingExternalDependencyError
 

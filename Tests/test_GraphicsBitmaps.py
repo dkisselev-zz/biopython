@@ -16,6 +16,8 @@ import os
 import random
 import unittest
 
+import pytest
+
 from Bio import MissingExternalDependencyError
 from Bio import MissingPythonDependencyError
 

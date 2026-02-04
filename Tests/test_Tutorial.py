@@ -59,6 +59,12 @@ import sys
 import unittest
 import warnings
 
+import pytest
+
+# This module has tests that explicitly change working directory
+# Use strict fixture to ensure CWD is properly enforced per-test
+pytestmark = pytest.mark.usefixtures("enforce_working_directory_strict")
+
 # This is the same mechanism used for run_tests.py --offline
 # to skip tests requiring the network.
 import requires_internet

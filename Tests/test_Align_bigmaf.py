@@ -10,6 +10,7 @@ from io import StringIO
 import numpy as np
 
 from Bio import Align
+from Bio.Align import bigmaf  # Ensure bigmaf is loaded for Align.bigmaf.declaration
 
 
 class TestAlign_declaration(unittest.TestCase):

@@ -6,14 +6,12 @@
 
 import unittest
 
-try:
-    import numpy as np
-except ImportError:
-    from Bio import MissingPythonDependencyError
+import pytest
 
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.Cluster."
-    ) from None
+# Skip entire module if NumPy not available
+pytest.importorskip("numpy", reason="Install NumPy if you want to use Bio.Cluster.")
+
+import numpy as np
 
 
 class TestCluster(unittest.TestCase):

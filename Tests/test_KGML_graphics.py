@@ -9,6 +9,8 @@
 import os
 import unittest
 
+import pytest
+
 # Do we have ReportLab?  Raise error if not present.
 from Bio import MissingExternalDependencyError
 

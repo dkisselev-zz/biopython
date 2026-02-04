@@ -11,6 +11,8 @@ import sys
 import unittest
 from subprocess import getoutput
 
+import pytest
+
 from Bio import MissingExternalDependencyError
 from Bio.PDB import PDBParser
 from Bio.PDB.PSEA import PSEA

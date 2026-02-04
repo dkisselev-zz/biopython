@@ -204,7 +204,8 @@ jobs:
     - name: Run test suite
       run: |
         cd Tests
-        PYTHONMALLOC=debug LD_PRELOAD="$(realpath "$(gcc -print-file-name=libasan.so)") $(realpath "$(gcc -print-file-name=libstdc++.so)")" ASAN_OPTIONS="detect_leaks=0" coverage run --source Bio,BioSQL run_tests.py --offline
+        pip install -e ..
+        PYTHONMALLOC=debug LD_PRELOAD="$(realpath "$(gcc -print-file-name=libasan.so)") $(realpath "$(gcc -print-file-name=libstdc++.so)")" ASAN_OPTIONS="detect_leaks=0" coverage run -m pytest --offline -v
         coverage xml
       shell: bash
 
@@ -251,7 +252,8 @@ jobs:
     - name: Run test suite
       run: |
         cd Tests
-        coverage run --source Bio,BioSQL run_tests.py --offline
+        pip install -e ..
+        coverage run -m pytest --offline -v
         coverage xml
 
     - name: Upload coverage to codecov
@@ -297,7 +299,8 @@ jobs:
     - name: Run test suite
       run: |
         cd Tests
-        coverage run --source Bio,BioSQL run_tests.py --offline
+        pip install -e ..
+        coverage run -m pytest --offline -v
         coverage xml
 
     - name: Upload coverage to codecov
@@ -343,7 +346,8 @@ jobs:
     - name: Run test suite
       run: |
         cd Tests
-        python run_tests.py --offline
+        pip install -e ..
+        python -m pytest --offline -v
 
   # Flag step
   check_tests:

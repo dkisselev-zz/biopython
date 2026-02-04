@@ -30,6 +30,8 @@ from io import BytesIO
 from unittest import mock
 from urllib.error import HTTPError
 
+import pytest
+
 import requires_internet
 
 from Bio import MissingExternalDependencyError

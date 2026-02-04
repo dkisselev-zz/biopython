@@ -9,6 +9,8 @@
 import unittest
 import warnings
 
+import pytest
+
 import requires_internet
 
 from Bio.PDB.mmtf import MMTFParser
@@ -17,6 +19,7 @@ from Bio.PDB.PDBExceptions import PDBConstructionWarning
 requires_internet.check()
 
 
+@pytest.mark.online
 class OnlineMMTF(unittest.TestCase):
     """Online tests for the MMTF code."""
 

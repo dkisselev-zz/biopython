@@ -68,24 +68,31 @@ if sys.version_info[:2] < MIN_PY_VER:
 class test_biopython(Command):
     """Run all of the tests for the package.
 
-    This is a automatic test run class to make distutils kind of act like
-    perl. With this you can do:
+    This supports both the legacy unittest runner and pytest.
+    Set environment variable USE_PYTEST=1 to use pytest.
 
-    python setup.py build
-    python setup.py install
-    python setup.py test
+    Usage:
+        python setup.py build
+        python setup.py install
+        python setup.py test
+        python setup.py test --offline
+        USE_PYTEST=1 python setup.py test
 
     """
 
     description = "Automatically run the test suite for Biopython."
-    user_options = [("offline", None, "Don't run online tests")]
+    user_options = [
+        ("offline", None, "Don't run online tests"),
+        ("pytest", None, "Use pytest instead of unittest runner"),
+    ]
 
     def initialize_options(self):
-        """No-op, initialise options."""
+        """Initialize options."""
         self.offline = None
+        self.pytest = os.environ.get("USE_PYTEST", "0") == "1"
 
     def finalize_options(self):
-        """No-op, finalise options."""
+        """Finalize options."""
         pass
 
     def run(self):
@@ -95,12 +102,37 @@ class test_biopython(Command):
         # change to the test dir and run the tests
         os.chdir("Tests")
         sys.path.insert(0, "")
-        import run_tests
 
-        if self.offline:
-            run_tests.main(["--offline"])
+        if self.pytest:
+            # Use pytest
+            try:
+                import pytest
+            except ImportError:
+                sys.stderr.write(
+                    "ERROR: pytest not installed. Install with: pip install pytest\n"
+                )
+                sys.exit(1)
+
+            args = []
+            if self.offline:
+                args.append("--offline")
+
+            sys.stderr.write("Running tests with pytest...\n")
+            exit_code = pytest.main(args)
+            if exit_code != 0:
+                sys.stderr.write(f"pytest exited with code {exit_code}\n")
+                sys.exit(exit_code)
         else:
-            run_tests.main([])
+            # Use legacy unittest runner (default during transition)
+            import run_tests
+
+            if self.offline:
+                exit_code = run_tests.main(["--offline"])
+            else:
+                exit_code = run_tests.main([])
+
+            if exit_code:
+                sys.exit(exit_code)
 
         # change back to the current directory
         os.chdir(this_dir)

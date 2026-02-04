@@ -11,6 +11,8 @@ import re
 import unittest
 import warnings
 
+import pytest
+
 try:
     import numpy as np  # noqa F401
 except ImportError:

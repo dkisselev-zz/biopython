@@ -6,6 +6,8 @@
 
 import unittest
 
+import pytest
+
 import requires_internet
 
 # Really do want "import *" to get all the test clases:

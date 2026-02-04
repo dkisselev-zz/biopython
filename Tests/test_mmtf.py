@@ -13,6 +13,8 @@ import tempfile
 import unittest
 import warnings
 
+import pytest
+
 try:
     import mmtf
 except ImportError:

@@ -4,6 +4,8 @@ Tests for BinaryCIF code in the PDB package.
 
 import unittest
 
+import pytest
+
 from Bio.PDB import MMCIFParser
 from Bio.PDB.binary_cif import BinaryCIFParser
 

@@ -9,6 +9,8 @@ import os
 import sys
 import unittest
 
+import pytest
+
 from Bio import MissingExternalDependencyError
 from Bio.Phylo.PAML import baseml
 from Bio.Phylo.PAML import codeml

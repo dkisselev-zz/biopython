@@ -8,15 +8,13 @@ import os
 import struct
 import unittest
 
-try:
-    import numpy.testing
-    from numpy import array
-except ImportError:
-    from Bio import MissingPythonDependencyError
+import pytest
 
-    raise MissingPythonDependencyError(
-        "Install NumPy if you want to use Bio.Affy.CelFile"
-    ) from None
+# Skip entire module if NumPy not available
+pytest.importorskip("numpy", reason="Install NumPy if you want to use Bio.Affy.CelFile")
+
+import numpy.testing
+from numpy import array
 
 from Bio.Affy import CelFile
 

@@ -6,6 +6,8 @@
 
 import unittest
 
+import pytest
+
 # Really do want "import *" to get all the test classes:
 from common_BioSQL import *  # noqa: F403
 from common_BioSQL import check_config

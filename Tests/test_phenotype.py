@@ -7,16 +7,9 @@
 # package.
 """Tests for the Bio.phenotype module."""
 
-try:
-    import numpy as np
+import pytest
 
-    del np
-except ImportError:
-    from Bio import MissingExternalDependencyError
-
-    raise MissingExternalDependencyError(
-        "Install NumPy if you want to use Bio.phenotype."
-    ) from None
+pytest.importorskip("numpy", reason="Install NumPy if you want to use Bio.phenotype.")
 
 import json
 import unittest

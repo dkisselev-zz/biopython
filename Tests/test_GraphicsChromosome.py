@@ -18,6 +18,8 @@ import unittest
 import warnings
 from io import StringIO
 
+import pytest
+
 from Bio import BiopythonWarning
 from Bio import MissingPythonDependencyError
 

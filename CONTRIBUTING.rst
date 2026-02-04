@@ -77,13 +77,28 @@ Local Testing
 -------------
 
 Please always run the full test suite locally before submitting a pull
-request, e.g.::
+request. Biopython supports both pytest (recommended) and the traditional
+unittest runner::
 
     $ pip install -e .
-    $ python setup.py test
-    $ git commit ...
+    $ cd Tests
+    $ pytest --offline           # Recommended: Run with pytest
+    $ python setup.py test       # Alternative: Run with unittest
 
-Have a look at the `related chapter <http://biopython.org/DIST/docs/tutorial/Tutorial.html#chapter%3Atesting>`_ in the documentation for more details.
+For faster testing during development, you can run tests in parallel::
+
+    $ cd Tests
+    $ pytest --offline -n auto   # Parallel execution
+
+Run specific tests::
+
+    $ cd Tests
+    $ pytest test_SeqIO.py --offline     # Single file
+    $ pytest -k "test_fasta" --offline   # By name pattern
+
+See ``Tests/TESTING.md`` for comprehensive testing documentation.
+
+Have a look at the `related chapter <http://biopython.org/DIST/docs/tutorial/Tutorial.html#chapter%3Atesting>`_ in the tutorial for more details about the test framework.
 
 Continuous Integration
 ----------------------

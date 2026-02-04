@@ -7,6 +7,8 @@
 
 import unittest
 
+import pytest
+
 # Check for any missing dependencies at the top level so we can skip
 from Bio import MissingExternalDependencyError
 from Bio import Phylo
