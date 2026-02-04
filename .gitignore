@@ -1,6 +1,9 @@
 #Ignore the build directory (and its sub-directories):
 build
 
+#Ignore Cargo build artifacts (Rust extensions):
+target/
+
 #Ignore the distribution directory
 dist
 

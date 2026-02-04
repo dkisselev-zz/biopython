@@ -4,6 +4,7 @@
 ## Building/Packaging
 setuptools
 wheel
+setuptools-rust
 
 # Style (for RST linting)
 # Most style dependencies are handled by pre-commit.

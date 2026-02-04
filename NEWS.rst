@@ -22,6 +22,9 @@ possible, especially the following contributors:
 - Ziyan Rao (first contribution)
 - Manuel Lera-Ramirez
 
+* Added ``Bio.SeqUtils.KmerCounter`` for high-speed k-mer counting backed
+  by a Rust extension (PyO3 + Rayon), with a pure-Python fallback.
+
 28 October 2025: Biopython 1.86
 ===============================
 

@@ -23,6 +23,7 @@ from Bio.Seq import complement
 from Bio.Seq import complement_rna
 from Bio.Seq import Seq
 from Bio.Seq import translate
+from Bio.SeqUtils._kmer_counter import KmerCounter  # noqa: F401
 
 ######################################
 # DNA

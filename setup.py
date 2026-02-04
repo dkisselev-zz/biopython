@@ -55,6 +55,23 @@ if setuptools_version_tuple < (70, 1) and "bdist_wheel" in sys.argv:
         )
 
 
+# Rust extension — compiled only when setuptools-rust *and* a Rust
+# toolchain are both available; otherwise silently skipped.
+_rust_kwargs: dict = {}
+try:
+    from setuptools_rust import RustExtension
+
+    _rust_kwargs["rust_extensions"] = [
+        RustExtension(
+            "Bio.SeqUtils._kmer_rust",
+            "Bio/SeqUtils/_kmer_rust/Cargo.toml",
+            optional=True,  # do not fail the build if rustc is missing
+        ),
+    ]
+except ImportError:
+    pass
+
+
 # Make sure we have the right Python version.
 MIN_PY_VER = (3, 10)
 if sys.version_info[:2] < MIN_PY_VER:
@@ -271,4 +288,5 @@ setup(
     include_package_data=True,  # done via MANIFEST.in under setuptools
     install_requires=REQUIRES,
     python_requires=">=%i.%i" % MIN_PY_VER,
+    **_rust_kwargs,
 )
