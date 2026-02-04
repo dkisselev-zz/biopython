@@ -8,4 +8,5 @@ This is from Biopython |version|.
    :caption: Table of contents
 
    Tutorial/index
+   kmer_counting
    api/index

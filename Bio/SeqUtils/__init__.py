@@ -8,7 +8,27 @@
 # choice of the "Biopython License Agreement" or the "BSD 3-Clause License".
 # Please see the LICENSE file that should have been included as part of this
 # package.
-"""Miscellaneous functions for dealing with sequences."""
+"""Miscellaneous functions for dealing with sequences.
+
+This module provides various utilities for sequence analysis including:
+- GC content calculation (gc_fraction, GC, GC123, GC_skew)
+- Molecular weight calculations (molecular_weight)
+- Melting temperature calculations (MeltingTemp submodule)
+- Sequence property analysis (ProtParam, ProtParamData submodules)
+- K-mer counting (KmerCounter submodule) - high-performance counting with optional Rust acceleration
+- Codon usage analysis (CodonAdaptationIndex class)
+
+For k-mer counting, see::
+
+    >>> from Bio.SeqUtils.KmerCounter import count_kmers
+    >>> counts = count_kmers("ACGTACGT", k=3)
+
+Or use the KmerCounter class for more control::
+
+    >>> from Bio.SeqUtils.KmerCounter import KmerCounter
+    >>> counter = KmerCounter(k=3, canonical=True)
+    >>> counts = counter.count("ACGTACGT")
+"""
 
 import re
 from math import cos
@@ -23,6 +43,13 @@ from Bio.Seq import complement
 from Bio.Seq import complement_rna
 from Bio.Seq import Seq
 from Bio.Seq import translate
+
+# K-mer counting module
+from Bio.SeqUtils.KmerCounter import KmerCounter
+from Bio.SeqUtils.KmerCounter import count_kmers
+from Bio.SeqUtils.KmerCounter import streaming_count_kmers
+
+__all__ = ["KmerCounter", "count_kmers", "streaming_count_kmers"]
 
 ######################################
 # DNA

@@ -15,6 +15,8 @@ recursive-include Scripts *    # Include scripts.
 recursive-include Tests *      # Include regression tests.
 recursive-include Bio *.c      # Include all .c files.
 recursive-include Bio *.h      # Include headers to compile .c files.
+recursive-include Bio/SeqUtils/_kmer_counter_rust *.rs    # Include Rust source files
+recursive-include Bio/SeqUtils/_kmer_counter_rust *.toml  # Include Rust config files
 recursive-include Doc *.tex    # Include relevant documentation.
 recursive-include Doc *.pdf
 recursive-include Doc *.py

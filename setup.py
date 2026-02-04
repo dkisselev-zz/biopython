@@ -38,6 +38,14 @@ except ImportError:
         "Try running: python -m ensurepip"
     )
 
+# Try to import setuptools-rust for Rust extension support
+try:
+    from setuptools_rust import Binding, RustExtension
+    RUST_AVAILABLE = True
+except ImportError:
+    RUST_AVAILABLE = False
+    RustExtension = None
+
 
 setuptools_version_tuple = tuple(int(x) for x in setuptools_version.split(".")[:2])
 if setuptools_version_tuple < (70, 1) and "bdist_wheel" in sys.argv:
@@ -211,6 +219,18 @@ EXTENSIONS = [
     Extension("Bio.SeqIO._twoBitIO", ["Bio/SeqIO/_twoBitIO.c"]),
 ]
 
+# Rust extensions (optional - requires Rust toolchain)
+RUST_EXTENSIONS = []
+if RUST_AVAILABLE:
+    RUST_EXTENSIONS = [
+        RustExtension(
+            "Bio.SeqUtils._kmer_counter_rust",
+            path="Bio/SeqUtils/_kmer_counter_rust/Cargo.toml",
+            binding=Binding.PyO3,
+            debug=False,
+        ),
+    ]
+
 
 def get_version():
     """Get version number from __init__.py."""
@@ -268,6 +288,7 @@ setup(
     cmdclass={"test": test_biopython},
     packages=PACKAGES,
     ext_modules=EXTENSIONS,
+    rust_extensions=RUST_EXTENSIONS,
     include_package_data=True,  # done via MANIFEST.in under setuptools
     install_requires=REQUIRES,
     python_requires=">=%i.%i" % MIN_PY_VER,

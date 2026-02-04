@@ -4,6 +4,9 @@ build
 #Ignore the distribution directory
 dist
 
+#Ignore Rust build artifacts
+**/target/
+
 #Ignore backup files from some Unix editors,
 \#*\#
 *~
@@ -140,3 +143,6 @@ ENV/
 # but should not be committed to Git, as different developers
 # may use different Python versions.
 .python-version
+
+# Claude Code internal directory
+.claude/
