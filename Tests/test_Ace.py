@@ -7,15 +7,19 @@
 
 """Tests for Ace module."""
 
+from pathlib import Path
+
 import pytest
 
 from Bio.Sequencing import Ace
+
+_HERE = Path(__file__).resolve().parent
 
 
 class TestAceTestOne:
     @pytest.fixture(autouse=True)
     def _setup(self):
-        self.handle = open("Ace/contig1.ace")
+        self.handle = open(_HERE / "Ace" / "contig1.ace")
 
         yield
         self.handle.close()
@@ -1017,7 +1021,7 @@ class TestAceTestTwo:
 
     @pytest.fixture(autouse=True)
     def _setup(self):
-        self.handle = open("Ace/seq.cap.ace")
+        self.handle = open(_HERE / "Ace" / "seq.cap.ace")
 
         yield
         self.handle.close()
@@ -1369,7 +1373,7 @@ class TestAceTestThree:
 
     @pytest.fixture(autouse=True)
     def _setup(self):
-        self.handle = open("Ace/consed_sample.ace")
+        self.handle = open(_HERE / "Ace" / "consed_sample.ace")
 
         yield
         self.handle.close()

@@ -24,11 +24,11 @@ import pytest
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-TESTS_DIR = os.path.abspath(os.path.dirname(__file__))
+TESTS_DIR = Path(__file__).resolve().parent
 
 # Ensure Tests/ is on sys.path so helpers like requires_internet are importable
-if TESTS_DIR not in sys.path:
-    sys.path.insert(0, TESTS_DIR)
+if str(TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(TESTS_DIR))
 
 # Modules that must never be collected for doctests
 ALWAYS_EXCLUDE_DOCTEST = {"Bio.Alphabet"}
@@ -146,27 +146,56 @@ class _SafeModule(pytest.Module):
         try:
             return super()._getobj()
         except Exception as exc:
-            # Two cases:
-            # 1) MissingExternalDependencyError (NOT an ImportError subclass) –
-            #    propagates as-is; type(exc).__qualname__ identifies it.
-            # 2) MissingPythonDependencyError (IS an ImportError subclass) –
-            #    pytest wraps it in CollectError; the original lives in __cause__
-            #    and the type name appears in str(exc).
-            cause = exc.__cause__ if exc.__cause__ else exc
-            cause_type = type(cause).__qualname__
-            if "MissingPythonDependencyError" in cause_type:
-                pytest.skip(str(cause))
-            elif "MissingExternalDependencyError" in cause_type:
-                pytest.skip(str(cause))
-            elif "Bio.Alphabet" in str(cause) and "ImportError" in cause_type:
+            # Lazy import: Bio.__init__ is always importable; only sub-modules
+            # may be missing their optional dependencies.
+            from Bio import MissingExternalDependencyError
+            from Bio import MissingPythonDependencyError
+
+            # Walk the __cause__/__context__ chain to the innermost exception.
+            # pytest may wrap an ImportError in CollectError (sometimes more
+            # than one level deep), so the real exception can be several links
+            # back.
+            original = _unwrap_cause(exc)
+
+            # --- isinstance / attribute checks (authoritative) -----------------
+            if isinstance(
+                original,
+                (MissingPythonDependencyError, MissingExternalDependencyError),
+            ):
+                pytest.skip(str(original))
+
+            if (
+                isinstance(original, ImportError)
+                and getattr(original, "name", "").startswith("Bio.Alphabet")
+            ):
                 pytest.skip("Bio.Alphabet has been removed")
-            # Fallback: scan the full string (covers double-wrapped cases)
+
+            # --- string-parsing fallback (CollectError swallows __cause__) -----
+            # When pytest wraps the exception so thoroughly that the cause
+            # chain is broken, the class name and message still appear in
+            # str(exc).
             msg = str(exc)
             if "MissingPythonDependencyError" in msg:
                 pytest.skip(_extract_skip_reason(msg))
-            elif "MissingExternalDependencyError" in msg:
+            if "MissingExternalDependencyError" in msg:
                 pytest.skip(_extract_skip_reason(msg))
+
             raise
+
+
+def _unwrap_cause(exc: BaseException) -> BaseException:
+    """Walk the __cause__ / __context__ chain to the innermost exception.
+
+    Stops when the chain ends or loops (guards against circular chaining).
+    """
+    seen: set[int] = set()
+    current = exc
+    while True:
+        seen.add(id(current))
+        nxt = current.__cause__ if current.__cause__ else current.__context__
+        if nxt is None or id(nxt) in seen:
+            return current
+        current = nxt
 
 
 def _extract_skip_reason(msg: str) -> str:
@@ -210,23 +239,21 @@ def _find_bio_modules() -> set[str]:
     """
     from pkgutil import iter_modules
 
-    root = os.path.join(TESTS_DIR, "..")
+    root = TESTS_DIR.parent
     modules: set[str] = set()
 
     def _walk(pkg_name: str) -> None:
         modules.add(pkg_name)
-        pkg_path = os.path.join(root, pkg_name.replace(".", os.sep))
-        for info in iter_modules([pkg_path]):
+        pkg_path = root / pkg_name.replace(".", "/")
+        for info in iter_modules([str(pkg_path)]):
             full_name = pkg_name + "." + info.name
             modules.add(full_name)
             if info.ispkg:
                 _walk(full_name)
 
     for top in ("Bio", "BioSQL"):
-        top_path = os.path.join(root, top)
-        if os.path.isdir(top_path) and os.path.exists(
-            os.path.join(top_path, "__init__.py")
-        ):
+        top_path = root / top
+        if top_path.is_dir() and (top_path / "__init__.py").is_file():
             _walk(top)
 
     return modules
@@ -263,7 +290,7 @@ def _cwd_safety() -> Generator[None, None, None]:
     """Guarantee CWD == Tests/ around each test; fail if a test changed it."""
     os.chdir(TESTS_DIR)
     yield
-    current = os.path.abspath(".")
+    current = Path.cwd().resolve()
     os.chdir(TESTS_DIR)  # Restore first so the next test isn't affected
     if current != TESTS_DIR:
         pytest.fail(
