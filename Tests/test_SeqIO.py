@@ -3373,6 +3373,7 @@ class TestSeqIO(SeqIOTestBaseClass):
             "qual": "No suitable quality scores found in letter_annotations of SeqRecord (id=NRP00210945).",
             "seqxml": "Sequence content is undefined",
             "sff": "Missing SFF flow information",
+            "airr": "Sequence content is undefined",
             "tab": "Sequence content is undefined",
             "xdna": "More than one sequence found",
         }
@@ -4962,6 +4963,7 @@ class TestSeqIO(SeqIOTestBaseClass):
             "pir": "Sequence content is undefined",
             "seqxml": "Sequence content is undefined",
             "sff": "Missing SFF flow information",
+            "airr": "Sequence content is undefined",
             "tab": "Sequence content is undefined",
             "xdna": "More than one sequence found",
             "nexus": "Need the molecule type to be defined",

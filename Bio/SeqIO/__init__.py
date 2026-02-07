@@ -263,6 +263,8 @@ names are also used in Bio.AlignIO and include the following:
     - abi     - Applied Biosystem's sequencing trace format
     - abi-trim - Same as "abi" but with quality trimming with Mott's algorithm
     - ace     - Reads the contig sequences from an ACE assembly file.
+    - airr    - AIRR Rearrangement TSV format for immune receptor repertoire
+      data as defined by the AIRR Community standard.
     - cif-atom - Uses Bio.PDB.MMCIFParser to determine the (partial) protein
       sequence as it appears in the structure based on the atomic coordinates.
     - cif-seqres - Reads a macromolecular Crystallographic Information File
@@ -380,6 +382,7 @@ from typing import Union
 from Bio import AlignIO
 from Bio.SeqIO import AbiIO
 from Bio.SeqIO import AceIO
+from Bio.SeqIO import AirrIO
 from Bio.SeqIO import FastaIO
 from Bio.SeqIO import GckIO
 from Bio.SeqIO import GfaIO
@@ -415,6 +418,7 @@ _FormatToIterator = {
     "abi": AbiIO.AbiIterator,
     "abi-trim": AbiIO._AbiTrimIterator,
     "ace": AceIO.AceIterator,
+    "airr": AirrIO.AirrIterator,
     "fasta": FastaIO.FastaIterator,
     "fasta-2line": FastaIO.FastaTwoLineIterator,
     "fasta-blast": FastaIO.FastaBlastIterator,
@@ -454,6 +458,7 @@ _FormatToIterator = {
 
 # Right now used in the unit tests as proxy for all supported outputs...
 _FormatToWriter = {
+    "airr": AirrIO.AirrWriter,
     "fasta": FastaIO.FastaWriter,
     "fasta-2line": FastaIO.FastaTwoLineWriter,
     "gb": InsdcIO.GenBankWriter,

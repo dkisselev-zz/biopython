@@ -32,6 +32,7 @@ This is from Biopython |version|.
    chapter_graphics
    chapter_kegg
    chapter_phenotype
+   chapter_immunoinformatics
    chapter_cookbook
    chapter_testing
    chapter_contributing

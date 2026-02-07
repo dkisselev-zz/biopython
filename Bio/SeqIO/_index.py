@@ -582,6 +582,49 @@ class TabRandomAccess(SeqFileRandomAccess):
         return handle.readline()
 
 
+class AirrRandomAccess(SeqFileRandomAccess):
+    """Random access to an AIRR rearrangement TSV file."""
+
+    def __init__(self, filename, format):
+        """Initialize the class."""
+        SeqFileRandomAccess.__init__(self, filename, format)
+        handle = self._handle
+        handle.seek(0)
+        header = handle.readline()
+        if not header:
+            raise ValueError("Empty AIRR TSV file")
+        if header.startswith(b"\xef\xbb\xbf"):
+            header = header[3:]
+        self._header = header
+        fields = header.decode().rstrip("\r\n").split("\t")
+        if "sequence_id" not in fields:
+            raise ValueError("AIRR file missing 'sequence_id' column")
+        self._seq_id_idx = fields.index("sequence_id")
+        self._data_start = handle.tell()
+
+    def __iter__(self):
+        """Yield (sequence_id, offset, length) tuples."""
+        handle = self._handle
+        handle.seek(self._data_start)
+        tab = b"\t"
+        while True:
+            start_offset = handle.tell()
+            line = handle.readline()
+            if not line:
+                break
+            if not line.strip():
+                continue
+            parts = line.split(tab)
+            if len(parts) <= self._seq_id_idx:
+                raise ValueError(f"Line too short: {line!r}")
+            yield parts[self._seq_id_idx].decode(), start_offset, len(line)
+
+    def get_raw(self, offset):
+        """Return header + data line so AirrIterator can reconstruct the record."""
+        self._handle.seek(offset)
+        return self._header + self._handle.readline()
+
+
 ##########################
 # Now the FASTQ indexers #
 ##########################
@@ -697,6 +740,7 @@ class FastqRandomAccess(SeqFileRandomAccess):
 
 _FormatToRandomAccess = {
     "ace": SequentialSeqFileRandomAccess,
+    "airr": AirrRandomAccess,
     "embl": EmblRandomAccess,
     "fasta": SequentialSeqFileRandomAccess,
     "fastq": FastqRandomAccess,  # Class handles all three variants
