@@ -483,16 +483,12 @@ class UniprotRandomAccess(SequentialSeqFileRandomAccess):
         # TODO - Can we handle this directly in the parser?
         # This is a hack - use get_raw for <entry>...</entry> and wrap it with
         # the apparently required XML header and footer.
-        data = (
-            b"""<?xml version='1.0' encoding='UTF-8'?>
+        data = b"""<?xml version='1.0' encoding='UTF-8'?>
         <uniprot xmlns="http://uniprot.org/uniprot"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://uniprot.org/uniprot
         http://www.uniprot.org/support/docs/uniprot.xsd">
-        """
-            + self.get_raw(offset)
-            + b"</uniprot>"
-        )
+        """ + self.get_raw(offset) + b"</uniprot>"
         return next(SeqIO.UniprotIO.UniprotIterator(BytesIO(data)))
 
 
@@ -580,6 +576,85 @@ class TabRandomAccess(SeqFileRandomAccess):
         handle = self._handle
         handle.seek(offset)
         return handle.readline()
+
+
+class AirrRandomAccess(SeqFileRandomAccess):
+    """Random access to AIRR (Adaptive Immune Receptor Repertoire) TSV files.
+
+    AIRR files have a header line defining field names, followed by data lines.
+    The sequence_id column is used as the record key.
+    """
+
+    def __init__(self, filename, format):
+        """Initialize AIRR random access indexer.
+
+        Parameters
+        ----------
+        filename : str
+            Path to AIRR TSV file
+        format : str
+            Format name (should be "airr")
+
+        """
+        SeqFileRandomAccess.__init__(self, filename, format)
+
+        # Read header to determine sequence_id column position
+        self._handle.seek(0)
+        header_line = self._handle.readline()
+        if not header_line:
+            raise ValueError("Empty AIRR file or missing header")
+
+        field_names = header_line.decode().rstrip("\n\r").split("\t")
+
+        # Find sequence_id column index
+        try:
+            self._id_index = field_names.index("sequence_id")
+        except ValueError:
+            raise ValueError("AIRR file must contain 'sequence_id' column") from None
+
+        # Store header length for skipping
+        self._header_length = len(header_line)
+
+    def __iter__(self):
+        """Iterate over sequence records, yielding (id, offset, length) tuples."""
+        handle = self._handle
+        handle.seek(self._header_length)  # Skip header
+        tab_char = b"\t"
+
+        while True:
+            start_offset = handle.tell()
+            line = handle.readline()
+            if not line:
+                break  # End of file
+
+            # Skip blank lines
+            if not line.strip():
+                continue
+
+            # Extract sequence_id from the appropriate column
+            fields = line.split(tab_char)
+            if self._id_index < len(fields):
+                seq_id = fields[self._id_index].decode().strip()
+                if seq_id:
+                    yield seq_id, start_offset, len(line)
+
+    def get_raw(self, offset):
+        """Return the raw record from file as bytes.
+
+        Returns header + record line for parsing.
+        """
+        handle = self._handle
+
+        # Read header
+        handle.seek(0)
+        header = handle.readline()
+
+        # Read record line
+        handle.seek(offset)
+        record_line = handle.readline()
+
+        # Return header + record for parser
+        return header + record_line
 
 
 ##########################
@@ -697,6 +772,7 @@ class FastqRandomAccess(SeqFileRandomAccess):
 
 _FormatToRandomAccess = {
     "ace": SequentialSeqFileRandomAccess,
+    "airr": AirrRandomAccess,
     "embl": EmblRandomAccess,
     "fasta": SequentialSeqFileRandomAccess,
     "fastq": FastqRandomAccess,  # Class handles all three variants

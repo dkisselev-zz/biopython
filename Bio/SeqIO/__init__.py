@@ -380,6 +380,7 @@ from typing import Union
 from Bio import AlignIO
 from Bio.SeqIO import AbiIO
 from Bio.SeqIO import AceIO
+from Bio.SeqIO import AirrIO
 from Bio.SeqIO import FastaIO
 from Bio.SeqIO import GckIO
 from Bio.SeqIO import GfaIO
@@ -415,6 +416,7 @@ _FormatToIterator = {
     "abi": AbiIO.AbiIterator,
     "abi-trim": AbiIO._AbiTrimIterator,
     "ace": AceIO.AceIterator,
+    "airr": AirrIO.AirrIterator,
     "fasta": FastaIO.FastaIterator,
     "fasta-2line": FastaIO.FastaTwoLineIterator,
     "fasta-blast": FastaIO.FastaBlastIterator,
@@ -454,6 +456,7 @@ _FormatToIterator = {
 
 # Right now used in the unit tests as proxy for all supported outputs...
 _FormatToWriter = {
+    "airr": AirrIO.AirrWriter,
     "fasta": FastaIO.FastaWriter,
     "fasta-2line": FastaIO.FastaTwoLineWriter,
     "gb": InsdcIO.GenBankWriter,
